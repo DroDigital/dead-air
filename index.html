@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>DEAD AIR</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        background: #000;
+        overflow: hidden;
+        color: #f0e0c0;
+        font-family: 'DeadAirPixel', 'Courier New', monospace;
+      }
+      #game {
+        display: block;
+        position: fixed;
+        inset: 0;
+        cursor: none;
+        image-rendering: pixelated;
+      }
+      #loading {
+        position: fixed;
+        inset: 0;
+        width: 100vw;
+        height: 56.25vw;
+        max-height: 100vh;
+        max-width: 177.78vh;
+        margin: auto;
+        image-rendering: pixelated;
+        z-index: 5;
+      }
+      #menus {
+        position: fixed;
+        inset: 0;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 10;
+        background: repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.25) 0 2px, transparent 2px 4px), rgba(6, 2, 1, 0.72);
+      }
+      #menus[class^='page-'] {
+        display: flex;
+      }
+      #menus .panel {
+        background: #140b06;
+        border: 3px solid #c89830;
+        box-shadow: 0 0 0 3px #3a1a08, 0 0 40px #000;
+        padding: 18px 26px;
+        min-width: 340px;
+        max-width: 560px;
+        max-height: 90vh;
+        overflow: auto;
+        image-rendering: pixelated;
+      }
+      #menus .panel.wide {
+        max-width: 960px;
+        width: 90vw;
+      }
+      #menus h2 {
+        margin: 0 0 12px;
+        color: #ffd040;
+        letter-spacing: 2px;
+        font-size: 22px;
+      }
+      #menus h2.win {
+        color: #80ff80;
+      }
+      #menus h2.lose {
+        color: #ff4030;
+      }
+      #menus h3 {
+        color: #d8a860;
+        font-size: 14px;
+        margin: 16px 0 6px;
+      }
+      #menus .logo {
+        font-size: 56px;
+        color: #ff4a2a;
+        text-shadow: 4px 4px 0 #3a0800;
+        letter-spacing: 6px;
+        text-align: center;
+      }
+      #menus .logo span {
+        color: #ffd040;
+        margin-left: 18px;
+      }
+      #menus .tag {
+        text-align: center;
+        color: #a08060;
+        margin-bottom: 18px;
+        font-size: 12px;
+      }
+      #menus .col {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      #menus .row {
+        display: flex;
+        gap: 10px;
+        margin-top: 14px;
+      }
+      #menus button {
+        font: inherit;
+        font-size: 15px;
+        background: #2a1a0c;
+        color: #f0e0c0;
+        border: 2px solid #6a4820;
+        padding: 8px 14px;
+        cursor: pointer;
+        text-align: left;
+      }
+      #menus button:hover,
+      #menus button:focus {
+        background: #5a3410;
+        border-color: #ffd040;
+        color: #fff;
+        outline: none;
+      }
+      #menus label {
+        display: flex;
+        justify-content: space-between;
+        gap: 10px;
+        align-items: center;
+        margin: 6px 0;
+        font-size: 13px;
+      }
+      #menus label.chk {
+        justify-content: flex-start;
+      }
+      #menus input,
+      #menus select {
+        font: inherit;
+        background: #0c0603;
+        color: #ffe8b0;
+        border: 2px solid #6a4820;
+        padding: 3px 6px;
+      }
+      #menus input:focus,
+      #menus select:focus {
+        border-color: #ffd040;
+        outline: none;
+      }
+      #menus .grid2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 2px 18px;
+      }
+      #menus .small {
+        font-size: 11px;
+        color: #a08868;
+      }
+      #menus .foot {
+        margin-top: 16px;
+        font-size: 11px;
+        color: #806040;
+        text-align: center;
+      }
+      #menus table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 12px;
+      }
+      #menus td,
+      #menus th {
+        border-bottom: 1px solid #3a2410;
+        padding: 3px 4px;
+        text-align: left;
+        vertical-align: top;
+      }
+      #menus tr.tot td {
+        color: #ffd040;
+        font-size: 15px;
+      }
+      .proproom {
+        background: repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.015) 0 1px, transparent 1px 7px), #120a06 !important;
+      }
+      .props {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: 8px;
+      }
+      .prop {
+        background: linear-gradient(#2a1c10, #1a100a);
+        border-bottom: 6px solid #4a3018;
+        padding: 6px;
+        font-size: 11px;
+        min-height: 110px;
+        filter: sepia(0.4);
+      }
+      .prop .icon {
+        height: 48px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #604830;
+        font-size: 20px;
+      }
+      .prop .icon img {
+        width: 48px;
+        height: 48px;
+        image-rendering: pixelated;
+      }
+      .prop .pn {
+        color: #ffd870;
+        margin: 4px 0;
+      }
+      .prop .pt {
+        color: #b0a080;
+      }
+      .prop.locked {
+        opacity: 0.45;
+      }
+      .prop.known {
+        filter: none;
+      }
+      .prop.r-cursed .pn {
+        color: #c080ff;
+      }
+      .prop.r-rare .pn {
+        color: #ffb030;
+      }
+      .prop.r-uncommon .pn {
+        color: #80d0ff;
+      }
+      .notes .note {
+        background: #e0d4b0;
+        color: #2a1a0c;
+        margin: 4px 0;
+        padding: 4px 8px;
+        font-family: 'DeadAirTerminal', 'Courier New', monospace;
+        font-size: 16px;
+      }
+      .notes .note.locked {
+        background: #3a2a1a;
+        color: #806040;
+      }
+      .unlocks {
+        columns: 2;
+        font-size: 11px;
+        color: #806040;
+      }
+      .unlocks li.on {
+        color: #c0ff90;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="game"></canvas>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

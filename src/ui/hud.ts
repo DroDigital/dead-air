@@ -1,0 +1,304 @@
+/**
+ * Internal-resolution overlay drawn in the pixel font: broadcast chyrons (the show's own
+ * on-air graphics), captions, choice cards, hover tooltips, nav arrows, loading screen.
+ */
+import { drawText, LINE_H, textWidth, wrapText } from './bitfont';
+
+export interface ChoiceOption {
+  label: string;
+  detail?: string;
+  disabled?: boolean;
+  color?: string;
+}
+
+export interface ChoicePanel {
+  title: string;
+  lines?: string[];
+  options: ChoiceOption[];
+  selected: number;
+  footer?: string;
+  accent?: string;
+  /** Layout: 'cards' (side by side) or 'list'. */
+  layout?: 'cards' | 'list';
+}
+
+interface Rect {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
+export interface Caption {
+  speaker: string;
+  text: string;
+  color: string;
+  t: number;
+  life: number;
+}
+
+export class Hud {
+  choice: ChoicePanel | null = null;
+  private optionRects: Rect[] = [];
+  private arrowRects: { dir: 'up' | 'down' | 'left' | 'right'; r: Rect }[] = [];
+  captions: Caption[] = [];
+  toasts: { text: string; color: string; t: number }[] = [];
+  tooltip: string | null = null;
+  ticker = '';
+  tickerRight = '';
+  arrows: ('up' | 'down' | 'left' | 'right')[] = [];
+  banner: { text: string; sub: string; color: string; t: number; life: number } | null = null;
+  fastMode = false;
+  showCursor = true;
+  hint = '';
+  /** The payout breakdown line (broadcast graphic), e.g. "$100 → ×2 → ×1.75 = $350". */
+  payout: { text: string; color: string } | null = null;
+
+  caption(speaker: string, text: string, color: string, seconds: number): void {
+    this.captions = [{ speaker, text, color, t: 0, life: Math.max(2, seconds + 1.2) }];
+  }
+
+  toast(text: string, color = '#ffe080'): void {
+    this.toasts.push({ text, color, t: 0 });
+    if (this.toasts.length > 4) this.toasts.shift();
+  }
+
+  showBanner(text: string, sub: string, color = '#ffd040', life = 2.4): void {
+    this.banner = { text, sub, color, t: 0, life };
+  }
+
+  update(dt: number): void {
+    for (const c of this.captions) c.t += dt;
+    this.captions = this.captions.filter((c) => c.t < c.life);
+    for (const t of this.toasts) t.t += dt;
+    this.toasts = this.toasts.filter((t) => t.t < 2.2);
+    if (this.banner) {
+      this.banner.t += dt;
+      if (this.banner.t > this.banner.life) this.banner = null;
+    }
+  }
+
+  hitChoice(x: number, y: number): number {
+    for (let i = 0; i < this.optionRects.length; i++) {
+      const r = this.optionRects[i];
+      if (x >= r.x && x < r.x + r.w && y >= r.y && y < r.y + r.h) return i;
+    }
+    return -1;
+  }
+
+  hitArrow(x: number, y: number): 'up' | 'down' | 'left' | 'right' | null {
+    for (const a of this.arrowRects) if (x >= a.r.x && x < a.r.x + a.r.w && y >= a.r.y && y < a.r.y + a.r.h) return a.dir;
+    return null;
+  }
+
+  draw(ctx: CanvasRenderingContext2D, w: number, h: number, k: number, mouse: { x: number; y: number; inside: boolean }, time: number): void {
+    // ---- Nav arrows (mouse play) ----
+    this.arrowRects = [];
+    if (!this.choice) {
+      const blink = Math.floor(time * 2) % 2 === 0;
+      for (const dir of this.arrows) {
+        const r: Rect =
+          dir === 'left'
+            ? { x: 2 * k, y: h / 2 - 10 * k, w: 10 * k, h: 20 * k }
+            : dir === 'right'
+              ? { x: w - 12 * k, y: h / 2 - 10 * k, w: 10 * k, h: 20 * k }
+              : dir === 'up'
+                ? { x: w / 2 - 10 * k, y: 2 * k, w: 20 * k, h: 10 * k }
+                : { x: w / 2 - 10 * k, y: h - 24 * k, w: 20 * k, h: 10 * k };
+        this.arrowRects.push({ dir, r });
+        const hover = mouse.inside && mouse.x >= r.x && mouse.x < r.x + r.w && mouse.y >= r.y && mouse.y < r.y + r.h;
+        const glyph = { left: '←', right: '→', up: '↑', down: '↓' }[dir];
+        if (hover || blink) drawText(ctx, glyph, r.x + r.w / 2, r.y + r.h / 2 - 3.5 * k, { align: 'center', scale: k, color: hover ? '#ffffff' : 'rgba(255,224,128,0.55)', shadow: '#000' });
+      }
+    }
+
+    // ---- Bottom chyron (broadcast ticker) ----
+    if (this.ticker) {
+      const y = h - 11 * k;
+      ctx.fillStyle = 'rgba(10,4,2,0.82)';
+      ctx.fillRect(0, y, w, 11 * k);
+      ctx.fillStyle = '#c02818';
+      ctx.fillRect(0, y, 30 * k, 11 * k);
+      drawText(ctx, 'LIVE', 15 * k, y + 2 * k, { align: 'center', scale: k, color: Math.floor(time * 1.5) % 2 ? '#ffffff' : '#ffd0c0' });
+      drawText(ctx, this.ticker, 34 * k, y + 2 * k, { scale: k, color: '#f0e0b0' });
+      if (this.tickerRight) drawText(ctx, this.tickerRight, w - 3 * k, y + 2 * k, { align: 'right', scale: k, color: '#a0e0a0' });
+    }
+    if (this.fastMode) drawText(ctx, 'FAST >>', w - 3 * k, 3 * k, { align: 'right', scale: k, color: '#80ff80' });
+    if (this.hint && !this.choice) drawText(ctx, this.hint, w / 2, h - 21 * k, { align: 'center', scale: k, color: 'rgba(255,240,200,0.8)', shadow: '#000' });
+
+    // ---- Banner (Deadline intro, SWEEPS, combos) ----
+    if (this.banner) {
+      const b = this.banner;
+      const slide = Math.min(1, b.t * 5) * (b.t > b.life - 0.25 ? (b.life - b.t) / 0.25 : 1);
+      const bw = w * slide;
+      const y = h * 0.3;
+      ctx.fillStyle = 'rgba(20,6,2,0.9)';
+      ctx.fillRect(w / 2 - bw / 2, y, bw, 26 * k);
+      ctx.fillStyle = b.color;
+      ctx.fillRect(w / 2 - bw / 2, y, bw, k);
+      ctx.fillRect(w / 2 - bw / 2, y + 26 * k - k, bw, k);
+      if (slide > 0.9) {
+        drawText(ctx, b.text, w / 2, y + 4 * k, { align: 'center', scale: 2 * k, color: b.color, shadow: '#000' });
+        drawText(ctx, b.sub, w / 2, y + 18 * k, { align: 'center', scale: k, color: '#f0e0c0' });
+      }
+    }
+
+    // ---- Payout line ----
+    if (this.payout && !this.choice) {
+      const lines = wrapText(this.payout.text, 50);
+      const y0 = 3 * k;
+      ctx.fillStyle = 'rgba(10,4,2,0.8)';
+      ctx.fillRect(0, y0, w, (lines.length * LINE_H + 3) * k);
+      lines.forEach((l, i) => drawText(ctx, l, w / 2, y0 + (2 + i * LINE_H) * k, { align: 'center', scale: k, color: this.payout!.color }));
+    }
+
+    // ---- Toasts ----
+    this.toasts.forEach((t, i) => {
+      const y = (this.payout ? 26 : 14) * k + i * 10 * k - Math.min(1, t.t) * 2 * k;
+      if (t.t > 1.8 && Math.floor(t.t * 10) % 2) return;
+      drawText(ctx, t.text, w / 2, y, { align: 'center', scale: k, color: t.color, shadow: '#000' });
+    });
+
+    // ---- Captions ----
+    const cap = this.captions[0];
+    if (cap) {
+      const lines = wrapText(cap.text, 46);
+      const shown = Math.ceil(cap.t * 40);
+      let left = shown;
+      const by = h - (this.ticker ? 14 : 4) * k - lines.length * LINE_H * k - 9 * k;
+      ctx.fillStyle = 'rgba(0,0,0,0.65)';
+      ctx.fillRect(14 * k, by - 2 * k, w - 28 * k, (lines.length * LINE_H + 12) * k);
+      drawText(ctx, cap.speaker, 18 * k, by, { scale: k, color: cap.color });
+      lines.forEach((l, i) => {
+        const vis = l.slice(0, Math.max(0, left));
+        left -= l.length;
+        drawText(ctx, vis, 18 * k, by + (10 + i * LINE_H) * k, { scale: k, color: '#ffffff' });
+      });
+    }
+
+    // ---- Choice panel ----
+    this.optionRects = [];
+    if (this.choice) this.drawChoice(ctx, w, h, k, mouse);
+
+    // ---- Tooltip ----
+    if (this.tooltip && mouse.inside && !this.choice) {
+      const lines = this.tooltip.split('\n').flatMap((l) => wrapText(l, 34));
+      const tw = Math.max(...lines.map((l) => textWidth(l, k))) + 6 * k;
+      const th = lines.length * LINE_H * k + 4 * k;
+      let x = mouse.x + 8 * k,
+        y = mouse.y + 8 * k;
+      if (x + tw > w) x = mouse.x - tw - 4 * k;
+      if (y + th > h - 12 * k) y = mouse.y - th - 4 * k;
+      ctx.fillStyle = 'rgba(12,8,4,0.92)';
+      ctx.fillRect(x, y, tw, th);
+      ctx.fillStyle = '#c89830';
+      ctx.fillRect(x, y, tw, k);
+      lines.forEach((l, i) => drawText(ctx, l, x + 3 * k, y + 3 * k + i * LINE_H * k, { scale: k, color: i === 0 ? '#ffd870' : '#e8e0d0' }));
+    }
+
+    // ---- Cursor ----
+    if (this.showCursor && mouse.inside) {
+      ctx.fillStyle = '#000';
+      ctx.fillRect(mouse.x - k, mouse.y - k, 3 * k, 3 * k);
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(mouse.x, mouse.y, k, k);
+    }
+  }
+
+  private drawChoice(ctx: CanvasRenderingContext2D, w: number, h: number, k: number, mouse: { x: number; y: number; inside: boolean }): void {
+    const c = this.choice!;
+    const accent = c.accent ?? '#ffd040';
+    const layout = c.layout ?? (c.options.length <= 3 && c.options.every((o) => (o.detail ?? '').length < 200) ? 'cards' : 'list');
+    const lines = (c.lines ?? []).flatMap((l) => wrapText(l, 48));
+    const pad = 6 * k;
+    ctx.fillStyle = 'rgba(8,4,2,0.72)';
+    const top = 10 * k;
+    const panelH = h - 24 * k;
+    ctx.fillRect(8 * k, top, w - 16 * k, panelH);
+    ctx.fillStyle = accent;
+    ctx.fillRect(8 * k, top, w - 16 * k, k);
+    drawText(ctx, c.title, w / 2, top + 4 * k, { align: 'center', scale: k, color: accent, shadow: '#000' });
+    let y = top + 15 * k;
+    for (const l of lines) {
+      drawText(ctx, l, w / 2, y, { align: 'center', scale: k, color: '#e8dcc0' });
+      y += LINE_H * k;
+    }
+    y += 3 * k;
+    const n = c.options.length;
+    const hoverIdx = mouse.inside ? this.hitChoiceAt(mouse.x, mouse.y) : -1;
+    if (layout === 'cards') {
+      const cw = Math.floor((w - 16 * k - pad * (n + 1)) / n);
+      const ch = top + panelH - y - (c.footer ? 12 : 4) * k;
+      for (let i = 0; i < n; i++) {
+        const o = c.options[i];
+        const x = 8 * k + pad + i * (cw + pad);
+        const r = { x, y, w: cw, h: ch };
+        this.optionRects.push(r);
+        const sel = i === c.selected || i === hoverIdx;
+        ctx.fillStyle = o.disabled ? '#1a1410' : sel ? '#3a2410' : '#20160c';
+        ctx.fillRect(x, y, cw, ch);
+        ctx.fillStyle = sel ? accent : '#5a4020';
+        ctx.fillRect(x, y, cw, k);
+        ctx.fillRect(x, y + ch - k, cw, k);
+        drawText(ctx, `${i + 1}`, x + 3 * k, y + 3 * k, { scale: k, color: '#806040' });
+        const labLines = wrapText(o.label, Math.floor(cw / (6 * k)) - 1);
+        labLines.forEach((l, j) => drawText(ctx, l, x + cw / 2, y + (4 + j * LINE_H) * k, { align: 'center', scale: k, color: o.disabled ? '#605040' : (o.color ?? '#ffffff') }));
+        const det = wrapText(o.detail ?? '', Math.floor(cw / (6 * k)) - 1);
+        det.slice(0, 11).forEach((l, j) => drawText(ctx, l, x + 3 * k, y + (6 + (labLines.length + j) * LINE_H) * k, { scale: k, color: o.disabled ? '#504030' : '#c8bca0' }));
+      }
+    } else {
+      const rowH = 11 * k;
+      for (let i = 0; i < n; i++) {
+        const o = c.options[i];
+        const r = { x: 14 * k, y, w: w - 28 * k, h: rowH - k };
+        this.optionRects.push(r);
+        const sel = i === c.selected || i === hoverIdx;
+        ctx.fillStyle = sel ? '#3a2410' : '#1a120a';
+        ctx.fillRect(r.x, r.y, r.w, r.h);
+        drawText(ctx, `${i + 1} ${o.label}`, r.x + 3 * k, r.y + 2 * k, { scale: k, color: o.disabled ? '#605040' : (o.color ?? '#ffffff') });
+        if (o.detail) drawText(ctx, o.detail, r.x + r.w - 3 * k, r.y + 2 * k, { align: 'right', scale: k, color: '#c8bca0' });
+        y += rowH;
+      }
+    }
+    if (c.footer) drawText(ctx, c.footer, w / 2, top + panelH - 9 * k, { align: 'center', scale: k, color: '#a09070' });
+  }
+
+  private hitChoiceAt(x: number, y: number): number {
+    for (let i = 0; i < this.optionRects.length; i++) {
+      const r = this.optionRects[i];
+      if (x >= r.x && x < r.x + r.w && y >= r.y && y < r.y + r.h) return i;
+    }
+    return -1;
+  }
+
+  /** Diegetic loading: a row of studio lights powering on one by one. */
+  drawLoading(ctx: CanvasRenderingContext2D, w: number, h: number, k: number, progress: number, time: number): void {
+    ctx.fillStyle = '#060302';
+    ctx.fillRect(0, 0, w, h);
+    const n = 8;
+    for (let i = 0; i < n; i++) {
+      const on = progress >= (i + 1) / n;
+      const flick = on && Math.random() < 0.04 ? 0.4 : 1;
+      const x = w * (0.12 + (0.76 * i) / (n - 1));
+      const y = h * 0.28;
+      // Light can.
+      ctx.fillStyle = '#1a1410';
+      ctx.fillRect(x - 6 * k, y - 10 * k, 12 * k, 10 * k);
+      ctx.fillStyle = on ? `rgba(255,${220 * flick},${140 * flick},1)` : '#2a2018';
+      ctx.fillRect(x - 5 * k, y, 10 * k, 3 * k);
+      if (on) {
+        ctx.fillStyle = `rgba(255,220,150,${0.06 * flick})`;
+        ctx.beginPath();
+        ctx.moveTo(x - 5 * k, y + 3 * k);
+        ctx.lineTo(x + 5 * k, y + 3 * k);
+        ctx.lineTo(x + 18 * k, h * 0.8);
+        ctx.lineTo(x - 18 * k, h * 0.8);
+        ctx.closePath();
+        ctx.fill();
+      }
+    }
+    const blink = Math.floor(time * 2) % 2 === 0;
+    drawText(ctx, 'PLEASE STAND BY', w / 2, h * 0.62, { align: 'center', scale: 2 * k, color: '#ffd8a0', shadow: '#401000' });
+    drawText(ctx, `WARMING UP THE STUDIO ${Math.round(progress * 100)}%`, w / 2, h * 0.62 + 20 * k, { align: 'center', scale: k, color: blink ? '#c0a080' : '#806040' });
+  }
+}

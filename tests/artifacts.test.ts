@@ -180,8 +180,8 @@ describe('artifacts', () => {
       for (let i = 0; i < 7 && g.run.phase === 'AwaitAction'; i++) {
         g.run.spinsLeft = Math.max(g.run.spinsLeft, 2);
         g.spinForced(i, i % 8);
-        if (g.run.phase === 'ArtifactPick') g.pickArtifact(null);
-        if (g.run.phase === 'PhoneCall') g.phoneHangUp();
+        if ((g.run.phase as string) === 'ArtifactPick') g.pickArtifact(null);
+        if ((g.run.phase as string) === 'PhoneCall') g.phoneHangUp();
       }
       g.deposit();
       expect(Number.isFinite(g.run.vault)).toBe(true);

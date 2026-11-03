@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { BALANCE, baseDebt } from '../src/game/balance';
 import { Game } from '../src/game/run';
-import { RING, cash, k, makeGame, wheelWith } from './helpers';
+import { RING, cash, makeGame, wheelWith } from './helpers';
 
 describe('debt & run structure', () => {
   it('Debt(d) = round50(450 × 1.7^(d−1))', () => {
