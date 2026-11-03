@@ -43,9 +43,14 @@ for (let guard = 0; guard < 400 && spins < maxSpins; guard++) {
     await sleep(300);
     continue;
   }
-  if (s.phase === 'GameOver' || s.phase === null) break;
+  if (s.phase === 'GameOver' || s.phase === null) {
+    await sleep(3000);
+    await snap('game-over');
+    break;
+  }
   if (s.choice) {
-    await page.keyboard.press('1');
+    if (spins % 7 === 3) await snap(`choice-${spins}`);
+    await page.keyboard.press('Enter');
     await sleep(400);
     continue;
   }
@@ -81,8 +86,9 @@ for (const [k, name] of [
   ['ArrowRight', '11-right'],
 ]) {
   await page.keyboard.press(k);
-  await sleep(700);
+  await sleep(900);
   await snap(name);
+  logs.push(`${name} ${JSON.stringify(await page.evaluate(() => window.deadAir.stage.stats))}`);
 }
 const stats = await page.evaluate(() => {
   const a = window.deadAir;

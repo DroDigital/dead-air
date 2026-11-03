@@ -123,7 +123,9 @@ async function runParallel(policy: string, seeds: string[], workers: number, sta
     if (!part.length) continue;
     jobs.push(
       new Promise((res, rej) => {
-        const worker = new Worker(fileURLToPath(import.meta.url), { workerData: { policy, seeds: part, stake } satisfies Job, execArgv: ['--import', 'tsx'] });
+        // Bootstrap tsx inside the worker so it can load this TypeScript file.
+        const boot = `import('tsx/esm/api').then((m) => { m.register(); return import(${JSON.stringify(import.meta.url)}); });`;
+        const worker = new Worker(boot, { eval: true, workerData: { policy, seeds: part, stake } satisfies Job });
         worker.once('message', res);
         worker.once('error', rej);
       }),
@@ -157,10 +159,12 @@ async function main(): Promise<void> {
   console.log('\nCombo frequency (per spin):');
   for (const r of reports) console.log(`  ${r.policy}: ${Object.entries(r.combosPerSpin).map(([k, v]) => `${k} ${pct(v)}`).join(', ')}`);
   const ev = reports.find((r) => r.policy === 'ev') ?? reports[reports.length - 1];
-  console.log(`\nArtifact ↔ win correlation (${ev.policy}; artifacts held at end, n ≥ 30):`);
-  const rows = ev.artifactWin.filter((a) => a.n >= 30);
-  for (const a of rows.slice(0, 8)) console.log(`  ▲ ${a.id.padEnd(18)} n=${String(a.n).padStart(5)} win ${pct(a.winRate)}`);
+  console.log(`\nArtifact pick ↔ win correlation (${ev.policy}; runs that ever acquired it, n ≥ 30; baseline ${pct(ev.winRate)}):`);
+  const rows = ev.pickedWin.filter((a) => a.n >= 30);
+  for (const a of rows.slice(0, 10)) console.log(`  ▲ ${a.id.padEnd(18)} n=${String(a.n).padStart(5)} win ${pct(a.winRate)}`);
   for (const a of rows.slice(-5)) console.log(`  ▼ ${a.id.padEnd(18)} n=${String(a.n).padStart(5)} win ${pct(a.winRate)}`);
+  const pickRate = [...ev.pickedWin].sort((a, b) => b.n - a.n).slice(0, 8);
+  console.log(`Most-picked: ${pickRate.map((a) => `${a.id} ${pct(a.n / ev.runs)}`).join(', ')}`);
   const maxA = rows[0];
   console.log(`\nTargets (EV bot): D1 ≥ 95% → ${pct(ev.passByDeadline[0])} · win 8–20% → ${pct(ev.winRate)} · max artifact win ≤ 60% → ${maxA ? `${maxA.id} ${pct(maxA.winRate)}` : 'n/a'}`);
   const dep = reports.find((r) => r.policy === 'deposit-every-spin');

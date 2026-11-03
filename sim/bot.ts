@@ -208,8 +208,8 @@ export class Bot {
           const ws = wheelStats(g);
           const need = r.debt - r.vault;
           const per = ws.expCash * 1.6;
-          if (need > per * g.spinsForPackage('standard') * 0.9) pkg = 'marathon';
-          else if (need < per * g.spinsForPackage('short') * 0.5) pkg = 'short';
+          if (need > per * g.spinsForPackage('standard') * 1.1) pkg = 'marathon';
+          else if (need <= 0) pkg = 'short';
         }
         g.choosePackage(pkg);
         this.ridden = 0;
@@ -314,7 +314,7 @@ export class Bot {
       if (!shop) return;
       // 1. Remove a Bankrupt if affordable.
       const bkIdx = r.wheel.findIndex((w) => w.kind === 'bankrupt');
-      if (bkIdx >= 0 && r.tokens >= g.serviceCost('remove') + 1 && g.shopRemove(bkIdx).ok) continue;
+      if (BALANCE.bankruptRemovable && bkIdx >= 0 && r.tokens >= g.serviceCost('remove', r.wheel[bkIdx]) + 1 && g.shopRemove(bkIdx).ok) continue;
       // 2. Best affordable artifact.
       const arts = shop.items.filter((i) => i.type === 'artifact' && !i.sold && i.cost <= r.tokens).sort((a, b) => artifactScore(b.id) - artifactScore(a.id));
       if (arts.length && r.artifacts.length < BALANCE.maxArtifacts && artifactScore(arts[0].id) >= 5) {
@@ -323,7 +323,7 @@ export class Bot {
       }
       // 3. A good wedge replacing the worst wedge.
       const L = g.layout();
-      const worstSeg = [...L.segments].sort((a, b) => wedgeWorth(g, a) - wedgeWorth(g, b))[0];
+      const worstSeg = [...L.segments].filter((x) => x.kind !== 'bankrupt').sort((a, b) => wedgeWorth(g, a) - wedgeWorth(g, b))[0];
       const wedges = shop.items.filter((i) => i.type === 'wedge' && !i.sold && i.cost <= r.tokens);
       let bought = false;
       for (const it of wedges) {
@@ -331,7 +331,7 @@ export class Bot {
         const val = w.kind === 'cash' || w.kind === 'cursedCash' ? w.value * 1.3 : WEDGES[w.kind].cashLike ? 200 : 100;
         if (val > wedgeWorth(g, worstSeg) + 60 && w.kind !== 'cursedCash') {
           g.shopBuy(it.slot);
-          if (r.phase === 'WedgeReplace') g.replaceWedge(worstSeg.wedgeIdx);
+          if (r.phase === 'WedgeReplace' && !g.replaceWedge(worstSeg.wedgeIdx).ok) g.replaceWedge(null);
           bought = true;
           break;
         }
@@ -339,7 +339,7 @@ export class Bot {
       if (bought) continue;
       // 4. Gild the best cash wedge.
       if (r.tokens >= g.serviceCost('gild') + 2) {
-        const cashIdx = r.wheel.map((w, i) => ({ w, i })).filter((x) => x.w.kind === 'cash').sort((a, b) => b.w.value * (1 + b.w.gild) - a.w.value * (1 + a.w.gild))[0];
+        const cashIdx = r.wheel.map((w, i) => ({ w, i })).filter((x) => x.w.kind === 'cash' && x.w.gild < BALANCE.maxGild).sort((a, b) => b.w.value * (1 + b.w.gild) - a.w.value * (1 + a.w.gild))[0];
         if (cashIdx && g.shopGild(cashIdx.i).ok) continue;
       }
       // 5. Narrow the remaining bankrupts.

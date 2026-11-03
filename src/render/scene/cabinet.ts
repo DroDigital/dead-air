@@ -10,7 +10,7 @@ import { WEDGES } from '../../content/wedges';
 import type { ShopState } from '../../game/types';
 import { drawText, wrapText } from '../../ui/bitfont';
 import { psxMaterial, type PsxMaterial } from '../psxMaterial';
-import { buildProp } from './props';
+import { PropBuilder, buildProp } from './props';
 import { CanvasPanel, hexCss, panelMesh, pickable } from './util';
 
 export const SERVICE_BUTTONS = ['remove', 'gild', 'widen', 'narrow', 'reroll', 'done'] as const;
@@ -22,7 +22,6 @@ export class CabinetView {
   private itemObjs: (THREE.Object3D | null)[] = [];
   private itemKeys: string[] = [];
   private tags: CanvasPanel;
-  private tokens: CanvasPanel;
   private services: CanvasPanel;
   private flip: CanvasPanel;
   private placard: CanvasPanel;
@@ -35,6 +34,7 @@ export class CabinetView {
   selectedService: ServiceButton | null = null;
   dripping = 0;
   private lastFlip = -1;
+  private tokenCount = 0;
   private flipAnim = 0;
 
   constructor(private assets: Assets) {
@@ -50,9 +50,8 @@ export class CabinetView {
     glass.position.set(1.85, 1.2, 2.75);
     glass.renderOrder = 2;
     g.add(glass);
-    const base = new THREE.Mesh(new THREE.BoxGeometry(0.46, 0.05, 0.94), psxMaterial({ map: assets.texture('tex.cabinet_wood'), color: 0x8a6040 }));
-    base.position.set(1.85, 0.88, 2.75);
-    g.add(base);
+    // Display base + debt-board backing (untextured, one mesh).
+    g.add(new PropBuilder().box(0x5a3a22, [0.46, 0.05, 0.94], [1.85, 0.88, 2.75]).box(0x3a2a1c, [0.05, 0.82, 0.72], [2.3, 1.62, 1.55]).build());
     // Display slots: row 1 = 3 artifacts, row 2 = 2 wedges + 1 card.
     const slots: [number, number][] = [
       [1.32, 3.02],
@@ -77,32 +76,21 @@ export class CabinetView {
       this.itemKeys.push('');
     });
     // Price tags across the glass front (one panel).
-    this.tags = new CanvasPanel(128, 64);
-    const tagMesh = panelMesh(this.tags, 0.88, 0.44, { transparent: true, alphaTest: 0.5 });
-    tagMesh.position.set(1.62, 1.18, 2.75);
+    this.tags = new CanvasPanel(128, 80);
+    const tagMesh = panelMesh(this.tags, 0.88, 0.55, { transparent: true, alphaTest: 0.5 });
+    tagMesh.position.set(1.62, 1.235, 2.75);
     tagMesh.rotation.y = -Math.PI / 2;
     g.add(tagMesh);
-    // Token counter on top.
-    this.tokens = new CanvasPanel(64, 16);
-    const tm = panelMesh(this.tokens, 0.4, 0.1);
-    tm.position.set(1.72, 1.6, 2.75);
-    tm.rotation.y = -Math.PI / 2;
-    g.add(tm);
+    // The token counter is drawn into the top row of the tags panel.
     // Crank on the side (reroll).
-    const crankBase = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.04, 8), psxMaterial({ color: 0x806040 }));
-    crankBase.rotation.x = Math.PI / 2;
-    this.crank.add(crankBase);
-    const arm = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.14, 0.02), psxMaterial({ color: 0xb0b0b0 }));
-    arm.position.y = 0.07;
-    this.crank.add(arm);
-    const knob = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 0.06, 6), psxMaterial({ color: 0xa02020 }));
-    knob.rotation.x = Math.PI / 2;
-    knob.position.set(0, 0.14, 0.03);
-    this.crank.add(knob);
+    const crankMesh = new PropBuilder()
+      .cyl(0x806040, 0.05, 0.05, 0.04, [0, 0, 0], [Math.PI / 2, 0, 0], 8)
+      .box(0xb0b0b0, [0.02, 0.14, 0.02], [0, 0.07, 0])
+      .cyl(0xa02020, 0.018, 0.018, 0.06, [0, 0.14, 0.03], [Math.PI / 2, 0, 0], 6)
+      .build();
+    this.crank.add(crankMesh);
     this.crank.position.set(1.85, 1.15, 2.16);
-    pickable(arm, 'crank');
-    pickable(knob, 'crank');
-    pickable(crankBase, 'crank');
+    pickable(crankMesh, 'crank');
     g.add(this.crank);
     // Service board: one panel, buttons resolved by UV.
     this.services = new CanvasPanel(96, 48);
@@ -113,21 +101,14 @@ export class CabinetView {
     g.add(sm);
 
     // Debt board on the right wall: flip clock + placard.
-    const boardBack = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.75, 0.62), psxMaterial({ map: assets.texture('tex.cabinet_wood'), color: 0x504030 }));
-    boardBack.position.set(2.45, 1.75, 1.55);
-    g.add(boardBack);
-    this.flip = new CanvasPanel(64, 32);
-    const fm = panelMesh(this.flip, 0.5, 0.25);
-    fm.position.set(2.42, 1.92, 1.55);
+    // Flip clock (top half) and placard (bottom half) share one panel.
+    this.flip = new CanvasPanel(64, 64);
+    this.placard = this.flip;
+    const fm = panelMesh(this.flip, 0.62, 0.62);
+    fm.position.set(2.27, 1.62, 1.55);
     fm.rotation.y = -Math.PI / 2;
     pickable(fm, 'debtboard');
     g.add(fm);
-    this.placard = new CanvasPanel(64, 32);
-    const pm = panelMesh(this.placard, 0.5, 0.25, { lit: true });
-    pm.position.set(2.42, 1.58, 1.55);
-    pm.rotation.y = -Math.PI / 2;
-    pickable(pm, 'debtboard');
-    g.add(pm);
     // Drips under the placard (red, like the ink is bleeding).
     this.drips = new THREE.InstancedMesh(new THREE.BoxGeometry(0.008, 0.02, 0.008), psxMaterial({ color: 0x700808, emissive: 0x200000 }), 12);
     this.drips.count = 0;
@@ -137,11 +118,7 @@ export class CabinetView {
 
   setShop(shop: ShopState | null, tokens: number, canAfford: (cost: number) => boolean): void {
     this.open = !!shop;
-    this.tokens.draw((ctx, w, h) => {
-      ctx.fillStyle = '#0a0503';
-      ctx.fillRect(0, 0, w, h);
-      drawText(ctx, `TOK ${tokens}`, w / 2, 4, { align: 'center', color: '#ffc040' });
-    });
+    this.tokenCount = tokens;
     for (let i = 0; i < this.itemAnchors.length; i++) {
       const it = shop?.items[i];
       const key = it && !it.sold ? `${it.type}:${it.id}:${it.wedge?.uid ?? ''}` : '';
@@ -192,7 +169,12 @@ export class CabinetView {
     }
     this.tags.draw((ctx, w, h) => {
       ctx.clearRect(0, 0, w, h);
+      ctx.fillStyle = '#0a0503';
+      ctx.fillRect(w / 2 - 30, 0, 60, 12);
+      drawText(ctx, `TOK ${this.tokenCount}`, w / 2, 3, { align: 'center', color: '#ffc040' });
+      ctx.translate(0, 16);
       if (!shop) {
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
         drawText(ctx, 'CLOSED', w / 2, h / 2 - 3, { align: 'center', color: '#c03020', scale: 2, shadow: '#000' });
         return;
       }
@@ -212,6 +194,7 @@ export class CabinetView {
         }
         drawText(ctx, `${it.cost}T`, x, y - 6, { align: 'center', color: canAfford(it.cost) ? '#ffe080' : '#a04030', shadow: '#000' });
       });
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
     });
     this.drawServices();
   }
@@ -253,7 +236,8 @@ export class CabinetView {
       this.lastFlip = spinsLeft;
       this.flipAnim = 1;
     }
-    this.flip.draw((ctx, w, h) => {
+    this.flip.draw((ctx, w) => {
+      const h = 32;
       ctx.fillStyle = '#080808';
       ctx.fillRect(0, 0, w, h);
       const s = String(Math.max(0, spinsLeft)).padStart(2, '0');
@@ -267,7 +251,9 @@ export class CabinetView {
       }
       drawText(ctx, 'SPINS', w / 2, 27, { align: 'center', color: '#808070' });
     });
-    this.placard.draw((ctx, w, h) => {
+    this.placard.draw((ctx, w) => {
+      ctx.translate(0, 32);
+      const h = 32;
       ctx.fillStyle = '#d8ccb0';
       ctx.fillRect(0, 0, w, h);
       ctx.fillStyle = '#3a0808';
@@ -275,6 +261,7 @@ export class CabinetView {
       drawText(ctx, deadline > 8 ? `DUE ∞${deadline}` : `DUE #${deadline}`, w / 2, 1, { align: 'center', color: '#ffd0c0' });
       drawText(ctx, `$${debt}`, w / 2, 12, { align: 'center', color: vault >= debt ? '#205020' : '#801010', scale: 1 });
       drawText(ctx, mutator ? 'SWEEPS!' : `V $${vault}`, w / 2, 22, { align: 'center', color: mutator ? '#a02020' : '#404040' });
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
     });
   }
 
@@ -288,19 +275,20 @@ export class CabinetView {
     this.glassMat.uniforms.uEmissive.value.setRGB(0.05 + (this.open ? 0.06 + 0.03 * Math.sin(time * 3) : 0), 0.07, 0.05);
     // Drips when spins run low.
     if (this.dripping > 0 && Math.random() < dt * 2.5 * this.dripping && this.dripState.length < 12) {
-      this.dripState.push({ x: 1.45 + Math.random() * 0.4, y: 1.45, v: 0 });
+      this.dripState.push({ x: 1.3 + Math.random() * 0.5, y: 1.3, v: 0 });
     }
     const m = new THREE.Matrix4();
     this.dripState = this.dripState.filter((d) => {
-      d.v += dt * (d.y > 1.4 ? 0.15 : 3);
+      d.v += dt * (d.y > 1.28 ? 0.15 : 3);
       d.y -= d.v * dt;
-      return d.y > 0.85;
+      return d.y > 0.9;
     });
     this.dripState.forEach((d, i) => {
-      m.makeTranslation(2.415, d.y, d.x);
+      m.makeTranslation(2.265, d.y, d.x);
       this.drips.setMatrixAt(i, m);
     });
     this.drips.count = this.dripState.length;
+    this.drips.visible = this.drips.count > 0;
     this.drips.instanceMatrix.needsUpdate = true;
   }
 }

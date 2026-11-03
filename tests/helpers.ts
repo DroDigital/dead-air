@@ -17,6 +17,7 @@ export function makeGame(specs?: Spec[], opts: { seed?: string; ring?: number[];
       g.newWedge(s.kind, s.value ?? WEDGES[s.kind].defaultValue, s.width ?? (s.kind === 'jackpot' ? BALANCE.jackpotWidth : BALANCE.baseWidth)),
     );
   }
+  g.run.vault = 0; // mechanics tests start from an empty Vault
   if (opts.ring) g.run.ring = [...opts.ring];
   for (const a of opts.artifacts ?? []) g.grantArtifact(a);
   g.choosePackage(opts.pkg ?? 'standard');

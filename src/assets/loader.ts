@@ -8,6 +8,7 @@
  */
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { Rng } from '../core/rng';
 import { clonePsx, conformToPsx, psxMaterial, psxTexture, type PsxMaterial } from '../render/psxMaterial';
 import index from './manifest.json';
@@ -163,6 +164,40 @@ const MODEL_GEN: Record<string, () => THREE.Object3D> = {
   'mdl.prize_cabinet': () => new THREE.Mesh(new THREE.BoxGeometry(1, 1.6, 0.5), psxMaterial({ color: 0x6a4020 })),
 };
 
+/**
+ * Bake an imported scene into one mesh per texture (world transforms applied), so each
+ * imported prop costs one draw call.
+ */
+function flattenModel(root: THREE.Object3D): THREE.Object3D {
+  root.updateMatrixWorld(true);
+  const byMap = new Map<THREE.Texture | null, { mat: PsxMaterial; geos: THREE.BufferGeometry[] }>();
+  root.traverse((o) => {
+    const m = o as THREE.Mesh;
+    if (!m.isMesh) return;
+    const mat = m.material as PsxMaterial;
+    const key = mat.uniforms.map.value as THREE.Texture | null;
+    let e = byMap.get(key);
+    if (!e) {
+      e = { mat, geos: [] };
+      byMap.set(key, e);
+    }
+    let g = m.geometry.index ? m.geometry.toNonIndexed() : m.geometry.clone();
+    g.applyMatrix4(m.matrixWorld);
+    for (const name of Object.keys(g.attributes)) if (!['position', 'normal', 'uv'].includes(name)) g.deleteAttribute(name);
+    const n = g.getAttribute('position').count;
+    if (!g.getAttribute('normal')) g.computeVertexNormals();
+    if (!g.getAttribute('uv')) g.setAttribute('uv', new THREE.BufferAttribute(new Float32Array(n * 2), 2));
+
+    e.geos.push(g);
+  });
+  const out = new THREE.Group();
+  for (const { mat, geos } of byMap.values()) {
+    const merged = mergeGeometries(geos, false);
+    if (merged) out.add(new THREE.Mesh(merged, mat));
+  }
+  return out;
+}
+
 // ---------------------------------------------------------------------------------------
 // Loader
 // ---------------------------------------------------------------------------------------
@@ -196,7 +231,7 @@ export class Assets {
           } else if (e?.type === 'model') {
             const g = await gltf.loadAsync(e.url);
             conformToPsx(g.scene);
-            this.models.set(id, g.scene);
+            this.models.set(id, flattenModel(g.scene));
           } else if (e?.type === 'font') {
             const name = id === 'font.pixel' ? 'DeadAirPixel' : 'DeadAirTerminal';
             const ff = new FontFace(name, `url(${e.url})`);

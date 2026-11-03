@@ -35,8 +35,8 @@ export class PropBuilder {
   cone(color: number, r: number, h: number, pos: V3 = [0, 0, 0], rot: V3 = [0, 0, 0]): this {
     return this.add(new THREE.ConeGeometry(r, h, 6), color, pos, rot);
   }
-  torus(color: number, r: number, t: number, pos: V3 = [0, 0, 0], rot: V3 = [0, 0, 0]): this {
-    return this.add(new THREE.TorusGeometry(r, t, 4, 10), color, pos, rot);
+  torus(color: number, r: number, t: number, pos: V3 = [0, 0, 0], rot: V3 = [0, 0, 0], seg = 10, tube = 4): this {
+    return this.add(new THREE.TorusGeometry(r, t, tube, seg), color, pos, rot);
   }
   build(): THREE.Mesh {
     const geo = mergeGeometries(this.parts, false)!;

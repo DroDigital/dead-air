@@ -78,7 +78,7 @@ export function tooltipFor(hit: PickHit, g: Game | null): string | null {
   if (id === 'services' && hit.uv) {
     const b: ServiceButton = SERVICE_BUTTONS[Math.min(5, (Math.min(2, Math.floor((1 - hit.uv.y) * 3)) * 2 + (hit.uv.x < 0.5 ? 0 : 1)))];
     const desc: Record<ServiceButton, string> = {
-      remove: `REMOVE [X] — ${g.serviceCost('remove')} TOK\nTurn a wedge into a Dud.`,
+      remove: `REMOVE [X] — ${g.serviceCost('remove')} TOK\nTurn a wedge into a Dud. (Not Bankrupts: Network property.)`,
       gild: `GILD [G] — ${g.serviceCost('gild')} TOK\n+50% value on a Cash/Token/Interest wedge.`,
       widen: `WIDEN [+] — ${g.serviceCost('resize')} TOK\nA wedge gets 5° wider.`,
       narrow: `NARROW [-] — ${g.serviceCost('resize')} TOK\nA wedge gets 5° narrower.`,

@@ -51,6 +51,7 @@ export class Hud {
   fastMode = false;
   showCursor = true;
   hint = '';
+  corner = '';
   /** The payout breakdown line (broadcast graphic), e.g. "$100 → ×2 → ×1.75 = $350". */
   payout: { text: string; color: string } | null = null;
 
@@ -123,7 +124,8 @@ export class Hud {
       drawText(ctx, this.ticker, 34 * k, y + 2 * k, { scale: k, color: '#f0e0b0' });
       if (this.tickerRight) drawText(ctx, this.tickerRight, w - 3 * k, y + 2 * k, { align: 'right', scale: k, color: '#a0e0a0' });
     }
-    if (this.fastMode) drawText(ctx, 'FAST >>', w - 3 * k, 3 * k, { align: 'right', scale: k, color: '#80ff80' });
+    if (this.corner && !this.choice) drawText(ctx, this.corner, w - 3 * k, (this.payout ? 26 : 3) * k, { align: 'right', scale: k, color: '#ffc040', shadow: '#000' });
+    if (this.fastMode) drawText(ctx, 'FAST >>', 3 * k, (this.payout ? 26 : 3) * k, { scale: k, color: '#80ff80', shadow: '#000' });
     if (this.hint && !this.choice) drawText(ctx, this.hint, w / 2, h - 21 * k, { align: 'center', scale: k, color: 'rgba(255,240,200,0.8)', shadow: '#000' });
 
     // ---- Banner (Deadline intro, SWEEPS, combos) ----

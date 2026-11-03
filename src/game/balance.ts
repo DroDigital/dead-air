@@ -24,12 +24,13 @@ export const BALANCE = {
   streakStep: 0.25, // [BRIEF]
 
   // ---- Economy ------------------------------------------------------------------------
-  startTokens: 3,
-  startVault: 0,
+  startTokens: 2,
+  /** A small float so Deadline 1 is survivable (tuned: EV bot D1 ≥ 95%). */
+  startVault: 200,
   tokenRate: 50, // $ per token on conversion [BRIEF]
   interestRate: 0.1, // [BRIEF]
   /** Interest cap grows with the deadline you just paid. */
-  interestCap: (deadline: number): number => 60 + 40 * deadline,
+  interestCap: (deadline: number): number => 30 + 20 * deadline,
   taxRate: 0.1, // [BRIEF]
   jackpotValue: 1000, // [BRIEF]
   cursedCashValue: 600, // [BRIEF]
@@ -53,13 +54,25 @@ export const BALANCE = {
   sweetBias: 1.0,
 
   // ---- Shop ---------------------------------------------------------------------------
-  artifactCost: { common: 4, uncommon: 6, rare: 9, cursed: 4 } as Record<string, number>,
+  /** Added to every artifact's listed cost in the Prize Cabinet. */
+  artifactPriceAdd: 3,
   rarityWeights: { common: 50, uncommon: 30, rare: 12, cursed: 10 } as Record<string, number>,
   wedgeCostBase: 3,
   scratchCost: 2,
   removeCost: 3,
+  /** Each Remove costs this much more than the last (per run). */
+  removeEscalation: 2,
+  /** Bankrupt wedges are Network property: they cannot be Removed or overwritten in the Cabinet. */
+  bankruptRemovable: false,
+  /** (If removable) removing a Bankrupt costs this many times more. */
+  removeBankruptMult: 3,
+  /** A wedge can be gilded at most this many times. */
+  maxGild: 2,
+  /** Narrowing cannot take a Bankrupt below this nominal width. */
+  bankruptMinWidth: 10,
   gildCost: 3,
-  resizeCost: 2,
+  gildEscalation: 2,
+  resizeCost: 3,
   rerollBase: 1, // [BRIEF]
   rerollStep: 1, // [BRIEF]
   shopArtifacts: 3, // [BRIEF]

@@ -38,8 +38,11 @@ export class StudioView {
     const paper = () => psxMaterial({ map: assets.texture('tex.wallpaper'), color: 0x9a9070 });
     const carpet = () => psxMaterial({ map: assets.texture('tex.carpet'), color: 0xc08080 });
     const stage = () => psxMaterial({ map: assets.texture('tex.stage_wood') });
-    const dark = () => psxMaterial({ color: 0x241a14 });
-    const metal = () => psxMaterial({ map: assets.texture('tex.metal'), color: 0x707070 });
+    // Untextured trims/props share one vertex-coloured batch (one draw call).
+    const vc = () => psxMaterial({ vertexColors: true });
+    const DARK = 0x241a14,
+      METAL = 0x5a5a5e,
+      GOLD = 0xc89830;
     const plaster = () => psxMaterial({ map: assets.texture('tex.plaster'), color: 0x605850 });
 
     // Floor: carpet around, stage platform under the wheel.
@@ -58,7 +61,7 @@ export class StudioView {
       const hi = new THREE.PlaneGeometry(10, 2.9);
       scaleUv(hi, 5, 1.5);
       b.add('paper', paper, hi, new THREE.Matrix4().compose(new THREE.Vector3(x, 2.75, 1), new THREE.Quaternion().setFromEuler(new THREE.Euler(0, ry, 0)), new THREE.Vector3(1, 1, 1)));
-      b.box('dark', dark, [0.08, 0.1, 10], [x + (x < 0 ? 0.04 : -0.04), 1.32, 1]);
+      b.box('vc', vc, [0.08, 0.1, 10], [x + (x < 0 ? 0.04 : -0.04), 1.32, 1], [0, 0, 0], 1, DARK);
     }
     const backHi = new THREE.PlaneGeometry(6, 4.2);
     scaleUv(backHi, 3, 2);
@@ -67,20 +70,20 @@ export class StudioView {
     scaleUv(front, 4, 2);
     b.add('wall', wall, front, new THREE.Matrix4().compose(new THREE.Vector3(0, 2.1, 5), new THREE.Quaternion().setFromEuler(new THREE.Euler(0, Math.PI, 0)), new THREE.Vector3(1, 1, 1)));
     const ceil = new THREE.PlaneGeometry(6, 8);
-    b.add('dark', dark, ceil, new THREE.Matrix4().compose(new THREE.Vector3(0, 4.2, 1), new THREE.Quaternion().setFromEuler(new THREE.Euler(Math.PI / 2, 0, 0)), new THREE.Vector3(1, 1, 1)));
+    b.add('vc', vc, ceil, new THREE.Matrix4().compose(new THREE.Vector3(0, 4.2, 1), new THREE.Quaternion().setFromEuler(new THREE.Euler(Math.PI / 2, 0, 0)), new THREE.Vector3(1, 1, 1)), DARK);
     // Lighting truss with dead stage cans.
-    b.box('metal', metal, [5.6, 0.08, 0.08], [0, 3.6, 0.6]);
-    b.box('metal', metal, [5.6, 0.08, 0.08], [0, 3.6, 0.9]);
+    b.box('vc', vc, [5.6, 0.08, 0.08], [0, 3.6, 0.6], [0, 0, 0], 1, METAL);
+    b.box('vc', vc, [5.6, 0.08, 0.08], [0, 3.6, 0.9], [0, 0, 0], 1, METAL);
     for (let i = 0; i < 6; i++) {
       const x = -2.4 + i * 0.96;
       const can = new THREE.CylinderGeometry(0.12, 0.16, 0.3, 6);
-      b.add('dark', dark, can, new THREE.Matrix4().compose(new THREE.Vector3(x, 3.38, 0.75), new THREE.Quaternion().setFromEuler(new THREE.Euler(0.5 + (i % 2) * 0.3, 0, (i - 2.5) * 0.08)), new THREE.Vector3(1, 1, 1)));
+      b.add('vc', vc, can, new THREE.Matrix4().compose(new THREE.Vector3(x, 3.38, 0.75), new THREE.Quaternion().setFromEuler(new THREE.Euler(0.5 + (i % 2) * 0.3, 0, (i - 2.5) * 0.08)), new THREE.Vector3(1, 1, 1)), DARK);
     }
     // Contestant console (the desk with Tray + Vault) and the chair arms.
     const cab = () => psxMaterial({ map: assets.texture('tex.cabinet_wood'), color: 0xa07850 });
     b.box('cab', cab, [1.7, 0.08, 0.6], [0, 0.6, 2.45]);
     b.box('cab', cab, [1.7, 0.56, 0.06], [0, 0.28, 2.16]);
-    b.box('gold', () => psxMaterial({ color: 0xc89830, emissive: 0x100800 }), [1.72, 0.03, 0.04], [0, 0.645, 2.15]);
+    b.box('vc', vc, [1.72, 0.03, 0.04], [0, 0.645, 2.15], [0, 0, 0], 1, GOLD);
     const leather = () => psxMaterial({ map: assets.texture('tex.leather'), color: 0x9a4030 });
     b.box('leather', leather, [0.12, 0.12, 0.5], [-0.62, 0.7, 3.0]);
     b.box('leather', leather, [0.12, 0.12, 0.5], [0.62, 0.7, 3.0]);
@@ -88,12 +91,12 @@ export class StudioView {
     b.box('cab', cab, [0.6, 0.06, 0.6], [-1.65, 0.78, 1.95]);
     b.box('cab', cab, [0.06, 0.78, 0.06], [-1.65, 0.39, 1.95]);
     // Prop junk in the dark: old camera on a tripod, sandbags.
-    b.box('dark', dark, [0.4, 0.3, 0.6], [-2.2, 1.55, -1.4], [0, 0.5, 0]);
-    b.add('metal', metal, new THREE.CylinderGeometry(0.02, 0.02, 1.4, 4), new THREE.Matrix4().makeTranslation(-2.2, 0.7, -1.4));
+    b.box('vc', vc, [0.4, 0.3, 0.6], [-2.2, 1.55, -1.4], [0, 0.5, 0], 1, DARK);
+    b.add('vc', vc, new THREE.CylinderGeometry(0.02, 0.02, 1.4, 4), new THREE.Matrix4().makeTranslation(-2.2, 0.7, -1.4), METAL);
     b.box('leather', leather, [0.5, 0.2, 0.3], [2.4, 0.1, -1.6], [0, 0.3, 0]);
     // Trapdoor frame under the chair.
-    b.box('dark', dark, [1.2, 0.02, 0.05], [0, 0.005, 2.3]);
-    b.box('dark', dark, [1.2, 0.02, 0.05], [0, 0.005, 3.5]);
+    b.box('vc', vc, [1.2, 0.02, 0.05], [0, 0.005, 2.3], [0, 0, 0], 1, DARK);
+    b.box('vc', vc, [1.2, 0.02, 0.05], [0, 0.005, 3.5], [0, 0, 0], 1, DARK);
     b.build(g);
 
     // Trapdoor leaves (animated on Game Over).
@@ -222,9 +225,9 @@ export class StudioView {
     S.uLightRange.value[1] = 3.8;
     for (const m of this.tubeMats) m.uniforms.uEmissive.value.setRGB(0.5 * fl, 0.65 * fl, 0.7 * fl);
     // Prize cabinet glow (dim, greenish), always weak.
-    S.uLightPos.value[2].set(1.8, 1.9, 2.4);
-    S.uLightColor.value[2].setRGB(0.35 * lv, 0.32 * lv, 0.2 * lv);
-    S.uLightRange.value[2] = 2.6;
+    S.uLightPos.value[2].set(1.2, 2.0, 2.4);
+    S.uLightColor.value[2].setRGB(0.95 * lv, 0.8 * lv, 0.5 * lv);
+    S.uLightRange.value[2] = 3.2;
     // Accent light (phone / jackpot moments).
     S.uLightPos.value[3].copy(this.accent.pos);
     S.uLightColor.value[3].copy(this.accent.color).multiplyScalar(lv);

@@ -36,7 +36,7 @@ export function panelMesh(panel: CanvasPanel, width: number, height: number, opt
  */
 export class Batcher {
   private groups = new Map<string, { mat: PsxMaterial; geos: THREE.BufferGeometry[] }>();
-  add(key: string, mat: () => PsxMaterial, geo: THREE.BufferGeometry, m: THREE.Matrix4 | THREE.Object3D): void {
+  add(key: string, mat: () => PsxMaterial, geo: THREE.BufferGeometry, m: THREE.Matrix4 | THREE.Object3D, color?: number): void {
     let g = this.groups.get(key);
     if (!g) {
       g = { mat: mat(), geos: [] };
@@ -49,12 +49,19 @@ export class Batcher {
       geom.applyMatrix4(m.matrix);
     } else geom.applyMatrix4(m);
     for (const name of Object.keys(geom.attributes)) if (!['position', 'normal', 'uv'].includes(name)) geom.deleteAttribute(name);
+    if (color !== undefined) {
+      const c = new THREE.Color(color);
+      const n = geom.getAttribute('position').count;
+      const cols = new Float32Array(n * 3);
+      for (let i = 0; i < n; i++) cols.set([c.r, c.g, c.b], i * 3);
+      geom.setAttribute('color', new THREE.BufferAttribute(cols, 3));
+    }
     g.geos.push(geom);
   }
-  box(key: string, mat: () => PsxMaterial, size: [number, number, number], pos: [number, number, number], rot: [number, number, number] = [0, 0, 0], uvScale = 1): void {
+  box(key: string, mat: () => PsxMaterial, size: [number, number, number], pos: [number, number, number], rot: [number, number, number] = [0, 0, 0], uvScale = 1, color?: number): void {
     const geo = new THREE.BoxGeometry(...size);
     if (uvScale !== 1) scaleUv(geo, uvScale * size[0], uvScale * size[1]);
-    this.add(key, mat, geo, at(pos, rot));
+    this.add(key, mat, geo, at(pos, rot), color);
   }
   build(parent: THREE.Object3D): THREE.Mesh[] {
     const out: THREE.Mesh[] = [];

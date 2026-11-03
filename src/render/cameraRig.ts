@@ -14,7 +14,7 @@ interface StationDef {
 
 export const STATIONS: Record<Station, StationDef> = {
   center: { eye: new THREE.Vector3(0, 1.28, 3.05), target: new THREE.Vector3(0, 1.42, -0.6), fov: 60 },
-  down: { eye: new THREE.Vector3(0, 1.32, 3.05), target: new THREE.Vector3(0, 0.62, 2.35), fov: 58 },
+  down: { eye: new THREE.Vector3(0, 1.42, 3.3), target: new THREE.Vector3(0, 0.62, 2.4), fov: 60 },
   left: { eye: new THREE.Vector3(-0.15, 1.3, 3.0), target: new THREE.Vector3(-2.0, 1.15, 2.55), fov: 62 },
   right: { eye: new THREE.Vector3(0.15, 1.3, 3.0), target: new THREE.Vector3(2.0, 1.25, 2.3), fov: 62 },
 };

@@ -128,6 +128,7 @@ export class TrayView {
       this.coins.setMatrixAt(i, m);
     }
     this.coins.count = this.coinState.length;
+    this.coins.visible = this.coins.count > 0;
     this.coins.instanceMatrix.needsUpdate = true;
     // The glass glows hotter as the Streak climbs.
     const h = this.heat * (0.7 + 0.3 * Math.sin(time * 6));

@@ -137,3 +137,34 @@ describe('the phone', () => {
     expect(g.run.nextMods.spinsDelta).toBe(3);
   });
 });
+
+describe('cabinet rules', () => {
+  it('Bankrupt wedges are Network property: no Remove, no overwrite', () => {
+    const g = toShop('bk');
+    const i = 5;
+    g.run.wheel[i].kind = 'bankrupt';
+    expect(g.shopRemove(i).ok).toBe(false);
+    const it = g.run.shop!.items.find((x) => x.type === 'wedge')!;
+    g.shopBuy(it.slot);
+    expect(g.replaceWedge(i).ok).toBe(false);
+    expect(g.run.wheel[i].kind).toBe('bankrupt');
+  });
+
+  it('Bankrupts can be narrowed, but not below the floor', () => {
+    const g = toShop('bk2');
+    const i = 5;
+    g.run.wheel[i].kind = 'bankrupt';
+    expect(g.shopResize(i, -1).ok).toBe(true);
+    expect(g.shopResize(i, -1).ok).toBe(false);
+  });
+
+  it('gilding is capped and escalates in price', () => {
+    const g = toShop('gild');
+    const i = g.run.wheel.findIndex((w) => w.kind === 'cash');
+    const c0 = g.serviceCost('gild');
+    expect(g.shopGild(i).ok).toBe(true);
+    expect(g.serviceCost('gild')).toBeGreaterThan(c0);
+    expect(g.shopGild(i).ok).toBe(true);
+    expect(g.shopGild(i).ok).toBe(false);
+  });
+});

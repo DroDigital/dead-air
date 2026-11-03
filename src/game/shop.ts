@@ -73,7 +73,7 @@ export function rollShop(run: RunState, rng: Rng, nextUid: () => number): ShopIt
   const arts = rollArtifacts(run, rng, BALANCE.shopArtifacts);
   for (const id of arts) {
     const def = ARTIFACTS.find((a) => a.id === id)!;
-    items.push({ slot: items.length, type: 'artifact', id, cost: def.cost + markup(run), sold: false });
+    items.push({ slot: items.length, type: 'artifact', id, cost: def.cost + BALANCE.artifactPriceAdd + markup(run), sold: false });
   }
   const kinds = shopWedgeKinds(run);
   for (let i = 0; i < BALANCE.shopWedges; i++) {

@@ -250,8 +250,8 @@ export class Menus {
         <table class="ratings">${s.ratings.lines.map((l) => `<tr><td>${esc(l.label)}</td><td>+${l.value}</td></tr>`).join('')}<tr class="tot"><td>RATINGS</td><td>${s.ratings.total}</td></tr></table>
         ${s.unlocks.length ? `<h3>NEW IN THE PROP ROOM</h3><ul>${s.unlocks.map((u) => `<li>${esc(u.kind.toUpperCase())}: ${esc(u.name)}</li>`).join('')}</ul>` : ''}
         <div class="col">
-          ${s.canEndless ? this.btn('KEEP BROADCASTING (ENDLESS)', () => this.cb.onEndlessContinue()) : ''}
-          ${s.canEndless ? this.btn('RETIRE A WINNER', () => this.cb.onRetire()) : this.btn('BACK TO TITLE', () => this.cb.onQuitToTitle())}
+          ${s.won && s.canEndless ? this.btn('KEEP BROADCASTING (ENDLESS)', () => this.cb.onEndlessContinue()) : ''}
+          ${s.won ? this.btn('RETIRE A WINNER', () => this.cb.onRetire()) : this.btn('BACK TO TITLE', () => this.cb.onQuitToTitle())}
         </div>
       </div>`;
     }

@@ -889,7 +889,13 @@ export class Game implements PayoutHost {
   }
 
   /** Ring Jump: re-spin only the inner ring and pay the previous outer wedge again. */
+  private ringJumpDepth = 0;
+
   ringJump(): void {
+    if (this.ringJumpDepth > 0) {
+      this.note('RING JUMP FIZZLES');
+      return;
+    }
     const run = this.run;
     const prev = run.history[run.history.length - 1];
     const ring = this.effectiveRing();
@@ -915,14 +921,19 @@ export class Game implements PayoutHost {
       return;
     }
     result.segIdx = seg.idx;
-    result.payout = resolvePayout(this, {
+    this.ringJumpDepth++;
+    try {
+      result.payout = resolvePayout(this, {
       seg,
       neighbor: null,
       innerMult: result.innerMult,
       spinNo: run.stats.spins,
       firstOfDeadline: false,
-      nested: true,
-    });
+        nested: true,
+      });
+    } finally {
+      this.ringJumpDepth--;
+    }
     // resolvePayout may have overwritten ringJumpResult through a nested call; restore.
     this.ringJumpResult = result;
   }
@@ -1184,6 +1195,7 @@ export class Game implements PayoutHost {
     if (idx !== null) {
       const target = this.run.wheel[idx];
       if (!target) return { ok: false, reason: 'no wedge' };
+      if (target.kind === 'bankrupt' && !BALANCE.bankruptRemovable) return { ok: false, reason: 'the network owns that one' };
       if (this.run.tokens < p.cost) return { ok: false, reason: 'not enough tokens' };
       this.addTokens(-p.cost, 'buy wedge');
       const w = structuredClone(p.wedge);
@@ -1219,17 +1231,21 @@ export class Game implements PayoutHost {
     return { ok: true };
   }
 
-  serviceCost(kind: 'remove' | 'gild' | 'resize'): number {
-    return SERVICE_COSTS[kind]() + (BALANCE.stakeShopMarkup[this.run.stake] ?? 0);
+  serviceCost(kind: 'remove' | 'gild' | 'resize', target?: Wedge): number {
+    if (kind === 'remove' && target?.kind === 'bankrupt') return Math.round(this.serviceCost('remove') * BALANCE.removeBankruptMult);
+    const escalate = kind === 'remove' ? BALANCE.removeEscalation * (this.run.marks.removals ?? 0) : kind === 'gild' ? BALANCE.gildEscalation * (this.run.marks.gilds ?? 0) : 0;
+    return SERVICE_COSTS[kind]() + escalate + (BALANCE.stakeShopMarkup[this.run.stake] ?? 0);
   }
 
   shopRemove(idx: number): ShopResult {
     this.assertPhase('Shop');
     const w = this.run.wheel[idx];
     if (!w || w.kind === 'dud') return { ok: false, reason: 'nothing to remove' };
-    const cost = this.serviceCost('remove');
+    if (w.kind === 'bankrupt' && !BALANCE.bankruptRemovable) return { ok: false, reason: 'the network owns that one' };
+    const cost = this.serviceCost('remove', w);
     if (this.run.tokens < cost) return { ok: false, reason: 'not enough tokens' };
     this.addTokens(-cost, 'remove');
+    this.run.marks.removals = (this.run.marks.removals ?? 0) + 1;
     this.setWedgeKind(w.uid, 'dud', 0);
     this.changed('remove');
     return { ok: true };
@@ -1239,9 +1255,11 @@ export class Game implements PayoutHost {
     this.assertPhase('Shop');
     const w = this.run.wheel[idx];
     if (!w || !WEDGES[w.kind].gildable) return { ok: false, reason: 'cannot gild' };
+    if (w.gild >= BALANCE.maxGild) return { ok: false, reason: 'fully gilded' };
     const cost = this.serviceCost('gild');
     if (this.run.tokens < cost) return { ok: false, reason: 'not enough tokens' };
     this.addTokens(-cost, 'gild');
+    this.run.marks.gilds = (this.run.marks.gilds ?? 0) + 1;
     w.gild += 1;
     this.bus.emit('wheelChanged', { reason: 'gild' });
     this.changed('gild');
@@ -1253,7 +1271,8 @@ export class Game implements PayoutHost {
     const w = this.run.wheel[idx];
     if (!w) return { ok: false, reason: 'no wedge' };
     const next = w.width + dir * BALANCE.widenStep;
-    if (next < BALANCE.minWidth || next > BALANCE.maxWidth) return { ok: false, reason: 'limit reached' };
+    const min = w.kind === 'bankrupt' ? BALANCE.bankruptMinWidth : BALANCE.minWidth;
+    if (next < min || next > BALANCE.maxWidth) return { ok: false, reason: 'limit reached' };
     const cost = this.serviceCost('resize');
     if (this.run.tokens < cost) return { ok: false, reason: 'not enough tokens' };
     this.addTokens(-cost, 'resize');

@@ -10,6 +10,7 @@ import { drawText, textWidth } from '../../ui/bitfont';
 import type { Assets } from '../../assets/loader';
 import { psxMaterial, type PsxMaterial } from '../psxMaterial';
 import { CanvasPanel, DEG, TAU, hexCss, pickable } from './util';
+import { PropBuilder } from './props';
 
 export const WHEEL_R = 1.25;
 const INNER_R = 0.42;
@@ -65,19 +66,17 @@ export class WheelView {
     g.position.set(0, 1.55, -0.6);
 
     // Back plate / frame (static).
-    const chrome = psxMaterial({ map: assets.texture('tex.metal'), color: 0xb8b8c0 });
-    const back = new THREE.Mesh(new THREE.CylinderGeometry(WHEEL_R + 0.16, WHEEL_R + 0.16, 0.12, 40), chrome);
-    back.rotation.x = Math.PI / 2;
-    back.position.z = -0.08;
-    g.add(back);
-    const gold = psxMaterial({ color: 0xd8a830, emissive: 0x1a1000 });
-    const rim = new THREE.Mesh(new THREE.TorusGeometry(WHEEL_R + 0.09, 0.045, 5, 40), gold);
-    g.add(rim);
-
-    // Stand.
-    const stand = new THREE.Mesh(new THREE.BoxGeometry(0.35, 1.5, 0.3), psxMaterial({ map: assets.texture('tex.metal'), color: 0x605860 }));
-    stand.position.set(0, -1.0, -0.2);
-    g.add(stand);
+    // Static frame: back plate, gold rim, stand, hub, flapper bracket, inner pointer — one mesh.
+    const frame = new PropBuilder()
+      .cyl(0x8a8a92, WHEEL_R + 0.16, WHEEL_R + 0.16, 0.12, [0, 0, -0.08], [Math.PI / 2, 0, 0], 40)
+      .torus(0xd8a830, WHEEL_R + 0.09, 0.045, [0, 0, 0], [0, 0, 0], 40, 5)
+      .box(0x4a4448, [0.35, 1.5, 0.3], [0, -1.0, -0.2])
+      .cyl(0xd8a830, 0.11, 0.13, 0.08, [0, 0, 0.07], [Math.PI / 2, 0, 0], 10)
+      .box(0xd8a830, [0.12, 0.1, 0.12], [0, WHEEL_R + 0.2, 0.06])
+      .cone(0xe03020, 0.04, 0.09, [0, INNER_R + 0.02, 0.07], [0, 0, Math.PI])
+      .build();
+    g.add(frame);
+    void assets;
 
     // Outer wheel face.
     this.face = new CanvasPanel(512, 512);
@@ -95,6 +94,7 @@ export class WheelView {
     this.highlightMat = psxMaterial({ color: 0xffffff, emissive: 0xffffff, lit: false, transparent: true, opacity: 0 });
     this.highlight = new THREE.Mesh(new THREE.BufferGeometry(), this.highlightMat);
     this.highlight.position.z = 0.012;
+    this.highlight.visible = false;
     this.spinner.add(this.highlight);
 
     // Inner ring.
@@ -104,20 +104,7 @@ export class WheelView {
     this.ringSpinner.add(ringMesh);
     pickable(ringMesh, 'ring');
     g.add(this.ringSpinner);
-    const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.13, 0.08, 10), gold);
-    hub.rotation.x = Math.PI / 2;
-    hub.position.z = 0.07;
-    g.add(hub);
-    // Inner pointer (static, at the top of the inner ring).
-    const ip = new THREE.Mesh(new THREE.ConeGeometry(0.04, 0.09, 3), psxMaterial({ color: 0xe03020, emissive: 0x300000 }));
-    ip.rotation.z = Math.PI;
-    ip.position.set(0, INNER_R + 0.02, 0.07);
-    g.add(ip);
-
-    // Flapper (leather) on a bracket at the top.
-    const bracket = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.1, 0.12), gold);
-    bracket.position.set(0, WHEEL_R + 0.2, 0.06);
-    g.add(bracket);
+    // Flapper (leather) hangs from the bracket at the top.
     this.flapperPivot.position.set(0, WHEEL_R + 0.15, 0.07);
     const flap = new THREE.Mesh(new THREE.BoxGeometry(0.05, FLAP_LEN, 0.015), psxMaterial({ map: assets.texture('tex.leather'), color: 0x8a3020 }));
     flap.position.y = -FLAP_LEN / 2;
@@ -280,6 +267,7 @@ export class WheelView {
   showHighlight(segIdx: number | null, color = 0xffffff, opacity = 0.35): void {
     if (segIdx === null || !this.layout) {
       this.highlightMat.uniforms.uOpacity.value = 0;
+      this.highlight.visible = false;
       return;
     }
     const s = this.layout.segments[segIdx];
@@ -300,6 +288,7 @@ export class WheelView {
     this.highlight.geometry = geo;
     this.highlightMat.uniforms.uEmissive.value.setHex(color);
     this.highlightMat.uniforms.uOpacity.value = opacity;
+    this.highlight.visible = true;
   }
 
   /** Replay a recorded spin. Resolves when the wheel has settled (plus a flapper hang beat). */

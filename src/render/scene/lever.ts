@@ -5,6 +5,7 @@ import * as THREE from 'three';
 import { drawText } from '../../ui/bitfont';
 import { psxMaterial } from '../psxMaterial';
 import { CanvasPanel, panelMesh, pickable } from './util';
+import { PropBuilder } from './props';
 
 export class LeverView {
   readonly group = new THREE.Group();
@@ -18,14 +19,9 @@ export class LeverView {
     const base = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.08, 0.2), psxMaterial({ color: 0x3a3a3a }));
     base.position.y = 0.04;
     g.add(base);
-    const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.3, 5), psxMaterial({ color: 0xc8c8c8 }));
-    shaft.position.y = 0.15;
-    this.arm.add(shaft);
-    const ball = new THREE.Mesh(new THREE.SphereGeometry(0.04, 6, 4), psxMaterial({ color: 0xc81818, emissive: 0x200000 }));
-    ball.position.y = 0.31;
-    this.arm.add(ball);
-    pickable(ball, 'lever');
-    pickable(shaft, 'lever');
+    const arm = new PropBuilder().cyl(0xc8c8c8, 0.012, 0.012, 0.3, [0, 0.15, 0], [0, 0, 0], 5).sphere(0xd02018, 0.04, [0, 0.31, 0]).build();
+    this.arm.add(arm);
+    pickable(arm, 'lever');
     this.arm.position.y = 0.06;
     this.arm.rotation.x = -0.35;
     g.add(this.arm);

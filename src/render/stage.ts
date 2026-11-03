@@ -34,6 +34,7 @@ export class Marquee {
   private color = '#ffe060';
   private scroll = 0;
   private flash = 0;
+  reduced = false;
   constructor() {
     this.mesh = panelMesh(this.panel, 3.0, 0.28, { fog: 0.1 });
     this.mesh.position.set(0, 3.12, -0.62);
@@ -43,7 +44,7 @@ export class Marquee {
     this.text = text;
     this.color = color;
     this.scroll = 0;
-    if (flash) this.flash = 1;
+    if (flash && !this.reduced) this.flash = 1;
     this.draw();
   }
   private draw(): void {

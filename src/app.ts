@@ -194,6 +194,7 @@ export class App {
     this.stage.post.dither = this.settings.dither;
     this.stage.setWarp(this.settings.warp);
     this.stage.vfx.reducedFlashing = this.settings.reducedFlashing;
+    this.stage.marquee.reduced = this.settings.reducedFlashing;
     this.stage.wheel.setColorblind(this.settings.colorblind);
     this.hud.fastMode = this.settings.fastMode;
     this.mixer.setVolumes(this.settings);
@@ -381,8 +382,9 @@ export class App {
     if (!g) return;
     const r = g.run;
     const d = r.deadline > BALANCE.deadlinesPerRun ? `∞${r.deadline}` : `${r.deadline}/8`;
-    this.hud.ticker = `D${d} SPINS ${r.spinsLeft}  TRAY $${r.tray} ×${r.streak.toFixed(2)}  VAULT $${r.vault}/$${r.debt}`;
-    this.hud.tickerRight = `TOK ${r.tokens}`;
+    this.hud.ticker = `D${d}  SPINS ${r.spinsLeft}  TRAY $${r.tray} ×${r.streak.toFixed(2)}  VAULT $${r.vault}/${r.debt}`;
+    this.hud.tickerRight = '';
+    this.hud.corner = `TOK ${r.tokens}`;
   }
 
   /** Push the current run state to every view. */
@@ -745,8 +747,9 @@ export class App {
     const st = this.stage;
     this.sfx.play('bankrupt', { gain: 0.9 });
     if (this.settings.screenShake) st.rig.shake(1);
-    st.studio.lightLevel = 0;
-    st.wheel.bulbsOn = 0;
+    // Lights out for half a second (a gentle dim with Reduced Flashing).
+    st.studio.lightLevel = this.settings.reducedFlashing ? 0.45 : 0;
+    st.wheel.bulbsOn = this.settings.reducedFlashing ? 0.4 : 0;
     this.mixer.setMuffle(0.6);
     st.tray.setAmount(0, false);
     this.music.setLevel(0.2);
