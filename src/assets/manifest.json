@@ -1,0 +1,77 @@
+{
+  "generated": "npm run assets",
+  "assets": {
+    "tex.wall_panel": {
+      "type": "texture",
+      "url": "assets/textures/wall_panel.png"
+    },
+    "tex.carpet": {
+      "type": "texture",
+      "url": "assets/textures/carpet.png"
+    },
+    "tex.curtain": {
+      "type": "texture",
+      "url": "assets/textures/curtain.png"
+    },
+    "tex.wallpaper": {
+      "type": "texture",
+      "url": "assets/textures/wallpaper.png"
+    },
+    "tex.metal": {
+      "type": "texture",
+      "url": "assets/textures/metal.png"
+    },
+    "tex.leather": {
+      "type": "texture",
+      "url": "assets/textures/leather.png"
+    },
+    "tex.stage_wood": {
+      "type": "texture",
+      "url": "assets/textures/stage_wood.png"
+    },
+    "tex.cabinet_wood": {
+      "type": "texture",
+      "url": "assets/textures/cabinet_wood.png"
+    },
+    "tex.plaster": {
+      "type": "texture",
+      "url": "assets/textures/plaster.png"
+    },
+    "mdl.tv_head": {
+      "type": "model",
+      "url": "assets/models/tv_head.glb"
+    },
+    "mdl.bulb": {
+      "type": "model",
+      "url": "assets/models/bulb.glb"
+    },
+    "mdl.socket": {
+      "type": "model",
+      "url": "assets/models/socket.glb"
+    },
+    "mdl.fluorescent": {
+      "type": "model",
+      "url": "assets/models/fluorescent.glb"
+    },
+    "mdl.pocket_watch": {
+      "type": "model",
+      "url": "assets/models/pocket_watch.glb"
+    },
+    "mdl.alarm_clock": {
+      "type": "model",
+      "url": "assets/models/alarm_clock.glb"
+    },
+    "mdl.prize_cabinet": {
+      "type": "model",
+      "url": "assets/models/prize_cabinet.glb"
+    },
+    "font.pixel": {
+      "type": "font",
+      "url": "assets/fonts/Silkscreen-Regular.ttf"
+    },
+    "font.terminal": {
+      "type": "font",
+      "url": "assets/fonts/VT323-Regular.ttf"
+    }
+  }
+}

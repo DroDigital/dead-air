@@ -1,0 +1,377 @@
+{
+  "$comment": "Source of truth for every external asset. `npm run assets -- --fetch` downloads sources into /assets-src; `npm run assets` converts them into /public/assets and regenerates src/assets/manifest.json (runtime index) and CREDITS.md. Entries whose source is missing fall back to a procedural stand-in with the same id at runtime and are listed in ASSETS_TODO.md.",
+  "assets": [
+    {
+      "id": "tex.wall_panel",
+      "type": "texture",
+      "src": "textures/dark_paneled_wood.jpg",
+      "out": "textures/wall_panel.png",
+      "size": 128,
+      "fetch": {
+        "polyhaven": "dark_paneled_wood",
+        "kind": "texture"
+      },
+      "sourceUrl": "https://polyhaven.com/a/dark_paneled_wood",
+      "author": "Dimitrios Savva (Poly Haven)",
+      "license": "CC0-1.0",
+      "modifications": "Diffuse map only; downscaled to 128×128; quantised to 15-bit colour; sampled with nearest filtering and lit by the PSX material."
+    },
+    {
+      "id": "tex.carpet",
+      "type": "texture",
+      "src": "textures/dirty_carpet.jpg",
+      "out": "textures/carpet.png",
+      "size": 64,
+      "fetch": {
+        "polyhaven": "dirty_carpet",
+        "kind": "texture"
+      },
+      "sourceUrl": "https://polyhaven.com/a/dirty_carpet",
+      "author": "Rohit Seervi (Poly Haven)",
+      "license": "CC0-1.0",
+      "modifications": "Diffuse map only; downscaled to 64×64; quantised to 15-bit colour."
+    },
+    {
+      "id": "tex.curtain",
+      "type": "texture",
+      "src": "textures/velour_velvet.jpg",
+      "out": "textures/curtain.png",
+      "size": 64,
+      "fetch": {
+        "polyhaven": "velour_velvet",
+        "kind": "texture"
+      },
+      "sourceUrl": "https://polyhaven.com/a/velour_velvet",
+      "author": "colormass, Rico Cilliers (Poly Haven)",
+      "license": "CC0-1.0",
+      "modifications": "Diffuse map only; downscaled to 64×64; quantised to 15-bit colour; tinted burgundy at runtime."
+    },
+    {
+      "id": "tex.wallpaper",
+      "type": "texture",
+      "src": "textures/decrepit_wallpaper.jpg",
+      "out": "textures/wallpaper.png",
+      "size": 128,
+      "fetch": {
+        "polyhaven": "decrepit_wallpaper",
+        "kind": "texture"
+      },
+      "sourceUrl": "https://polyhaven.com/a/decrepit_wallpaper",
+      "author": "Rob Tuytel (Poly Haven)",
+      "license": "CC0-1.0",
+      "modifications": "Diffuse map only; downscaled to 128×128; quantised to 15-bit colour."
+    },
+    {
+      "id": "tex.metal",
+      "type": "texture",
+      "src": "textures/rusty_metal_02.jpg",
+      "out": "textures/metal.png",
+      "size": 64,
+      "fetch": {
+        "polyhaven": "rusty_metal_02",
+        "kind": "texture"
+      },
+      "sourceUrl": "https://polyhaven.com/a/rusty_metal_02",
+      "author": "Rob Tuytel (Poly Haven)",
+      "license": "CC0-1.0",
+      "modifications": "Diffuse map only; downscaled to 64×64; quantised to 15-bit colour."
+    },
+    {
+      "id": "tex.leather",
+      "type": "texture",
+      "src": "textures/fabric_leather_01.jpg",
+      "out": "textures/leather.png",
+      "size": 64,
+      "fetch": {
+        "polyhaven": "fabric_leather_01",
+        "kind": "texture"
+      },
+      "sourceUrl": "https://polyhaven.com/a/fabric_leather_01",
+      "author": "Rob Tuytel (Poly Haven)",
+      "license": "CC0-1.0",
+      "modifications": "Diffuse map only; downscaled to 64×64; quantised to 15-bit colour."
+    },
+    {
+      "id": "tex.stage_wood",
+      "type": "texture",
+      "src": "textures/old_wood_floor.jpg",
+      "out": "textures/stage_wood.png",
+      "size": 64,
+      "fetch": {
+        "polyhaven": "old_wood_floor",
+        "kind": "texture"
+      },
+      "sourceUrl": "https://polyhaven.com/a/old_wood_floor",
+      "author": "Guillaume Monsergent (Poly Haven)",
+      "license": "CC0-1.0",
+      "modifications": "Diffuse map only; downscaled to 64×64; quantised to 15-bit colour."
+    },
+    {
+      "id": "tex.cabinet_wood",
+      "type": "texture",
+      "src": "textures/wood_cabinet_worn_long.jpg",
+      "out": "textures/cabinet_wood.png",
+      "size": 64,
+      "fetch": {
+        "polyhaven": "wood_cabinet_worn_long",
+        "kind": "texture"
+      },
+      "sourceUrl": "https://polyhaven.com/a/wood_cabinet_worn_long",
+      "author": "Dimitrios Savva, Rico Cilliers (Poly Haven)",
+      "license": "CC0-1.0",
+      "modifications": "Diffuse map only; downscaled to 64×64; quantised to 15-bit colour."
+    },
+    {
+      "id": "tex.plaster",
+      "type": "texture",
+      "src": "textures/peeling_painted_wall.jpg",
+      "out": "textures/plaster.png",
+      "size": 64,
+      "fetch": {
+        "polyhaven": "peeling_painted_wall",
+        "kind": "texture"
+      },
+      "sourceUrl": "https://polyhaven.com/a/peeling_painted_wall",
+      "author": "Dimitrios Savva (Poly Haven)",
+      "license": "CC0-1.0",
+      "modifications": "Diffuse map only; downscaled to 64×64; quantised to 15-bit colour."
+    },
+    {
+      "id": "mdl.tv_head",
+      "type": "model",
+      "src": "models/television_02/television_02.gltf",
+      "out": "models/tv_head.glb",
+      "targetTris": 500,
+      "texSize": 64,
+      "fetch": {
+        "polyhaven": "television_02",
+        "kind": "model"
+      },
+      "sourceUrl": "https://polyhaven.com/a/television_02",
+      "author": "Benny Weimer (Poly Haven)",
+      "license": "CC0-1.0",
+      "modifications": "Normal/ARM maps dropped; mesh welded and decimated with meshoptimizer; base colour downscaled to 64×64; material replaced by the PSX material at runtime; screen face rendered by the game."
+    },
+    {
+      "id": "mdl.bulb",
+      "type": "model",
+      "src": "models/lightbulb_01/lightbulb_01.gltf",
+      "out": "models/bulb.glb",
+      "targetTris": 160,
+      "texSize": 64,
+      "fetch": {
+        "polyhaven": "lightbulb_01",
+        "kind": "model"
+      },
+      "sourceUrl": "https://polyhaven.com/a/lightbulb_01",
+      "author": "Josh Dean (Poly Haven)",
+      "license": "CC0-1.0",
+      "modifications": "Normal/ARM maps dropped; decimated; base colour downscaled; PSX material at runtime."
+    },
+    {
+      "id": "mdl.socket",
+      "type": "model",
+      "src": "models/pull_chain_light_socket/pull_chain_light_socket.gltf",
+      "out": "models/socket.glb",
+      "targetTris": 200,
+      "texSize": 64,
+      "fetch": {
+        "polyhaven": "pull_chain_light_socket",
+        "kind": "model"
+      },
+      "sourceUrl": "https://polyhaven.com/a/pull_chain_light_socket",
+      "author": "Josh Dean (Poly Haven)",
+      "license": "CC0-1.0",
+      "modifications": "Normal/ARM maps dropped; decimated; base colour downscaled; PSX material at runtime."
+    },
+    {
+      "id": "mdl.fluorescent",
+      "type": "model",
+      "src": "models/mounted_fluorescent_lights/mounted_fluorescent_lights.gltf",
+      "out": "models/fluorescent.glb",
+      "targetTris": 400,
+      "texSize": 64,
+      "fetch": {
+        "polyhaven": "mounted_fluorescent_lights",
+        "kind": "model"
+      },
+      "sourceUrl": "https://polyhaven.com/a/mounted_fluorescent_lights",
+      "author": "Ulan Cabanilla (Poly Haven)",
+      "license": "CC0-1.0",
+      "modifications": "Normal/ARM maps dropped; decimated; base colour downscaled; PSX material at runtime; tube emissive driven by the flicker light."
+    },
+    {
+      "id": "mdl.pocket_watch",
+      "type": "model",
+      "src": "models/pocket_watch/pocket_watch.gltf",
+      "out": "models/pocket_watch.glb",
+      "targetTris": 300,
+      "texSize": 64,
+      "fetch": {
+        "polyhaven": "pocket_watch",
+        "kind": "model"
+      },
+      "sourceUrl": "https://polyhaven.com/a/pocket_watch",
+      "author": "PierreB3D (Poly Haven)",
+      "license": "CC0-1.0",
+      "modifications": "Normal/ARM maps dropped; decimated; base colour downscaled; PSX material at runtime. Used for the Stopwatch / Dead Man's Watch artifacts."
+    },
+    {
+      "id": "mdl.alarm_clock",
+      "type": "model",
+      "src": "models/alarm_clock_01/alarm_clock_01.gltf",
+      "out": "models/alarm_clock.glb",
+      "targetTris": 300,
+      "texSize": 64,
+      "fetch": {
+        "polyhaven": "alarm_clock_01",
+        "kind": "model"
+      },
+      "sourceUrl": "https://polyhaven.com/a/alarm_clock_01",
+      "author": "Yann Kervran, James Ray Cock (Poly Haven)",
+      "license": "CC0-1.0",
+      "modifications": "Normal/ARM maps dropped; decimated; base colour downscaled; PSX material at runtime. Used for the Metronome artifact."
+    },
+    {
+      "id": "mdl.prize_cabinet",
+      "type": "model",
+      "src": "models/vintage_cabinet_01/vintage_cabinet_01.gltf",
+      "out": "models/prize_cabinet.glb",
+      "targetTris": 1400,
+      "texSize": 128,
+      "fetch": {
+        "polyhaven": "vintage_cabinet_01",
+        "kind": "model"
+      },
+      "sourceUrl": "https://polyhaven.com/a/vintage_cabinet_01",
+      "author": "Rico Cilliers (Poly Haven)",
+      "license": "CC0-1.0",
+      "modifications": "Normal/ARM maps dropped; decimated from ~61k to ~1.4k triangles; base colour downscaled to 128×128; PSX material at runtime. Glass front and crank added procedurally."
+    },
+    {
+      "id": "font.pixel",
+      "type": "font",
+      "src": "fonts/Silkscreen-Regular.ttf",
+      "out": "fonts/Silkscreen-Regular.ttf",
+      "fetch": {
+        "url": "https://raw.githubusercontent.com/google/fonts/main/ofl/silkscreen/Silkscreen-Regular.ttf"
+      },
+      "sourceUrl": "https://github.com/google/fonts/tree/main/ofl/silkscreen",
+      "author": "Jason Kottke",
+      "license": "OFL-1.1",
+      "modifications": "None. Used for menus. In-world text uses the game's own 5×7 bitmap font."
+    },
+    {
+      "id": "font.terminal",
+      "type": "font",
+      "src": "fonts/VT323-Regular.ttf",
+      "out": "fonts/VT323-Regular.ttf",
+      "fetch": {
+        "url": "https://raw.githubusercontent.com/google/fonts/main/ofl/vt323/VT323-Regular.ttf"
+      },
+      "sourceUrl": "https://github.com/google/fonts/tree/main/ofl/vt323",
+      "author": "Peter Hull",
+      "license": "OFL-1.1",
+      "modifications": "None. Used for long-form text (lore, credits)."
+    },
+    {
+      "id": "sfx.flapper",
+      "type": "audio",
+      "src": "audio/flapper.wav",
+      "out": "audio/flapper.wav",
+      "fetch": null,
+      "sourceUrl": "https://kenney.nl/assets/impact-sounds",
+      "author": "Kenney (intended)",
+      "license": "CC0-1.0",
+      "modifications": "Intended: bitcrush to 10 bits, one-pole lowpass at 7 kHz, resample to 22.05 kHz. Currently synthesised at runtime (see ASSETS_TODO.md)."
+    },
+    {
+      "id": "sfx.coins",
+      "type": "audio",
+      "src": "audio/coins.wav",
+      "out": "audio/coins.wav",
+      "fetch": null,
+      "sourceUrl": "https://kenney.nl/assets/rpg-audio",
+      "author": "Kenney (intended)",
+      "license": "CC0-1.0",
+      "modifications": "Intended: bitcrush + lowpass. Currently synthesised at runtime."
+    },
+    {
+      "id": "sfx.vault_thunk",
+      "type": "audio",
+      "src": "audio/vault_thunk.wav",
+      "out": "audio/vault_thunk.wav",
+      "fetch": null,
+      "sourceUrl": "https://kenney.nl/assets/impact-sounds",
+      "author": "Kenney (intended)",
+      "license": "CC0-1.0",
+      "modifications": "Intended: bitcrush + lowpass. Currently synthesised at runtime."
+    },
+    {
+      "id": "sfx.bankrupt",
+      "type": "audio",
+      "src": "audio/bankrupt.wav",
+      "out": "audio/bankrupt.wav",
+      "fetch": null,
+      "sourceUrl": "https://freesound.org/ (CC0 filter)",
+      "author": "TBD (intended)",
+      "license": "CC0-1.0",
+      "modifications": "Intended: bitcrush + lowpass. Currently synthesised at runtime."
+    },
+    {
+      "id": "sfx.crowd",
+      "type": "audio",
+      "src": "audio/crowd.wav",
+      "out": "audio/crowd.wav",
+      "fetch": null,
+      "sourceUrl": "https://freesound.org/ (CC0 filter)",
+      "author": "TBD (intended)",
+      "license": "CC0-1.0",
+      "modifications": "Intended: bitcrush + lowpass. Currently synthesised at runtime (filtered noise swells)."
+    },
+    {
+      "id": "sfx.phone_bell",
+      "type": "audio",
+      "src": "audio/phone_bell.wav",
+      "out": "audio/phone_bell.wav",
+      "fetch": null,
+      "sourceUrl": "https://freesound.org/ (CC0 filter)",
+      "author": "TBD (intended)",
+      "license": "CC0-1.0",
+      "modifications": "Intended: bitcrush + lowpass. Currently synthesised at runtime (twin-bell FM)."
+    },
+    {
+      "id": "sfx.lever",
+      "type": "audio",
+      "src": "audio/lever.wav",
+      "out": "audio/lever.wav",
+      "fetch": null,
+      "sourceUrl": "https://kenney.nl/assets/interface-sounds",
+      "author": "Kenney (intended)",
+      "license": "CC0-1.0",
+      "modifications": "Intended: bitcrush + lowpass. Currently synthesised at runtime."
+    },
+    {
+      "id": "sfx.jackpot_bells",
+      "type": "audio",
+      "src": "audio/jackpot_bells.wav",
+      "out": "audio/jackpot_bells.wav",
+      "fetch": null,
+      "sourceUrl": "https://freesound.org/ (CC0 filter)",
+      "author": "TBD (intended)",
+      "license": "CC0-1.0",
+      "modifications": "Intended: bitcrush + lowpass. Currently synthesised at runtime."
+    },
+    {
+      "id": "music.show_loop",
+      "type": "audio",
+      "src": "audio/show_loop.wav",
+      "out": "audio/show_loop.wav",
+      "fetch": null,
+      "sourceUrl": "(original composition, procedural)",
+      "author": "DEAD AIR",
+      "license": "CC0-1.0",
+      "modifications": "Generated at runtime by the music sequencer; detune/tempo/warble increase each Deadline."
+    }
+  ]
+}
