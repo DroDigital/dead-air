@@ -57,13 +57,13 @@ export class VaultView {
     const ring = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 0.02, 10), psxMaterial({ color: 0x202020 }));
     ring.position.set(-0.34, 0.005, 0.05);
     g.add(ring);
-    const lbl = new CanvasPanel(48, 8);
+    const lbl = new CanvasPanel(64, 10);
     lbl.draw((ctx, w, h) => {
       ctx.fillStyle = '#100808';
       ctx.fillRect(0, 0, w, h);
       drawText(ctx, 'DEPOSIT', w / 2, 1, { align: 'center', color: '#ffd0a0' });
     });
-    const lm = panelMesh(lbl, 0.15, 0.025);
+    const lm = panelMesh(lbl, 0.2, 0.031);
     lm.rotation.x = -Math.PI / 2;
     lm.position.set(-0.34, 0.005, 0.16);
     g.add(lm);

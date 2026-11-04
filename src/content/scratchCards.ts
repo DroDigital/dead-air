@@ -1,6 +1,7 @@
 /**
  * Scratch Cards — consumables (max 3). Each is used from the card slot by the Tray.
  */
+import { BALANCE } from '../game/balance';
 import type { GameOps } from '../game/hooks';
 import type { RunState } from '../game/types';
 
@@ -21,7 +22,7 @@ export const SCRATCH_CARDS: readonly ScratchDef[] = [
   {
     id: 'nudge',
     name: 'Nudge',
-    text: 'After your next spin stops, rotate the wheel ±1 wedge (or leave it).',
+    text: 'After your next spin stops, nudge the wheel one wedge either way (or leave it).',
     when: 'spin',
     color: 0x4ab0ff,
     usable: (r) => awaiting(r) && !r.flags.nudge,
@@ -105,9 +106,10 @@ export const SCRATCH_CARDS: readonly ScratchDef[] = [
     text: 'Gild a random Cash wedge (+50% value).',
     when: 'any',
     color: 0xffe070,
-    usable: (r) => r.wheel.some((w) => w.kind === 'cash'),
+    usable: (r) => r.wheel.some((w) => w.kind === 'cash' && w.gild < BALANCE.maxGild),
     use: (ops) => {
-      const cash = ops.run.wheel.filter((w) => w.kind === 'cash');
+      const cash = ops.run.wheel.filter((w) => w.kind === 'cash' && w.gild < BALANCE.maxGild);
+      if (!cash.length) return;
       const w = ops.rng.loot.pick(cash);
       w.gild += 1;
       ops.note(`GILDED $${w.value}`);

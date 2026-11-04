@@ -75,6 +75,7 @@ export class App {
   private sellArmed = -1;
   private iconCache = new Map<string, string>();
   private lastFrame = performance.now();
+  private deferToken = 0;
   private debug = false;
 
   constructor(private canvas: HTMLCanvasElement) {
@@ -104,6 +105,7 @@ export class App {
     });
     const firstGesture = () => {
       void this.mixer.resume().then(() => {
+        this.music.kick();
         this.music.startAmbience();
         this.mixer.setVolumes(this.settings);
       });
@@ -277,9 +279,24 @@ export class App {
     this.music.setLevel(1);
     this.stage.studio.openTrapdoor(0);
     this.stage.host.silent = !!g.run.marks.hostSilent;
+    this.resetStageVisuals();
     this.stage.tray.setAmount(g.run.tray, false);
     this.stage.vault.setVault(g.run.vault, true);
     this.sync(false);
+  }
+
+  /** Normal lighting, closed trapdoor, host at rest and an empty cabinet: the state every run starts from. */
+  private resetStageVisuals(): void {
+    const st = this.stage;
+    st.post.fade = 1;
+    st.rig.offset.set(0, 0, 0);
+    st.studio.openTrapdoor(0);
+    st.studio.lightLevel = 1;
+    st.studio.spotLevel = 1;
+    st.wheel.bulbsOn = 1;
+    st.host.expression = 'smile';
+    st.host.setPose('idle');
+    st.cabinet.setShop(null, 0, () => false);
   }
 
   async newRun(seed: string, stake: number, startWheel: string): Promise<void> {
@@ -309,11 +326,26 @@ export class App {
   }
 
   private resume(): void {
+    this.deferToken++; // cancels a quit or abandon that was waiting for the broadcast to finish
     this.menus.hide();
     this.input.clear();
   }
 
+  /** Quitting or abandoning waits until the current spin or presentation has finished. Returns true if deferred. */
+  private deferIfBusy(action: () => void): boolean {
+    if (!this.busy && !this.stage.wheel.busy && !this.charge) return false;
+    const token = ++this.deferToken;
+    const tick = () => {
+      if (token !== this.deferToken) return;
+      if (this.busy || this.stage.wheel.busy || this.charge) setTimeout(tick, 150);
+      else action();
+    };
+    setTimeout(tick, 150);
+    return true;
+  }
+
   private quitToTitle(): void {
+    if (this.deferIfBusy(() => this.quitToTitle())) return;
     if (this.game && this.game.run.phase !== 'GameOver' && !this.game.run.marks.metaApplied) this.runSlot.save(this.game.snapshot());
     this.game = null;
     this.hud.choice = null;
@@ -329,6 +361,7 @@ export class App {
 
   private abandon(): void {
     if (!this.game) return;
+    if (this.deferIfBusy(() => this.abandon())) return;
     const r = this.game.run;
     r.endedAt = r.deadline;
     const res = applyRun(this.meta, r);
@@ -696,7 +729,9 @@ export class App {
     if (res.combos.some((c) => c !== 'deadAir') && Math.random() < 0.5) this.hostSay('combo', 'grin', 'cheer');
 
     // Notes (prize effects).
-    for (const n of res.notes.slice(0, 4)) this.hud.toast(n);
+    const tally = new Map<string, number>();
+    for (const n of res.notes) tally.set(n, (tally.get(n) ?? 0) + 1);
+    for (const [n, c] of [...tally].slice(0, 4)) this.hud.toast(c > 1 ? `${n} ×${c}` : n);
 
     const big = p.cash >= Math.max(500, g.run.debt * 0.5);
     if (p.bankrupt && !p.bankruptBlocked) await this.bankruptDrama(p.trayLost, p.deadAir);
@@ -1029,28 +1064,8 @@ export class App {
       this.saveMeta();
       this.menus.showSummary(false, r.deadline, res.ratings, res.newUnlocks, false);
     }
-    this.resetStageAfterRun();
     this.game = null;
     this.hud.ticker = '';
-  }
-
-  private resetStageAfterRun(): void {
-    const st = this.stage;
-    setTimeout(() => {
-      st.post.fade = 1;
-      st.rig.offset.set(0, 0, 0);
-      st.studio.openTrapdoor(0);
-      st.studio.lightLevel = 1;
-      st.studio.spotLevel = 1;
-      st.wheel.bulbsOn = 1;
-      st.host.expression = 'smile';
-      st.host.setPose('idle');
-      st.tray.setAmount(0, false);
-      st.vault.setVault(0, true);
-      st.shelf.setArtifacts([]);
-      st.cabinet.setShop(null, 0, () => false);
-      this.music.setDeadline(1);
-    }, 600);
   }
 
   private async victory(): Promise<void> {
@@ -1189,16 +1204,14 @@ export class App {
     };
     inp.isBusy = () => this.busy > 0 || this.stage.wheel.busy;
     inp.onAction = (a) => this.onAction(a);
-    window.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && this.menus.open && this.menus.page === 'pause') {
-        e.preventDefault();
-        this.resume();
-      }
-    });
   }
 
   private onAction(a: Action): void {
-    if (this.menus.open) return;
+    if (this.menus.open) {
+      // Escape closes the pause menu; every other input belongs to the open menu.
+      if (a.type === 'pause' && this.menus.page === 'pause') this.resume();
+      return;
+    }
     if (this.fsm.state === 'Boot') return;
     const g = this.game;
     if (a.type === 'pause') {

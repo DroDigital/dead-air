@@ -21,10 +21,12 @@ Open the printed URL. Other scripts:
 | Command | What it does |
 |---|---|
 | `npm run build` | Typecheck (strict) + production build to `dist/` |
-| `npm test` | 150+ Vitest unit tests (rules, physics, determinism, saves, content, sim) |
+| `npm test` | 159 Vitest tests: rules, wheel physics, determinism, saves and migrations, content, text coverage, regressions, simulator smoke tests |
 | `npm run sim -- --runs 5000 --seed 1` | Headless balance simulator (all bot policies, multi-threaded) |
 | `npm run assets` | Convert `/assets-src` → `/public/assets` (PS1 conformance), regenerate the runtime index, CREDITS.md, ASSETS_TODO.md |
 | `npm run assets -- --fetch` | Download any missing CC0/OFL sources first, then convert |
+| `npm run playtest -- --minutes 6` | Automated playtest through the real UI in headless Chromium (keyboard, mouse, menus). Checks game invariants and on-screen text after every step. Flags: `--boost --jump8 --doom --reload --unlock`. Needs `npm run preview` running (port 4173, or `--url`) and Playwright with a Chromium build: `npm i --no-save playwright && npx playwright install chromium`. |
+| `node tools/scenarios.mjs` | 11 scripted checks for paths random play rarely reaches (Prize Room, every setting, quitting mid-spin, continue, abandon, Endless). Same setup as the playtest. |
 
 Dev extras: `?gui` (lil-gui tuning panel, dev builds only), `?debug` (draw-call/triangle readout).
 
@@ -50,15 +52,15 @@ src/
   main.ts, app.ts          entry + app controller (FSM, flow, input routing, autosave)
   core/                    rng (sfc32 streams), fsm, events, save (versioned + migrations), config
   game/                    rules core — no DOM/Three: wheel physics, payout, combos, run, shop, hooks, balance, meta
-  content/                 wedges (23), artifacts (50), scratch cards (12), bargains (36), mutators (8), host lines (95), lore (22), starting wheels
+  content/                 wedges (23), artifacts (50), scratch cards (12), bargains (37), mutators (8), host lines (95), lore (22), starting wheels (4), stakes (4)
   assets/                  id-based loader with procedural fallbacks; generated runtime manifest
   render/                  PSX material, post chain, camera rig, VFX, stage, scene/* (studio, wheel, tray, vault, shelf, cabinet, host, phone, lever, props)
-  audio/                   mixer (buses), procedural SFX, music, gibberish voice
+  audio/                   mixer (buses), SFX (CC0 recordings where available, otherwise procedural), music, gibberish voice
   ui/                      input, HUD/chyrons, tooltips, DOM menus, bitmap font
 sim/                       bot policies + simulator
-tools/                     asset pipeline, screenshot driver
-tests/                     Vitest suites
+tools/                     asset pipeline (assets.ts), browser harnesses (playtest.mjs, scenarios.mjs, shared Playwright loader browser.mjs), screenshot helper (shot.mjs)
+tests/                     Vitest suites (rng, wheel, payout, artifacts, run, shop/phone, saves, content, text, regressions, sim)
 assets/manifest.json       licensing source of truth
 ```
 
-See **DECISIONS.md** (interpretations and deviations), **BALANCE.md** (simulator results), **CREDITS.md** (generated), **ASSETS_TODO.md** (procedural stand-ins awaiting real files).
+See **DECISIONS.md** (interpretations and deviations), **BALANCE.md** (simulator results), **PLAYTEST.md** (playtest method, findings and fixes), **CREDITS.md** (generated), **ASSETS_TODO.md** (procedural stand-ins still awaiting CC0 recordings).

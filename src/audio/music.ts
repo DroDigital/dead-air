@@ -24,6 +24,7 @@ export class Music {
   private tempo = 126;
   private detune = 0;
   playing = false;
+  private wantPlaying = false;
   private amb: { stop: () => void } | null = null;
   private buzzGain: GainNode | null = null;
 
@@ -52,6 +53,7 @@ export class Music {
   }
 
   start(): void {
+    this.wantPlaying = true;
     if (this.playing || !this.mixer.running) return;
     this.playing = true;
     this.nextTime = this.mixer.ctx.currentTime + 0.1;
@@ -66,7 +68,13 @@ export class Music {
     this.timer = window.setInterval(tick, 50);
   }
 
+  /** Starts a loop that was requested before the browser unlocked audio. */
+  kick(): void {
+    if (this.wantPlaying && !this.playing) this.start();
+  }
+
   stop(): void {
+    this.wantPlaying = false;
     this.playing = false;
     if (this.timer !== null) clearInterval(this.timer);
     this.timer = null;

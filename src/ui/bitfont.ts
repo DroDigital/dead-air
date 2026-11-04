@@ -87,6 +87,12 @@ export const GLYPH_H = 7;
 export const ADVANCE = 6;
 export const LINE_H = 9;
 
+/** True if the bitmap font can draw this character (after aliasing and upper-casing). */
+export function supportsGlyph(ch: string): boolean {
+  const c = ALIAS[ch] ?? ch.toUpperCase();
+  return Object.prototype.hasOwnProperty.call(G, c);
+}
+
 function glyph(ch: string): number[] {
   const c = ALIAS[ch] ?? ch.toUpperCase();
   return G[c] ?? G['?'];

@@ -17,6 +17,8 @@ const INNER_R = 0.42;
 const PEG_R = WHEEL_R - 0.05;
 const FLAP_LEN = 0.2;
 const BULBS = 40;
+/** Narrowest wedge (degrees) that still gets a label on the wheel face. */
+const LABEL_MIN_DEG = 12;
 
 export interface WheelLabelFn {
   (seg: Segment): string;
@@ -79,7 +81,7 @@ export class WheelView {
     void assets;
 
     // Outer wheel face.
-    this.face = new CanvasPanel(512, 512);
+    this.face = new CanvasPanel(128, 128);
     this.faceMat = psxMaterial({ map: this.face.texture, wrap: 0.35 });
     const face = new THREE.Mesh(new THREE.CircleGeometry(WHEEL_R, 48), this.faceMat);
     this.spinner.add(face);
@@ -98,7 +100,7 @@ export class WheelView {
     this.spinner.add(this.highlight);
 
     // Inner ring.
-    this.ringFace = new CanvasPanel(256, 256);
+    this.ringFace = new CanvasPanel(64, 64);
     const ringMesh = new THREE.Mesh(new THREE.CircleGeometry(INNER_R, 32), psxMaterial({ map: this.ringFace.texture, wrap: 0.35 }));
     ringMesh.position.z = 0.03;
     this.ringSpinner.add(ringMesh);
@@ -132,6 +134,7 @@ export class WheelView {
   setLayout(layout: Layout, ring: number[], label: WheelLabelFn): void {
     this.layout = layout;
     const R = this.face.w / 2;
+    const lw = Math.max(1, R / 64);
     this.face.draw((ctx, w, h) => {
       ctx.clearRect(0, 0, w, h);
       ctx.save();
@@ -149,15 +152,15 @@ export class WheelView {
         if (this.colorblind || s.overridden) this.pattern(ctx, def.pattern, a0, a1, R, def.ink, s.overridden);
         if (s.gild > 0) {
           ctx.strokeStyle = '#ffd84a';
-          ctx.lineWidth = 6;
+          ctx.lineWidth = lw * 2;
           ctx.beginPath();
-          ctx.arc(0, 0, R - 8, a0 + 0.02, a1 - 0.02);
+          ctx.arc(0, 0, R - lw * 3, a0 + 0.02, a1 - 0.02);
           ctx.stroke();
         }
       }
       // Dividers.
       ctx.strokeStyle = '#e8c050';
-      ctx.lineWidth = 3;
+      ctx.lineWidth = lw;
       for (const s of layout.segments) {
         const a = (s.start - 90) * DEG;
         ctx.beginPath();
@@ -170,14 +173,16 @@ export class WheelView {
         const def = WEDGES[s.kind];
         const mid = ((s.start + s.end) / 2 - 90) * DEG;
         const txt = label(s);
-        const width = s.end - s.start;
-        const scale = width < 7 ? 1 : 2;
+        // Too narrow to carry a label: the tooltip names it.
+        if (s.end - s.start < LABEL_MIN_DEG) continue;
+        // Labels use the native 5×7 font. Left-hand wedges are flipped so every label reads upright.
+        const flip = Math.cos(mid) < 0;
         ctx.save();
-        ctx.rotate(mid);
-        const tw = textWidth(txt, scale);
-        const rOuter = R * 0.93;
-        const x = Math.max(R * 0.4, rOuter - tw);
-        drawText(ctx, txt, x, -3.5 * scale, { scale, color: hexCss(def.ink), shadow: 'rgba(0,0,0,0.6)' });
+        ctx.rotate(flip ? mid + Math.PI : mid);
+        let shown = txt;
+        while (textWidth(shown) > R * 0.6 && shown.length > 1) shown = shown.slice(0, -1);
+        const x = flip ? -R * 0.9 : R * 0.3;
+        drawText(ctx, shown, x, -3.5, { color: hexCss(def.ink), shadow: '#000' });
         ctx.restore();
       }
       ctx.restore();
@@ -213,12 +218,12 @@ export class WheelView {
         ctx.fillStyle = v === 0 ? '#111' : v === 1 ? '#3a3a48' : v === 2 ? '#2c6a8a' : v === 3 ? '#c09020' : '#c02030';
         ctx.fill();
         ctx.strokeStyle = '#e8c050';
-        ctx.lineWidth = 2;
+        ctx.lineWidth = 1;
         ctx.stroke();
         const mid = (a0 + a1) / 2;
         ctx.save();
         ctx.rotate(mid + Math.PI / 2);
-        drawText(ctx, `×${v}`, 0, -R * 0.82, { scale: 2, align: 'center', color: v === 0 ? '#c03030' : '#fff4c0', shadow: '#000' });
+        drawText(ctx, `×${v}`, 0, -R * 0.78, { scale: 1, align: 'center', color: v === 0 ? '#c03030' : '#fff4c0', shadow: '#000' });
         ctx.restore();
       }
       ctx.restore();
@@ -234,8 +239,8 @@ export class WheelView {
     ctx.clip();
     ctx.fillStyle = overridden ? 'rgba(255,255,255,0.25)' : `${hexCss(ink)}55`;
     ctx.strokeStyle = ctx.fillStyle;
-    ctx.lineWidth = 3;
-    const step = 14;
+    ctx.lineWidth = Math.max(1, R / 64);
+    const step = Math.max(3, Math.round(R / 8));
     if (p === 'stripes' || p === 'diag' || overridden) {
       for (let k = -R * 2; k < R * 2; k += step) {
         ctx.beginPath();
