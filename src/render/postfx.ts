@@ -74,13 +74,14 @@ void main() {
   if (uRoll > 0.0) {
     float pos = fract(uTime * 0.35);
     float dy = abs(uv.y - (1.0 - pos));
-    band = smoothstep(0.08, 0.0, dy) * uRoll;
+    band = (1.0 - smoothstep(0.0, 0.08, dy)) * uRoll;
     float line = floor(uv.y * uRes.y);
     uv.x += band * 0.03 * sin(line * 1.7 + uTime * 40.0);
     uv.x += uRoll * 0.004 * sin(uTime * 13.0 + line * 0.3);
   }
   float px = 1.0 / uRes.x;
-  float fr = 0.6 + 0.6 * uRoll;
+  // Keep the broadcast fringe visible without splitting small bitmap lettering.
+  float fr = 0.35 + 0.6 * uRoll;
   vec3 col;
   col.r = texture2D(tLow, uv + vec2(px * fr, 0.0)).r;
   col.g = texture2D(tLow, uv).g;
@@ -238,8 +239,19 @@ export class PostFx {
   /** Convert a CSS-pixel position on the canvas to internal pixel coords (or null if outside). */
   toInternal(cssX: number, cssY: number, cssW: number, cssH: number): { x: number; y: number } | null {
     const vp = this.viewport(cssW, cssH);
-    const x = ((cssX - vp.x) / vp.w) * this.width;
-    const y = ((cssY - vp.y) / vp.h) * this.height;
+    let u = (cssX - vp.x) / vp.w;
+    let v = (cssY - vp.y) / vp.h;
+    if (u < 0 || v < 0 || u >= 1 || v >= 1) return null;
+    // Match the sampling transform in CRT_FRAG, including the black curved corners.
+    if (this.crt) {
+      const cx = u * 2 - 1;
+      const cy = v * 2 - 1;
+      const bend = 1 + 0.06 * (cx * cx + cy * cy);
+      u = (cx * bend + 1) * 0.5;
+      v = (cy * bend + 1) * 0.5;
+    }
+    const x = u * this.width;
+    const y = v * this.height;
     if (x < 0 || y < 0 || x >= this.width || y >= this.height) return null;
     return { x, y };
   }

@@ -135,13 +135,13 @@ export class Hud {
       const bw = w * slide;
       const y = h * 0.3;
       ctx.fillStyle = 'rgba(20,6,2,0.9)';
-      ctx.fillRect(w / 2 - bw / 2, y, bw, 26 * k);
+      ctx.fillRect(w / 2 - bw / 2, y, bw, 31 * k);
       ctx.fillStyle = b.color;
       ctx.fillRect(w / 2 - bw / 2, y, bw, k);
-      ctx.fillRect(w / 2 - bw / 2, y + 26 * k - k, bw, k);
+      ctx.fillRect(w / 2 - bw / 2, y + 30 * k, bw, k);
       if (slide > 0.9) {
         drawText(ctx, b.text, w / 2, y + 4 * k, { align: 'center', scale: 2 * k, color: b.color, shadow: '#000' });
-        drawText(ctx, b.sub, w / 2, y + 18 * k, { align: 'center', scale: k, color: '#f0e0c0' });
+        drawText(ctx, b.sub, w / 2, y + 21 * k, { align: 'center', scale: k, color: '#f0e0c0' });
       }
     }
 
@@ -227,7 +227,7 @@ export class Hud {
     }
     y += 3 * k;
     const n = c.options.length;
-    const hoverIdx = mouse.inside ? this.hitChoiceAt(mouse.x, mouse.y) : -1;
+    const hovered = (r: Rect) => mouse.inside && mouse.x >= r.x && mouse.x < r.x + r.w && mouse.y >= r.y && mouse.y < r.y + r.h;
     if (layout === 'cards') {
       const cw = Math.floor((w - 16 * k - pad * (n + 1)) / n);
       const ch = top + panelH - y - (c.footer ? 12 : 4) * k;
@@ -236,7 +236,7 @@ export class Hud {
         const x = 8 * k + pad + i * (cw + pad);
         const r = { x, y, w: cw, h: ch };
         this.optionRects.push(r);
-        const sel = i === c.selected || i === hoverIdx;
+        const sel = i === c.selected || hovered(r);
         ctx.fillStyle = o.disabled ? '#1a1410' : sel ? '#3a2410' : '#20160c';
         ctx.fillRect(x, y, cw, ch);
         ctx.fillStyle = sel ? accent : '#5a4020';
@@ -254,7 +254,7 @@ export class Hud {
         const o = c.options[i];
         const r = { x: 14 * k, y, w: w - 28 * k, h: rowH - k };
         this.optionRects.push(r);
-        const sel = i === c.selected || i === hoverIdx;
+        const sel = i === c.selected || hovered(r);
         ctx.fillStyle = sel ? '#3a2410' : '#1a120a';
         ctx.fillRect(r.x, r.y, r.w, r.h);
         drawText(ctx, `${i + 1} ${o.label}`, r.x + 3 * k, r.y + 2 * k, { scale: k, color: o.disabled ? '#605040' : (o.color ?? '#ffffff') });
@@ -263,14 +263,6 @@ export class Hud {
       }
     }
     if (c.footer) drawText(ctx, c.footer, w / 2, top + panelH - 9 * k, { align: 'center', scale: k, color: '#a09070' });
-  }
-
-  private hitChoiceAt(x: number, y: number): number {
-    for (let i = 0; i < this.optionRects.length; i++) {
-      const r = this.optionRects[i];
-      if (x >= r.x && x < r.x + r.w && y >= r.y && y < r.y + r.h) return i;
-    }
-    return -1;
   }
 
   /** Diegetic loading: a row of studio lights powering on one by one. */

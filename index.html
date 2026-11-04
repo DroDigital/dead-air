@@ -246,6 +246,84 @@
       .unlocks li.on {
         color: #c0ff90;
       }
+
+      /* The menus are the show's control cards: aged brass, warm paper and
+         restrained red on a dark studio ground. Keep the scene visible behind. */
+      :root {
+        --menu-ink: #f4e2ba;
+        --menu-gold: #e0ae43;
+        --menu-muted: #b49a72;
+        --menu-edge: #705025;
+      }
+      #menus {
+        padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right))
+          max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+        box-sizing: border-box;
+        background: repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.18) 0 2px, transparent 2px 4px), rgba(6, 2, 1, 0.58);
+      }
+      #menus .panel {
+        box-sizing: border-box;
+        width: min(100%, 420px);
+        min-width: 0;
+        max-height: 100%;
+        padding: 24px 28px;
+        color: var(--menu-ink);
+        background: linear-gradient(135deg, #21130b, #100905 55%, #1a0d07);
+        border: 2px solid var(--menu-gold);
+        box-shadow: inset 0 0 0 3px #271609, inset 0 0 0 4px #61401a, 0 0 0 4px #261408, 0 12px 50px #000;
+        scrollbar-color: #9c702c #1a0d07;
+      }
+      #menus .panel.wide { width: min(100%, 960px); }
+      #menus.page-settings .panel { width: min(100%, 640px); }
+      #menus .grid2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      #menus .grid2 label { min-width: 0; }
+      #menus input[type='range'] { width: min(120px, 45%); }
+      #menus .logo {
+        font-size: clamp(32px, 7vw, 56px);
+        letter-spacing: 0.08em;
+        line-height: 1.1;
+      }
+      #menus .logo span { margin-left: 0.25em; }
+      #menus .tag {
+        color: var(--menu-muted);
+        letter-spacing: 0.06em;
+        line-height: 1.5;
+        margin: 8px 0 20px;
+      }
+      #menus .col { gap: 7px; }
+      #menus button {
+        min-height: 40px;
+        border-color: var(--menu-edge);
+        background: linear-gradient(90deg, #33200f, #211308);
+        transition: background-color 120ms, border-color 120ms, color 120ms;
+      }
+      #menus button:hover, #menus button:focus-visible {
+        background: #5a3410;
+        border-color: #ffd65a;
+        box-shadow: inset 4px 0 #ffd65a;
+        color: #fff8e7;
+      }
+      #menus button:focus-visible, #menus input:focus-visible, #menus select:focus-visible {
+        outline: 2px solid #fff0b0;
+        outline-offset: 2px;
+      }
+      #menus input, #menus select { min-width: 0; max-width: 65%; box-sizing: border-box; }
+      #menus input[type='checkbox'] { accent-color: var(--menu-gold); }
+      #menus input[type='range'] { accent-color: var(--menu-gold); }
+      #menus .foot, #menus .small { color: var(--menu-muted); line-height: 1.5; }
+      #menus .foot { border-top: 1px solid #5a3a1a; padding-top: 12px; }
+      @media (max-width: 600px) {
+        #menus .panel { padding: 20px; }
+        #menus .grid2 { grid-template-columns: 1fr; }
+        #menus .row { flex-wrap: wrap; }
+        #menus .row button { flex: 1 1 auto; }
+        #menus label { flex-wrap: wrap; line-height: 1.5; }
+        #menus input, #menus select { max-width: 100%; }
+        .unlocks { columns: 1; }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        #menus button { transition: none; }
+      }
     </style>
   </head>
   <body>
