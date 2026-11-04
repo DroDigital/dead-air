@@ -2,6 +2,7 @@
  * DOM menus: title, new broadcast, settings, collection (the prop room), credits, pause,
  * end-of-run summary. Fully keyboard navigable (Tab/arrows/Enter) and mouse driven.
  */
+import type { Action } from './input';
 import sourceManifest from '../../assets/manifest.json';
 import runtimeIndex from '../assets/manifest.json';
 import { ARTIFACTS, LOCKED_ARTIFACTS } from '../content/artifacts';
@@ -37,7 +38,7 @@ export interface MenuCallbacks {
   artifactIcon(id: string): string | null;
 }
 
-type Page = 'title' | 'new' | 'settings' | 'collection' | 'credits' | 'pause' | 'summary' | null;
+type Page = 'title' | 'new' | 'settings' | 'collection' | 'credits' | 'pause' | 'abandon' | 'summary' | null;
 
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
 
@@ -73,6 +74,39 @@ export class Menus {
   showSummary(won: boolean, deadline: number, ratings: RatingsBreakdown, unlocks: Unlock[], canEndless: boolean): void {
     this.summary = { won, deadline, ratings, unlocks, canEndless };
     this.show('summary');
+  }
+
+  /** Route controller actions directly to native menu controls. */
+  action(a: Action): void {
+    const focusables = [...this.root.querySelectorAll<HTMLElement>('button:not([disabled]), input:not([disabled]), select:not([disabled]), details[data-lore] > summary')];
+    const active = document.activeElement as HTMLElement | null;
+    const i = focusables.indexOf(active as HTMLElement);
+    if (a.type === 'nav') {
+      const horizontal = a.dir === 'left' || a.dir === 'right';
+      const step = a.dir === 'left' || a.dir === 'up' ? -1 : 1;
+      if (horizontal && active instanceof HTMLInputElement && active.type === 'range') {
+        if (step < 0) active.stepDown(); else active.stepUp();
+        active.dispatchEvent(new Event('input', { bubbles: true }));
+      } else if (horizontal && active instanceof HTMLSelectElement) {
+        let next = active.selectedIndex + step;
+        while (next >= 0 && next < active.options.length && active.options[next].disabled) next += step;
+        if (next >= 0 && next < active.options.length) {
+          active.selectedIndex = next;
+          active.dispatchEvent(new Event('input', { bubbles: true }));
+          active.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+      } else {
+        focusables[(i + step + focusables.length) % focusables.length]?.focus();
+      }
+      this.cb.onUiSound('move');
+    } else if (a.type === 'confirm') {
+      if (active instanceof HTMLButtonElement || active instanceof HTMLInputElement && active.type === 'checkbox' || active?.tagName === 'SUMMARY') active.click();
+    } else if (a.type === 'back' || a.type === 'pause') {
+      if (this.page === 'pause') this.cb.onResume();
+      else if (this.back) this.show(this.back, this.back === 'pause' ? null : 'title');
+      else return;
+      this.cb.onUiSound('back');
+    }
   }
 
   private keys(e: KeyboardEvent): void {
@@ -183,6 +217,7 @@ export class Menus {
         </div>
         <div class="row">${this.btn('DONE', () => this.show(this.back ?? 'title', this.back === 'pause' ? null : 'title'))}</div>
         <p class="small">KEYS: ARROWS/WASD look · SPACE hold lever · ENTER deposit/confirm · 1-6 cards/artifacts/choices · F fast · ESC pause</p>
+        <p class="small">PAD: D-PAD/LEFT STICK look · A confirm · B back/sell · HOLD X spin · Y gamble · LB peek · RB fast · START pause · RIGHT STICK cursor · RT click</p>
       </div>`;
       queueMicrotask(() => {
         this.root.querySelectorAll<HTMLInputElement | HTMLSelectElement>('[data-k]').forEach((el) => {
@@ -242,9 +277,16 @@ export class Menus {
           ${this.btn('RESUME', () => this.cb.onResume())}
           ${this.btn('SETTINGS', () => this.show('settings', 'pause'))}
           ${this.btn('QUIT TO TITLE (SAVED)', () => this.cb.onQuitToTitle())}
-          ${this.btn('ABANDON BROADCAST', () => {
-            if (confirm('Abandon this broadcast? The run ends and counts as a loss.')) this.cb.onAbandon();
-          })}
+          ${this.btn('ABANDON BROADCAST', () => this.show('abandon', 'pause'))}
+        </div>
+      </div>`;
+    } else if (p === 'abandon') {
+      html = `<div class="panel">
+        <h2>ABANDON BROADCAST?</h2>
+        <p>The run ends and counts as a loss.</p>
+        <div class="col">
+          ${this.btn('KEEP BROADCASTING', () => this.show('pause'))}
+          ${this.btn('ABANDON BROADCAST', () => this.cb.onAbandon())}
         </div>
       </div>`;
     } else if (p === 'summary' && this.summary) {

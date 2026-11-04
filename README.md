@@ -45,6 +45,8 @@ You stay seated and look between four stations (**arrow keys / WASD**, mouse whe
 
 **F** toggles fast mode, **ESC** pauses. Everything is also clickable.
 
+A standard gamepad is supported: use the **D-pad / left stick** to look and navigate choices, **A / Cross** to confirm or deposit, **B / Circle** to go back or sell a selected artifact, and hold **X / Square** to charge the lever (release to spin). **Y / Triangle** offers Double or Nothing, **LB / L1** peeks while charging, **RB / R1** toggles fast mode, and **Start / Options** pauses. Move the scene cursor with the **right stick** and press **RT / R2** to click cards, artifacts, shop items, and services; click an artifact and then another slot to swap them. In menus, use the D-pad / left stick and A / Cross, and use left/right to adjust settings. Connect a controller and press a button if the browser has not detected it yet.
+
 **A run:** 8 Deadlines (Debt = round50(450 × 1.7^(d−1))), Sweeps at 4 and 8. Pick a Broadcast Package (Short 6 spins +4 Tokens / Standard 8 +2 / Marathon 11 +0 and a temporary Bankrupt). When spins run out the Tray auto-deposits and the Vault pays. Surplus can become Tokens ($50 each) or earn interest. Then the Prize Cabinet opens, and the phone may ring.
 
 **Combos:** ECHO (same type twice, ×2), HAT TRICK (3 cash in a row, +3 Tokens), NEIGHBORS (within 2° of a boundary, both wedges at 50%), DEAD AIR (Bankrupt with Tray > Debt — the Producer calls).
