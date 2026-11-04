@@ -101,7 +101,10 @@ export class App {
       onContinue: () => void this.continueRun(),
       onNewRun: (c) => void this.newRun(c.seed, c.stake, c.startWheel),
       onResume: () => this.resume(),
-      onAbandon: () => this.abandon(),
+      onAbandon: () => {
+        this.menus.show('pause');
+        this.abandon();
+      },
       onQuitToTitle: () => this.quitToTitle(),
       onSettings: (s) => this.applySettings(s),
       onEndlessContinue: () => this.endlessContinue(),
@@ -118,8 +121,14 @@ export class App {
       hasSave: () => this.runSlot.exists() && !!this.runSlot.load(),
       artifactIcon: (id) => this.artifactIcon(id),
     });
+    let audioStarted = false;
     const firstGesture = () => {
+      if (audioStarted) return;
       void this.mixer.resume().then(() => {
+        if (audioStarted || !this.mixer.running) return;
+        audioStarted = true;
+        window.removeEventListener('pointerdown', firstGesture);
+        window.removeEventListener('keydown', firstGesture);
         if (!this.game) {
           this.music.setTrack('menu');
           this.music.start();
@@ -132,12 +141,17 @@ export class App {
           const t = HOST_LINES.title[Math.floor(Math.random() * HOST_LINES.title.length)];
           setTimeout(() => !this.game && this.vo.play('host', t, { wear: 0.25, glitch: 0.1 }), 600);
         }
-      });
-      window.removeEventListener('pointerdown', firstGesture);
-      window.removeEventListener('keydown', firstGesture);
+      }).catch(() => { /* A later user gesture can retry audio. */ });
     };
     window.addEventListener('pointerdown', firstGesture);
     window.addEventListener('keydown', firstGesture);
+    this.input.onGamepadAction = (a) => {
+      firstGesture();
+      if (this.menus.open) {
+        if (a.type === 'pause' && this.menus.page === 'pause') this.resume();
+        else this.menus.action(a);
+      } else this.input.push(a);
+    };
 
     // Diegetic loading screen: a 2D pixel canvas (studio lights powering on one by one).
     const lc = document.createElement('canvas');
@@ -1814,6 +1828,7 @@ export class App {
     st.post.roll = Math.max(g?.run.phase === 'PhoneCall' && !this.phoneAnswered ? 0.7 : 0, st.post.roll - dt * 0.4);
     if (this.settings.reducedFlashing) st.post.roll = Math.min(st.post.roll, 0.25);
     st.update(dt, this.time, this.speed);
+    this.input.pollGamepad(dt, st.post.width, st.post.height);
     this.input.flush();
     this.hud.update(dt);
 
