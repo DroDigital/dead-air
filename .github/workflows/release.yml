@@ -1,0 +1,218 @@
+# Builds DEAD AIR for macOS, Windows, Linux and the web, attaches the installers to a GitHub
+# Release, and pushes every build to itch.io with butler.
+#
+#   Push a tag  v1.2.3   → test, build all platforms, GitHub Release v1.2.3, itch.io push
+#   Run manually         → test + build; itch.io push only if "push_to_itch" is ticked
+#
+# itch.io setup (once): repository Settings → Secrets and variables → Actions
+#   secret    BUTLER_API_KEY   an API key from https://itch.io/user/settings/api-keys
+#   variable  ITCH_GAME        <itch-username>/<game-slug>, e.g. drodigital/dead-air
+# Without both, the itch.io job is skipped and everything else still runs.
+#
+# itch channels: windows, mac, linux (desktop builds, installable from the itch app) and html5
+# (the browser version). itch tags the platforms from the channel names; tick "This file will
+# be played in the browser" on the html5 upload once in the itch dashboard.
+
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      push_to_itch:
+        description: Push this build to itch.io
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  NODE_VERSION: '22'
+
+jobs:
+  version:
+    name: Version
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.v.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: v
+        shell: bash
+        run: |
+          if [[ "$GITHUB_REF_TYPE" == "tag" ]]; then
+            version="${GITHUB_REF_NAME#v}"
+          else
+            version="$(node -p "require('./package.json').version")-build.${GITHUB_RUN_NUMBER}"
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "Version: $version"
+
+  web:
+    name: Test + web build
+    needs: version
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci
+        env:
+          ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
+      - run: npm test
+      - run: npm run build
+      - name: Package web build
+        run: cd dist && zip -qr "../dead-air-${{ needs.version.outputs.version }}-web.zip" .
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-web
+          path: dead-air-*-web.zip
+          if-no-files-found: error
+      # tar keeps file modes; itch.io gets this directory as the html5 channel.
+      - run: tar -czf itch-html5.tgz -C dist .
+      - uses: actions/upload-artifact@v4
+        with:
+          name: itch-html5
+          path: itch-html5.tgz
+          if-no-files-found: error
+
+  desktop:
+    name: Desktop (${{ matrix.name }})
+    needs: [version, web]
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: macOS
+            os: macos-latest
+            builder: --mac
+            unpacked: release/mac-universal release/mac-arm64 release/mac
+            channel: mac
+          - name: Windows
+            os: windows-latest
+            builder: --win
+            unpacked: release/win-unpacked
+            channel: windows
+          - name: Linux
+            os: ubuntu-latest
+            builder: --linux
+            unpacked: release/linux-unpacked
+            channel: linux
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - name: Package (electron-builder)
+        shell: bash
+        run: npx electron-builder ${{ matrix.builder }} --publish never -c.extraMetadata.version="${{ needs.version.outputs.version }}"
+        env:
+          # Optional macOS Developer ID signing; see the note in electron-builder.yml.
+          CSC_LINK: ${{ secrets.MAC_CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.MAC_CSC_KEY_PASSWORD }}
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Collect installers
+        shell: bash
+        run: |
+          mkdir -p out
+          shopt -s nullglob
+          for f in release/*.{dmg,zip,exe,AppImage,deb,tar.gz}; do cp "$f" out/; done
+          ls -la out
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-${{ matrix.channel }}
+          path: out/*
+          if-no-files-found: error
+      # The unpacked app (not the installer) goes to itch, so the itch app can install and
+      # patch it. tar keeps the executable bits and the .app bundle's symlinks intact.
+      - name: Package unpacked app for itch.io
+        shell: bash
+        run: |
+          for dir in ${{ matrix.unpacked }}; do
+            if [[ -d "$dir" ]]; then
+              ls -la "$dir"
+              tar -czf itch-${{ matrix.channel }}.tgz -C "$dir" .
+              exit 0
+            fi
+          done
+          echo "::error::No unpacked app found in: ${{ matrix.unpacked }}"; ls -la release; exit 1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: itch-${{ matrix.channel }}
+          path: itch-${{ matrix.channel }}.tgz
+          if-no-files-found: error
+
+  github-release:
+    name: GitHub Release
+    if: github.ref_type == 'tag'
+    needs: [version, web, desktop]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: release-*
+          path: out
+          merge-multiple: true
+      - run: ls -la out
+      - uses: softprops/action-gh-release@v2
+        with:
+          name: DEAD AIR ${{ needs.version.outputs.version }}
+          files: out/*
+          generate_release_notes: true
+          prerelease: ${{ contains(github.ref_name, '-') }}
+
+  itch:
+    name: itch.io (butler)
+    if: github.ref_type == 'tag' || inputs.push_to_itch
+    needs: [version, web, desktop]
+    runs-on: ubuntu-latest
+    env:
+      BUTLER_API_KEY: ${{ secrets.BUTLER_API_KEY }}
+      ITCH_GAME: ${{ vars.ITCH_GAME }}
+      VERSION: ${{ needs.version.outputs.version }}
+    steps:
+      - name: Check itch.io settings
+        id: cfg
+        run: |
+          if [[ -z "$BUTLER_API_KEY" || -z "$ITCH_GAME" ]]; then
+            echo "::warning::itch.io push skipped: set the BUTLER_API_KEY secret and the ITCH_GAME variable (user/game)."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Install butler
+        if: steps.cfg.outputs.ready == 'true'
+        run: |
+          curl -fsSL -o butler.zip https://broth.itch.zone/butler/linux-amd64/LATEST/archive/default
+          mkdir -p "$HOME/butler" && unzip -q butler.zip -d "$HOME/butler"
+          chmod +x "$HOME/butler/butler"
+          echo "$HOME/butler" >> "$GITHUB_PATH"
+          "$HOME/butler/butler" -V
+      - uses: actions/download-artifact@v4
+        if: steps.cfg.outputs.ready == 'true'
+        with:
+          pattern: itch-*
+          path: itch
+          merge-multiple: true
+      - name: Push channels
+        if: steps.cfg.outputs.ready == 'true'
+        run: |
+          for channel in windows mac linux html5; do
+            mkdir -p "build/$channel"
+            tar -xzf "itch/itch-$channel.tgz" -C "build/$channel"
+            butler push "build/$channel" "$ITCH_GAME:$channel" --userversion "$VERSION"
+          done
+          butler status "$ITCH_GAME"
