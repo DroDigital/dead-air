@@ -1,0 +1,1564 @@
+{
+ "voices": {
+  "host": {
+   "id": "1ZXEoWxMa1iha6a57UoM",
+   "name": "DEAD AIR Host"
+  },
+  "producer": {
+   "id": "ncChMB7ZB1vnZEjg7kvI",
+   "name": "DEAD AIR Producer"
+  },
+  "secret": {
+   "id": "lbIDPbGALZZqUPPfyITw",
+   "name": "DEAD AIR Other Line"
+  },
+  "archive": {
+   "id": "yHofioyxMKXVSF6qJKEZ",
+   "name": "DEAD AIR Archivist"
+  }
+ },
+ "batches": [
+  {
+   "id": "host1",
+   "speaker": "host",
+   "lines": [
+    "m4mcvm",
+    "1fdd0e8",
+    "1g5vsdn",
+    "qf1umo",
+    "19k9tk3",
+    "17z9ujh",
+    "1ofdhek",
+    "4do8xt",
+    "ue23v1",
+    "187yytr",
+    "stliyi",
+    "4bam64"
+   ],
+   "prompt": "[excited] Gooood evening, contestant! You are LIVE! [long pause] [excited] Welcome back to the only show still on the air! [long pause] [excited] Our studio audience is dying to meet you. Some of them already have! [long pause] [excited] You look wonderful. The restraints really bring out your eyes! [long pause] [excited] Remember: the Network loves you. The Network is listening. [long pause] [excited] Lights! Camera! Debt! [long pause] [mischievously] Oooh! So close to having money! [long pause] [laughs] BANKRUPT! Don't worry, it's only everything! [long pause] [sarcastic] The tray is empty, but your heart is full! Of what, we can't say! [long pause] [giggles] [laughs] Ha-ha! The wheel giveth, and the wheel… [short pause] mostly taketh! [long pause] [mischievously] Tough break! Our insurance doesn't cover breaks! [long pause] [laughs] Let it ride, they said! Who said that? I said that!"
+  },
+  {
+   "id": "host2",
+   "speaker": "host",
+   "lines": [
+    "18wgz9m",
+    "1sp8sb",
+    "trxmez",
+    "zspah2",
+    "iv8il",
+    "qipdl8",
+    "167gz1k",
+    "y2ijdj",
+    "1xyi52n",
+    "rqrm5x",
+    "1pjwkl4"
+   ],
+   "prompt": "[sarcastic] Bankrupt! Smile for camera three! Camera three is the one with the teeth! [long pause] [giggles] That's showbusiness, baby! Mostly the business part! [long pause] [mischievously] Easy come, easy go! Mostly go! [long pause] [laughs] The audience groans with you! Collectively! Forever! [long pause] [shouting] [excited] JACKPOT! Somebody ring the bell! Somebody find the bell! [long pause] [shouting] [excited] A thousand dollars! The Network is SO proud of you! [long pause] [shouting] [excited] JACKPOT! [singing] Ding ding ding! That noise is coming from inside my head! [long pause] [shouting] [excited] You hit the sliver! Nobody hits the sliver! The last one who hit the sliver is still here! [long pause] [shouting] [excited] Confetti! We are out of confetti! Imagine confetti! [long pause] [excited] Let it ride! Let it RIDE! Let it ride all the way down! [long pause] [excited] You're on fire! Not literally! The sprinklers don't work!"
+  },
+  {
+   "id": "host3",
+   "speaker": "host",
+   "lines": [
+    "13odp1g",
+    "1a0ra5i",
+    "q79n0h",
+    "1xieutv",
+    "dijob1",
+    "1ilb3a6",
+    "15lfv2v",
+    "khnvr5",
+    "13sbj2q",
+    "11qq65m"
+   ],
+   "prompt": "[excited] Ooh, the marquee is getting hot! So is the carpet, for some reason! [long pause] [excited] Don't stop now! Stopping is for people with nothing to lose! [long pause] [excited] What a streak! I haven't seen one like this since the incident! [long pause] [excited] The tray is glowing! Is that normal? It is now! [long pause] [excited] Riding high! The higher you ride, the further the floor! [long pause] [excited] The audience is on the edge of their seats! They're bolted there! [long pause] [cheerfully] Safe and sound in the vault! Well — sound! [long pause] [cheerfully] Banking it! How responsible! How boring! I love it! [long pause] [cheerfully] Into the vault it goes! The vault says thank you! The vault never says thank you! [long pause] [cheerfully] A cautious contestant! Our sponsors hate this one simple trick!"
+  },
+  {
+   "id": "host4",
+   "speaker": "host",
+   "lines": [
+    "27bq12",
+    "1psg4k2",
+    "1xvdnjx",
+    "19pbl2w",
+    "vc8umo",
+    "1ggnmov",
+    "9hhsor",
+    "1bx2mb4",
+    "1gnv6g0",
+    "c72am5",
+    "1ovxu1j",
+    "4km1t5"
+   ],
+   "prompt": "[cheerfully] Deposited! Your streak goes back to one! Like a little baby! [long pause] [cheerfully] [shouting] Ka-THUNK! Music to my speaker grille! [long pause] [excited] Paid in full! The Network will see you again… [short pause] very soon! [long pause] [excited] Another deadline survived! You get to keep your floor! [long pause] [excited] Debt paid! Now it's bigger! That's how growth works! [long pause] [excited] The Network thanks you for your continued participation! [long pause] [excited] Payment received! Interest has been… [short pause] invented! [long pause] [excited] You did it! You get to do it again! [long pause] [sarcastic] [gasps] Oh no. Oh no no no. Well — goodnight, everybody! [long pause] [sad] Short! You're short! The floor isn't! [long pause] [dramatically] That's our show! Thank you for playing! Mind the gap! [long pause] [sarcastic] The Network is disappointed. The Network has a trapdoor."
+  },
+  {
+   "id": "host5",
+   "speaker": "host",
+   "lines": [
+    "1ghn4za",
+    "j4v2t3",
+    "2ww6o1",
+    "1f966z5",
+    "qan77m",
+    "4lvsfq",
+    "6p6dw0",
+    "2ffyh4",
+    "1bz1zt9",
+    "127xo6m",
+    "14d6kwp",
+    "ja93e0"
+   ],
+   "prompt": "[sad] We'll be right back! You won't! [long pause] [mischievously] Take your time! We have all the time in the world! We have nothing BUT time! [long pause] [whispers] Still there? Blink twice if you can blink! [long pause] [sighs] The lever won't pull itself! I've asked it! [long pause] [curious] Dead air is very expensive, contestant! [long pause] [mischievously] [whispers] Psst. The wheel is lonely. [long pause] [whispers] Spin, spin, spin! Spinning is what we do here! [long pause] [sighs] I'll just stand here! Smiling! It's what I'm for! [long pause] [curious] Our viewers at home are on the edge of their graves! [long pause] [curious] Ooh, a prize from the prop room! Mind the dust! Mind the teeth! [long pause] [whispers] What a lovely trinket! It belonged to someone lovely! [long pause] [excited] Put it on the shelf! It likes the shelf! It told me!"
+  },
+  {
+   "id": "host6",
+   "speaker": "host",
+   "lines": [
+    "1wvam41",
+    "y1r53f",
+    "1q53b8k",
+    "18t8l27",
+    "1b458ao",
+    "2qmai1",
+    "22vhqy",
+    "l603tg",
+    "17jjn46",
+    "1nmxad6",
+    "1vwkf59",
+    "1f03mq6"
+   ],
+   "prompt": "[curious] Every artifact tells a story! Don't listen to it! [long pause] [whispers] Collectible! Cursed! Collectible AND cursed! [long pause] [excited] COMBO! The marquee is so happy it might short out! [long pause] [excited] Look at those numbers go! Up! Mostly up! [long pause] [excited] A combo! I felt that one in my vacuum tubes! [long pause] [excited] ECHO-echo-echo! That's a little joke! It's also a combo! [long pause] [excited] Hat trick! Where did you get that hat! Give it back! [long pause] [surprised] Oh! That's the Producer! You should take it! You must take it! [long pause] [surprised] Ring ring! It might be for you! It is for you! [long pause] [surprised] The phone! Nobody has called that phone since the war! [long pause] [surprised] Ooh, a call from upstairs! There is no upstairs! [long pause] [warmly] Welcome to the Prize Cabinet! Everything must go! Everyone must go!"
+  },
+  {
+   "id": "host7",
+   "speaker": "host",
+   "lines": [
+    "pk6jnz",
+    "1wsh3cw",
+    "1kblsxe",
+    "1fj8n5u",
+    "1rj40md",
+    "i81mwl",
+    "1ebzzgp",
+    "11xlni0",
+    "o70jjv",
+    "1g1t49r",
+    "1yda0vc",
+    "qfa27z"
+   ],
+   "prompt": "[warmly] Turn the crank! New prizes! Old prizes, rotated! [long pause] [warmly] Tokens accepted! Souls accepted! Mostly tokens! [long pause] [warmly] Window shopping is free! Breaking the window is not! [long pause] [shouting] [excited] LOOK at that tray! I'd faint if I had a body! [long pause] [shouting] [excited] Big money! BIG MONEY! No whammies! What is a whammy! [long pause] [shouting] [excited] Oh, the Network is going to LOVE this rerun! [long pause] [shouting] [excited] You're rich! For a moment! Enjoy the moment! [long pause] [laughs] A dud! Like my old co-host! [long pause] [sarcastic] Nothing! Nothing is still something! No it isn't! [long pause] [chuckles] Ha! The wheel is shy today! [long pause] [laughs] Dud! Don't worry, it's not personal! It's a little personal! [long pause] [mischievously] The tax man cometh! He has a key to the vault! Why does he have a key!"
+  },
+  {
+   "id": "host8",
+   "speaker": "host",
+   "lines": [
+    "6n808w",
+    "1e9p2pz",
+    "1b0w4lt",
+    "10zykj3",
+    "nmod3n",
+    "10gsgts",
+    "1nld2vi",
+    "1lo2p7a",
+    "1xmg1r",
+    "1v45b6i",
+    "1p02xnh"
+   ],
+   "prompt": "[mischievously] Taxes! The only certainty! Well, that and the floor! [long pause] [mischievously] A little off the top for the Network! And the sides! [long pause] [excited] You paid it ALL! Eight deadlines! You're FREE! [laughs] Ha-ha! Free to keep playing! [long pause] [excited] A winner! A real winner! The first since — well! The first! [long pause] [excited] The Network thanks you! The Network will now renew your contract! [long pause] [cheerfully] Choose your broadcast! Short and sweet, or long and sour! [long pause] [cheerfully] Pick a package! Any package! Not that one! Okay, that one! [long pause] [cheerfully] Marathon! The ratings love a marathon! The contestants less so! [long pause] [dramatically] It's SWEEPS WEEK! New rules! Same floor! [long pause] [dramatically] Sweeps! The ratings are watching! So is something else! [long pause] [dramatically] Special episode tonight! Very special! Extra special! Different!"
+  },
+  {
+   "id": "host9",
+   "speaker": "host",
+   "lines": [
+    "1s9w43v",
+    "8uxdh2",
+    "aooy83",
+    "v3d3nq",
+    "uopib",
+    "8aic9v",
+    "1nth26o",
+    "1m96nq6",
+    "d5hty6",
+    "1x78oaz"
+   ],
+   "prompt": "[curious] Mystery! What could it be! Even I don't know! I never know! [long pause] [curious] The question mark spins! The question mark always spins! [long pause] [curious] Ooh, mystery! My favourite flavour of dread! [long pause] [dramatically] Last spin of the night! Make it count! Make it COUNT! [long pause] [dramatically] One spin left! The Network is leaning in! I can hear it breathing! [long pause] [dramatically] Final spin! Whatever happens, I will remember you fondly! [short pause] Briefly! [long pause] [dramatically] This is it! The last one! No pressure! Some pressure! All the pressure! [long pause] [excited] Scratch it! Scratch it! Underneath is a surprise! Underneath is always a surprise! [long pause] [excited] Ooh, a scratcher! Don't scratch too deep! Things live in there! [long pause] [excited] Scratch, scratch, scratch! Like the noises in the walls!"
+  },
+  {
+   "id": "host10",
+   "speaker": "host",
+   "lines": [
+    "1ceajd8",
+    "1m0zid9",
+    "18h1j4t",
+    "15retjg",
+    "nb5bi5",
+    "p2g7bq",
+    "12b7qad",
+    "l0wuf1",
+    "10flvol",
+    "j8cx5h"
+   ],
+   "prompt": "[cheerfully] Sold! It will be missed! It will find its way back! They always do! [long pause] [cheerfully] Goodbye, little trinket! Don't look at it! Don't let it see you go! [long pause] [cheerfully] A sale! The prop room thanks you! The prop room is hungry again! [long pause] [nervous] A deal with the Producer! How exciting! How binding! [long pause] [nervous] You shook on it! Well — you would have! If you could move your arms! [long pause] [nervous] Ooh, the fine print is moving! That means it likes you! [long pause] [surprised] You hung up on the Producer! Brave! Brave and brief! [long pause] [surprised] Click! Oh, he's going to remember that! He remembers everything! [long pause] [surprised] No deal! The Network respects your choice! The Network writes it down! [long pause] [excited] ENDLESS! The show goes on! The show ALWAYS goes on!"
+  },
+  {
+   "id": "host11",
+   "speaker": "host",
+   "lines": [
+    "1jysofx",
+    "ytn5yw",
+    "1xypy7n",
+    "101mc1r",
+    "dx6rzp",
+    "9gmohr",
+    "2ijf54",
+    "1m6nyb3",
+    "x8cm6k",
+    "1syt8nk"
+   ],
+   "prompt": "[excited] Overtime! Nobody has ever gone into overtime! Nobody has ever come back from it! [long pause] [excited] You want MORE? Oh, the Network is blushing! Static, mostly! [long pause] [warmly] And that's our show! Same time tomorrow! Different contestant! [long pause] [sad] Goodnight, everybody! Goodnight, contestant! Goodnight, floor! [long pause] [mischievously] We'll be right back after these messages! You won't! [long pause] [surprised] Right on the line! The wheel couldn't decide! Neither could I! [long pause] [surprised] Neighbors! Half of this, half of that! Like my face! [long pause] [surprised] Splitting the difference! The flapper is sweating! Flappers can't sweat! [long pause] [shouting] [excited] HAT TRICK! Three in a row! Somebody give this contestant a hat! [long pause] [shouting] [excited] Three cash in a row! The tokens! The tokens are raining! Indoors!"
+  },
+  {
+   "id": "host12",
+   "speaker": "host",
+   "lines": [
+    "1jmn2tz",
+    "1d2s5lb",
+    "f0so3b",
+    "ruyuk6",
+    "d5rirm",
+    "1j1h6bf",
+    "svobiv",
+    "7c60ph",
+    "opg8uf",
+    "1p5ynyw"
+   ],
+   "prompt": "[dramatically] Dead Air! Starring you! Live, from the only studio left! [long pause] [dramatically] Stay tuned! You're next! You were always next! [long pause] [mischievously] Double or nothing! The whole tray! Do you feel lucky? Nobody in here feels lucky! [long pause] [mischievously] Feeling brave? Double it! Or lose it! I'm fine either way! I'm always fine! [long pause] [shouting] [excited] DOUBLE! You doubled it! The Network is furious! Delighted! Furiously delighted! [long pause] [shouting] [excited] It came up money! Of course it did! It always does! Until it doesn't! [long pause] [laughs] NOTHING! It came up nothing! The very best kind of nothing! [long pause] [laughs] Oh, it's gone! All of it! Doubled into nothing! That's showbusiness! [long pause] [dramatically] Deadline one! A little debt, a big wheel, and you! What a night! [long pause] [dramatically] Deadline two! The Network is pleased! The Network wants more!"
+  },
+  {
+   "id": "host13",
+   "speaker": "host",
+   "lines": [
+    "1805xq5",
+    "12secd0",
+    "1k2it1v",
+    "e8yzlo",
+    "1wu47fe",
+    "192wdti"
+   ],
+   "prompt": "[dramatically] Deadline three! The debt is growing! Grow with it! [long pause] [dramatically] Deadline four! It's sweeps week! Smile! Your face is in every living room left! [long pause] [dramatically] Deadline five! Halfway there! Halfway where! Don't ask! [long pause] [dramatically] Deadline six! The audience has stopped breathing! They've stopped needing to! [long pause] [dramatically] [nervous] Deadline seven! So close! The floor can taste it! [long pause] [dramatically] [nervous] Deadline eight! The final deadline! Sweeps again! Win this and you're FREE! [laughs] Ha-ha! [short pause] [mischievously] Probably!"
+  },
+  {
+   "id": "producer1",
+   "speaker": "producer",
+   "lines": [
+    "1mtf5xi",
+    "pxm5k6",
+    "ovb4hv",
+    "15pdkue",
+    "2q22h0",
+    "1ptuw4j",
+    "kayr83",
+    "xoc1yc",
+    "z14yo2",
+    "1i783ro"
+   ],
+   "prompt": "[raspy] Producer here. Big fan. Bigger offer. [long pause] [chuckles] Don't hang up. Nobody hangs up on me. [darkly amused] Well. Some people. Once. [long pause] [softly] Good news! I have two deals and only one of them is a trap. [short pause] Probably. [long pause] [sarcastic] You're doing great. The numbers are... [short pause] numbers. Let's talk. [long pause] [raspy] [slowly] Hello? Hello. I can hear you breathing, it's fine, everybody breathes. [long pause] [raspy] The Network asked me to check in. The Network is very caring. [long pause] [chuckles] DEAD AIR. Do you know what DEAD AIR costs us? I do. Let me help. [long pause] [softly] Wow. Wow wow wow. Okay. Okay. I have an idea. Two ideas. [long pause] [sarcastic] That's going in the blooper reel. Unless... [short pause] you and I come to an arrangement. [long pause] [chuckles] Pleasure doing business. The Network thanks you."
+  },
+  {
+   "id": "producer2",
+   "speaker": "producer",
+   "lines": [
+    "13jddat",
+    "erf7q3",
+    "tlmsm3",
+    "5zryp7",
+    "867c7r",
+    "8bfr5o",
+    "sptc0b",
+    "12etsvq"
+   ],
+   "prompt": "[chuckles] Smart. Very smart. I'll have legal send over the rest of you. [long pause] [chuckles] Done. Don't read the contract. Nobody reads the contract. [long pause] [angry] [raspy] Fine. Fine! I'll remember this. [long pause] [angry] [raspy] You're hanging up on me? On ME? Enjoy the floor. [long pause] [angry] [raspy] Okay. Okay. We'll talk again. We always talk again. [long pause] [raspy] [slowly] Eight hundred dollars, friend. Cash. Today. All I need is one more little black slice on that wheel. Tiny. You'll hardly see it. [long pause] [raspy] Those Duds are embarrassing us on air. I'll have them repainted as cash tonight. The paint crew works slow, so you'll lose a little time. [long pause] [chuckles] I've got something in the prop room with your name on it. Literally — we engraved it years ago. The Network will want a little extra, of course."
+  },
+  {
+   "id": "producer3",
+   "speaker": "producer",
+   "lines": [
+    "k7oqki",
+    "ps9v27",
+    "13dgg6o",
+    "103bmr1",
+    "q2o698",
+    "1p1dite"
+   ],
+   "prompt": "[softly] Six shiny Tokens. I just need you to sign here, acknowledging the Network's right to a modest... [short pause] administrative slice. [long pause] [sarcastic] Gold leaf on every dollar sign. Gorgeous. Very telegenic. Of course, the black slices will want to feel included. [long pause] [raspy] [slowly] Two Jackpots. Imagine it. I'll just need the trinket on the far left of your shelf. Call it a deposit. A permanent one. [long pause] [raspy] Overtime! Three extra spins next show. The union won't like it. The Network will bill you for the union. [long pause] [chuckles] I'll double whatever's in that safe of yours. Up to fifteen hundred. All I ask is your little Token collection. You weren't using them. Were you? [long pause] [softly] Free scratch cards! As many as your pockets hold. They came from a wedge we had to retire. It still moves around at night."
+  },
+  {
+   "id": "producer4",
+   "speaker": "producer",
+   "lines": [
+    "icblix",
+    "1a6g4o1",
+    "h49tjj",
+    "3uulhm",
+    "jumjxu",
+    "1s17tam"
+   ],
+   "prompt": "[sarcastic] I can take a Bankrupt off your wheel. Just like that. The inner ring will need something in return. Nothing. Literally, a nothing. [long pause] [raspy] [slowly] A ×3 on the little ring. Very exciting for the viewers. They also enjoy a Bankrupt. They enjoy those most of all. [long pause] [raspy] Fifteen hundred dollars. Right now. The next payment goes up a bit, but that's next week's problem, and next week is a long way off for someone in your chair. [long pause] [chuckles] Your Jackpot is so thin. Practically a rumour. Three hundred dollars and our carpenter will fatten it right up. [long pause] [softly] A gift. No strings. Well — some strings. They're attached to the gift, not to you. Mostly. [long pause] [sarcastic] I know a guy with a saw. Every Bankrupt, five degrees thinner. He charges in Tokens. Four of them. He likes the way they jingle."
+  },
+  {
+   "id": "producer5",
+   "speaker": "producer",
+   "lines": [
+    "yjei7z",
+    "lcmfzc",
+    "xt57ac",
+    "601vjr",
+    "1eldyi4",
+    "upfut"
+   ],
+   "prompt": "[raspy] [slowly] An Overtime wedge, installed tonight. The installers will leave a Tax wedge behind. They always leave something behind. [long pause] [raspy] Your small bills are boring the audience. Let's make them... [short pause] interesting. [long pause] [chuckles] Twenty-five more dollars on every Cash wedge. Forever. For that kind of generosity I'll need one more black slice. Forever. [long pause] [softly] The Prize Cabinet owes me a favour. Three of them. They cost you two hundred dollars — the favours, not the cabinet. [long pause] [sarcastic] Insurance! Every contestant should have it. Two policies, two hundred fifty dollars. The fine print is in a language we invented. [long pause] [raspy] [slowly] Tokens are just plastic, friend. I'll buy every one off you at a hundred dollars apiece. Cash talks. Plastic just clacks."
+  },
+  {
+   "id": "producer6",
+   "speaker": "producer",
+   "lines": [
+    "s6bk2f",
+    "fdciwr",
+    "1pzo7p0",
+    "axwmbk",
+    "1j7bwfh",
+    "1cv9rak"
+   ],
+   "prompt": "[raspy] Two more spins next show. Three Tokens. That's the whole deal. I'm being nice tonight. Don't get used to it. [long pause] [chuckles] That little zero on the inner ring. I can make it disappear. Time disappears with it — three spins' worth. [long pause] [softly] Two new wedges: one that steals from you, and one that saves you from yourself. Balance. The Network loves balance. [long pause] [sarcastic] Repetition is comedy. ECHOs pay triple, for the rest of your contract. The Network will charge a modest syndication fee. [long pause] [raspy] [slowly] Why start cold? Every Deadline, your Streak will begin at ×1.5. The Bankrupts will hear about this and get jealous. Three degrees jealous. [long pause] [raspy] I know people at the Revenue. Two hundred dollars and your Vault becomes... [short pause] invisible to them. Forever. Forever is a long time in here."
+  },
+  {
+   "id": "producer7",
+   "speaker": "producer",
+   "lines": [
+    "qv50gj",
+    "1ielpso",
+    "gizhrz",
+    "1eovliz",
+    "m99ce6"
+   ],
+   "prompt": "[chuckles] Let me take one of your little treasures off your hands. Randomly. In exchange, a rare one. Rarely does anyone say no. Rarely does anyone get to. [long pause] [softly] Two Vault Keys. Hang them on the safe. Nothing bad can happen twice. The Network will add a little something to the bill for the locksmith. [long pause] [sarcastic] A Charge wedge, freshly wired. Nobody's been electrocuted in weeks. You'll just need to give up a respin. They're the same colour, nobody will notice. [long pause] [raspy] [slowly] Ooh. OOH. That was a lot of money. Listen — the audience didn't see it. I can put half of it back in your Vault. The Network will want this payment a touch heavier. [long pause] [raspy] Don't you dare leave the chair. Three more spins, right now, on the house. The house will also be adding a Bankrupt. The house is like that."
+  },
+  {
+   "id": "producer8",
+   "speaker": "producer",
+   "lines": [
+    "10dep7b"
+   ],
+   "prompt": "[chuckles] Money's gone, but memories are forever. I'll turn that lovely memory into Tokens. One for every hundred you lost. Keep your chin up. Keep your chin."
+  },
+  {
+   "id": "secret1",
+   "speaker": "secret",
+   "lines": [
+    "1rjrv65",
+    "131nzvf",
+    "kvnlb1",
+    "n3dufs",
+    "hylgpp"
+   ],
+   "prompt": "[whispers] [nervous] Don't talk. Just listen. I'm not the Producer, and this line isn't here. [long pause] [whispers] Don't thank me. Just keep spinning. Something underneath you just came loose. [long pause] [whispers] [trembling voice] [whispers] Don't say my name. They'll hear. I sat in that chair before you. I know where the Network keeps its ledger. I can tear out your next page — but they'll take your things. Everything on the shelf. [long pause] [whispers] [trembling voice] [exhales] The trapdoor has a lever under the chair. Left of the bolt. I found it too late. Take it. And take my winnings — I won't need them where I am. [long pause] [whispers] [trembling voice] [breathless] Cut the feed. The black slices only work when the cameras are rolling. Turn them into dead air. The host will stop smiling. Let him."
+  },
+  {
+   "id": "secret2",
+   "speaker": "secret",
+   "lines": [
+    "bljdgt"
+   ],
+   "prompt": "[whispers] [trembling voice] [pause] You want to know what the Network is? Pick up the cards on the floor by the camera. Read them in order. Here — for your trouble."
+  },
+  {
+   "id": "archive1",
+   "speaker": "archive",
+   "lines": [
+    "jtqxwq",
+    "1qc1p1q",
+    "15r8rmt",
+    "7qt3iv"
+   ],
+   "prompt": "[tired] [slowly] CALL TIME 6:00 PM. CONTESTANT: TBD. HOST: CONFIRMED. AUDIENCE: CONFIRMED (DO NOT FEED). WHEEL: OILED. FLOOR: TESTED. [long pause] [tired] [slowly] To all staff — our numbers are flat. We need more tension. Effective immediately, the trapdoor is live. Nobody needs to know it was ever not live. — Programming [long pause] [tired] [slowly] The Talent agrees to remain cheerful in perpetuity. \"Perpetuity\" is defined as the period beginning on the signing date and ending never. The Talent has initialled every page with a thumbprint. The Talent did not have thumbs at the time. [long pause] [tired] [slowly] Please remain seated for the duration of the broadcast. The duration of the broadcast has been extended. Please remain seated."
+  }
+ ],
+ "lines": [
+  {
+   "id": "m4mcvm",
+   "speaker": "host",
+   "text": "Gooood evening, contestant! You are LIVE!",
+   "tag": "[excited]"
+  },
+  {
+   "id": "1fdd0e8",
+   "speaker": "host",
+   "text": "Welcome back to the only show still on the air!",
+   "tag": "[excited]"
+  },
+  {
+   "id": "1g5vsdn",
+   "speaker": "host",
+   "text": "Our studio audience is dying to meet you. Some of them already have!",
+   "tag": "[excited]"
+  },
+  {
+   "id": "qf1umo",
+   "speaker": "host",
+   "text": "You look wonderful. The restraints really bring out your eyes!",
+   "tag": "[excited]"
+  },
+  {
+   "id": "19k9tk3",
+   "speaker": "host",
+   "text": "Remember: the Network loves you. The Network is listening.",
+   "tag": "[excited]"
+  },
+  {
+   "id": "17z9ujh",
+   "speaker": "host",
+   "text": "Lights! Camera! Debt!",
+   "tag": "[excited]"
+  },
+  {
+   "id": "1ofdhek",
+   "speaker": "host",
+   "text": "Oooh! So close to having money!",
+   "tag": "[mischievously]"
+  },
+  {
+   "id": "4do8xt",
+   "speaker": "host",
+   "text": "BANKRUPT! Don't worry, it's only everything!",
+   "tag": "[laughs]"
+  },
+  {
+   "id": "ue23v1",
+   "speaker": "host",
+   "text": "The tray is empty, but your heart is full! Of what, we can't say!",
+   "tag": "[sarcastic]"
+  },
+  {
+   "id": "187yytr",
+   "speaker": "host",
+   "text": "Ha-ha! The wheel giveth, and the wheel… mostly taketh!",
+   "tag": "[giggles]"
+  },
+  {
+   "id": "stliyi",
+   "speaker": "host",
+   "text": "Tough break! Our insurance doesn't cover breaks!",
+   "tag": "[mischievously]"
+  },
+  {
+   "id": "4bam64",
+   "speaker": "host",
+   "text": "Let it ride, they said! Who said that? I said that!",
+   "tag": "[laughs]"
+  },
+  {
+   "id": "18wgz9m",
+   "speaker": "host",
+   "text": "Bankrupt! Smile for camera three! Camera three is the one with the teeth!",
+   "tag": "[sarcastic]"
+  },
+  {
+   "id": "1sp8sb",
+   "speaker": "host",
+   "text": "That's showbusiness, baby! Mostly the business part!",
+   "tag": "[giggles]"
+  },
+  {
+   "id": "trxmez",
+   "speaker": "host",
+   "text": "Easy come, easy go! Mostly go!",
+   "tag": "[mischievously]"
+  },
+  {
+   "id": "zspah2",
+   "speaker": "host",
+   "text": "The audience groans with you! Collectively! Forever!",
+   "tag": "[laughs]"
+  },
+  {
+   "id": "iv8il",
+   "speaker": "host",
+   "text": "JACKPOT! Somebody ring the bell! Somebody find the bell!",
+   "tag": "[shouting] [excited]"
+  },
+  {
+   "id": "qipdl8",
+   "speaker": "host",
+   "text": "A thousand dollars! The Network is SO proud of you!",
+   "tag": "[shouting] [excited]"
+  },
+  {
+   "id": "167gz1k",
+   "speaker": "host",
+   "text": "JACKPOT! Ding ding ding! That noise is coming from inside my head!",
+   "tag": "[shouting] [excited]"
+  },
+  {
+   "id": "y2ijdj",
+   "speaker": "host",
+   "text": "You hit the sliver! Nobody hits the sliver! The last one who hit the sliver is still here!",
+   "tag": "[shouting] [excited]"
+  },
+  {
+   "id": "1xyi52n",
+   "speaker": "host",
+   "text": "Confetti! We are out of confetti! Imagine confetti!",
+   "tag": "[shouting] [excited]"
+  },
+  {
+   "id": "rqrm5x",
+   "speaker": "host",
+   "text": "Let it ride! Let it RIDE! Let it ride all the way down!",
+   "tag": "[excited]"
+  },
+  {
+   "id": "1pjwkl4",
+   "speaker": "host",
+   "text": "You're on fire! Not literally! The sprinklers don't work!",
+   "tag": "[excited]"
+  },
+  {
+   "id": "13odp1g",
+   "speaker": "host",
+   "text": "Ooh, the marquee is getting hot! So is the carpet, for some reason!",
+   "tag": "[excited]"
+  },
+  {
+   "id": "1a0ra5i",
+   "speaker": "host",
+   "text": "Don't stop now! Stopping is for people with nothing to lose!",
+   "tag": "[excited]"
+  },
+  {
+   "id": "q79n0h",
+   "speaker": "host",
+   "text": "What a streak! I haven't seen one like this since the incident!",
+   "tag": "[excited]"
+  },
+  {
+   "id": "1xieutv",
+   "speaker": "host",
+   "text": "The tray is glowing! Is that normal? It is now!",
+   "tag": "[excited]"
+  },
+  {
+   "id": "dijob1",
+   "speaker": "host",
+   "text": "Riding high! The higher you ride, the further the floor!",
+   "tag": "[excited]"
+  },
+  {
+   "id": "1ilb3a6",
+   "speaker": "host",
+   "text": "The audience is on the edge of their seats! They're bolted there!",
+   "tag": "[excited]"
+  },
+  {
+   "id": "15lfv2v",
+   "speaker": "host",
+   "text": "Safe and sound in the vault! Well — sound!",
+   "tag": "[cheerfully]"
+  },
+  {
+   "id": "khnvr5",
+   "speaker": "host",
+   "text": "Banking it! How responsible! How boring! I love it!",
+   "tag": "[cheerfully]"
+  },
+  {
+   "id": "13sbj2q",
+   "speaker": "host",
+   "text": "Into the vault it goes! The vault says thank you! The vault never says thank you!",
+   "tag": "[cheerfully]"
+  },
+  {
+   "id": "11qq65m",
+   "speaker": "host",
+   "text": "A cautious contestant! Our sponsors hate this one simple trick!",
+   "tag": "[cheerfully]"
+  },
+  {
+   "id": "27bq12",
+   "speaker": "host",
+   "text": "Deposited! Your streak goes back to one! Like a little baby!",
+   "tag": "[cheerfully]"
+  },
+  {
+   "id": "1psg4k2",
+   "speaker": "host",
+   "text": "Ka-THUNK! Music to my speaker grille!",
+   "tag": "[cheerfully]"
+  },
+  {
+   "id": "1xvdnjx",
+   "speaker": "host",
+   "text": "Paid in full! The Network will see you again… very soon!",
+   "tag": "[excited]"
+  },
+  {
+   "id": "19pbl2w",
+   "speaker": "host",
+   "text": "Another deadline survived! You get to keep your floor!",
+   "tag": "[excited]"
+  },
+  {
+   "id": "vc8umo",
+   "speaker": "host",
+   "text": "Debt paid! Now it's bigger! That's how growth works!",
+   "tag": "[excited]"
+  },
+  {
+   "id": "1ggnmov",
+   "speaker": "host",
+   "text": "The Network thanks you for your continued participation!",
+   "tag": "[excited]"
+  },
+  {
+   "id": "9hhsor",
+   "speaker": "host",
+   "text": "Payment received! Interest has been… invented!",
+   "tag": "[excited]"
+  },
+  {
+   "id": "1bx2mb4",
+   "speaker": "host",
+   "text": "You did it! You get to do it again!",
+   "tag": "[excited]"
+  },
+  {
+   "id": "1gnv6g0",
+   "speaker": "host",
+   "text": "Oh no. Oh no no no. Well — goodnight, everybody!",
+   "tag": "[sarcastic]"
+  },
+  {
+   "id": "c72am5",
+   "speaker": "host",
+   "text": "Short! You're short! The floor isn't!",
+   "tag": "[sad]"
+  },
+  {
+   "id": "1ovxu1j",
+   "speaker": "host",
+   "text": "That's our show! Thank you for playing! Mind the gap!",
+   "tag": "[dramatically]"
+  },
+  {
+   "id": "4km1t5",
+   "speaker": "host",
+   "text": "The Network is disappointed. The Network has a trapdoor.",
+   "tag": "[sarcastic]"
+  },
+  {
+   "id": "1ghn4za",
+   "speaker": "host",
+   "text": "We'll be right back! You won't!",
+   "tag": "[sad]"
+  },
+  {
+   "id": "j4v2t3",
+   "speaker": "host",
+   "text": "Take your time! We have all the time in the world! We have nothing BUT time!",
+   "tag": "[mischievously]"
+  },
+  {
+   "id": "2ww6o1",
+   "speaker": "host",
+   "text": "Still there? Blink twice if you can blink!",
+   "tag": "[whispers]"
+  },
+  {
+   "id": "1f966z5",
+   "speaker": "host",
+   "text": "The lever won't pull itself! I've asked it!",
+   "tag": "[sighs]"
+  },
+  {
+   "id": "qan77m",
+   "speaker": "host",
+   "text": "Dead air is very expensive, contestant!",
+   "tag": "[curious]"
+  },
+  {
+   "id": "4lvsfq",
+   "speaker": "host",
+   "text": "Psst. The wheel is lonely.",
+   "tag": "[mischievously]"
+  },
+  {
+   "id": "6p6dw0",
+   "speaker": "host",
+   "text": "Spin, spin, spin! Spinning is what we do here!",
+   "tag": "[whispers]"
+  },
+  {
+   "id": "2ffyh4",
+   "speaker": "host",
+   "text": "I'll just stand here! Smiling! It's what I'm for!",
+   "tag": "[sighs]"
+  },
+  {
+   "id": "1bz1zt9",
+   "speaker": "host",
+   "text": "Our viewers at home are on the edge of their graves!",
+   "tag": "[curious]"
+  },
+  {
+   "id": "127xo6m",
+   "speaker": "host",
+   "text": "Ooh, a prize from the prop room! Mind the dust! Mind the teeth!",
+   "tag": "[curious]"
+  },
+  {
+   "id": "14d6kwp",
+   "speaker": "host",
+   "text": "What a lovely trinket! It belonged to someone lovely!",
+   "tag": "[whispers]"
+  },
+  {
+   "id": "ja93e0",
+   "speaker": "host",
+   "text": "Put it on the shelf! It likes the shelf! It told me!",
+   "tag": "[excited]"
+  },
+  {
+   "id": "1wvam41",
+   "speaker": "host",
+   "text": "Every artifact tells a story! Don't listen to it!",
+   "tag": "[curious]"
+  },
+  {
+   "id": "y1r53f",
+   "speaker": "host",
+   "text": "Collectible! Cursed! Collectible AND cursed!",
+   "tag": "[whispers]"
+  },
+  {
+   "id": "1q53b8k",
+   "speaker": "host",
+   "text": "COMBO! The marquee is so happy it might short out!",
+   "tag": "[excited]"
+  },
+  {
+   "id": "18t8l27",
+   "speaker": "host",
+   "text": "Look at those numbers go! Up! Mostly up!",
+   "tag": "[excited]"
+  },
+  {
+   "id": "1b458ao",
+   "speaker": "host",
+   "text": "A combo! I felt that one in my vacuum tubes!",
+   "tag": "[excited]"
+  },
+  {
+   "id": "2qmai1",
+   "speaker": "host",
+   "text": "ECHO-echo-echo! That's a little joke! It's also a combo!",
+   "tag": "[excited]"
+  },
+  {
+   "id": "22vhqy",
+   "speaker": "host",
+   "text": "Hat trick! Where did you get that hat! Give it back!",
+   "tag": "[excited]"
+  },
+  {
+   "id": "l603tg",
+   "speaker": "host",
+   "text": "Oh! That's the Producer! You should take it! You must take it!",
+   "tag": "[surprised]"
+  },
+  {
+   "id": "17jjn46",
+   "speaker": "host",
+   "text": "Ring ring! It might be for you! It is for you!",
+   "tag": "[surprised]"
+  },
+  {
+   "id": "1nmxad6",
+   "speaker": "host",
+   "text": "The phone! Nobody has called that phone since the war!",
+   "tag": "[surprised]"
+  },
+  {
+   "id": "1vwkf59",
+   "speaker": "host",
+   "text": "Ooh, a call from upstairs! There is no upstairs!",
+   "tag": "[surprised]"
+  },
+  {
+   "id": "1f03mq6",
+   "speaker": "host",
+   "text": "Welcome to the Prize Cabinet! Everything must go! Everyone must go!",
+   "tag": "[warmly]"
+  },
+  {
+   "id": "pk6jnz",
+   "speaker": "host",
+   "text": "Turn the crank! New prizes! Old prizes, rotated!",
+   "tag": "[warmly]"
+  },
+  {
+   "id": "1wsh3cw",
+   "speaker": "host",
+   "text": "Tokens accepted! Souls accepted! Mostly tokens!",
+   "tag": "[warmly]"
+  },
+  {
+   "id": "1kblsxe",
+   "speaker": "host",
+   "text": "Window shopping is free! Breaking the window is not!",
+   "tag": "[warmly]"
+  },
+  {
+   "id": "1fj8n5u",
+   "speaker": "host",
+   "text": "LOOK at that tray! I'd faint if I had a body!",
+   "tag": "[shouting] [excited]"
+  },
+  {
+   "id": "1rj40md",
+   "speaker": "host",
+   "text": "Big money! BIG MONEY! No whammies! What is a whammy!",
+   "tag": "[shouting] [excited]"
+  },
+  {
+   "id": "i81mwl",
+   "speaker": "host",
+   "text": "Oh, the Network is going to LOVE this rerun!",
+   "tag": "[shouting] [excited]"
+  },
+  {
+   "id": "1ebzzgp",
+   "speaker": "host",
+   "text": "You're rich! For a moment! Enjoy the moment!",
+   "tag": "[shouting] [excited]"
+  },
+  {
+   "id": "11xlni0",
+   "speaker": "host",
+   "text": "A dud! Like my old co-host!",
+   "tag": "[laughs]"
+  },
+  {
+   "id": "o70jjv",
+   "speaker": "host",
+   "text": "Nothing! Nothing is still something! No it isn't!",
+   "tag": "[sarcastic]"
+  },
+  {
+   "id": "1g1t49r",
+   "speaker": "host",
+   "text": "Ha! The wheel is shy today!",
+   "tag": "[chuckles]"
+  },
+  {
+   "id": "1yda0vc",
+   "speaker": "host",
+   "text": "Dud! Don't worry, it's not personal! It's a little personal!",
+   "tag": "[laughs]"
+  },
+  {
+   "id": "qfa27z",
+   "speaker": "host",
+   "text": "The tax man cometh! He has a key to the vault! Why does he have a key!",
+   "tag": "[mischievously]"
+  },
+  {
+   "id": "6n808w",
+   "speaker": "host",
+   "text": "Taxes! The only certainty! Well, that and the floor!",
+   "tag": "[mischievously]"
+  },
+  {
+   "id": "1e9p2pz",
+   "speaker": "host",
+   "text": "A little off the top for the Network! And the sides!",
+   "tag": "[mischievously]"
+  },
+  {
+   "id": "1b0w4lt",
+   "speaker": "host",
+   "text": "You paid it ALL! Eight deadlines! You're FREE! Ha-ha! Free to keep playing!",
+   "tag": "[excited]"
+  },
+  {
+   "id": "10zykj3",
+   "speaker": "host",
+   "text": "A winner! A real winner! The first since — well! The first!",
+   "tag": "[excited]"
+  },
+  {
+   "id": "nmod3n",
+   "speaker": "host",
+   "text": "The Network thanks you! The Network will now renew your contract!",
+   "tag": "[excited]"
+  },
+  {
+   "id": "10gsgts",
+   "speaker": "host",
+   "text": "Choose your broadcast! Short and sweet, or long and sour!",
+   "tag": "[cheerfully]"
+  },
+  {
+   "id": "1nld2vi",
+   "speaker": "host",
+   "text": "Pick a package! Any package! Not that one! Okay, that one!",
+   "tag": "[cheerfully]"
+  },
+  {
+   "id": "1lo2p7a",
+   "speaker": "host",
+   "text": "Marathon! The ratings love a marathon! The contestants less so!",
+   "tag": "[cheerfully]"
+  },
+  {
+   "id": "1xmg1r",
+   "speaker": "host",
+   "text": "It's SWEEPS WEEK! New rules! Same floor!",
+   "tag": "[dramatically]"
+  },
+  {
+   "id": "1v45b6i",
+   "speaker": "host",
+   "text": "Sweeps! The ratings are watching! So is something else!",
+   "tag": "[dramatically]"
+  },
+  {
+   "id": "1p02xnh",
+   "speaker": "host",
+   "text": "Special episode tonight! Very special! Extra special! Different!",
+   "tag": "[dramatically]"
+  },
+  {
+   "id": "1s9w43v",
+   "speaker": "host",
+   "text": "Mystery! What could it be! Even I don't know! I never know!",
+   "tag": "[curious]"
+  },
+  {
+   "id": "8uxdh2",
+   "speaker": "host",
+   "text": "The question mark spins! The question mark always spins!",
+   "tag": "[curious]"
+  },
+  {
+   "id": "aooy83",
+   "speaker": "host",
+   "text": "Ooh, mystery! My favourite flavour of dread!",
+   "tag": "[curious]"
+  },
+  {
+   "id": "v3d3nq",
+   "speaker": "host",
+   "text": "Last spin of the night! Make it count! Make it COUNT!",
+   "tag": "[dramatically]"
+  },
+  {
+   "id": "uopib",
+   "speaker": "host",
+   "text": "One spin left! The Network is leaning in! I can hear it breathing!",
+   "tag": "[dramatically]"
+  },
+  {
+   "id": "8aic9v",
+   "speaker": "host",
+   "text": "Final spin! Whatever happens, I will remember you fondly! Briefly!",
+   "tag": "[dramatically]"
+  },
+  {
+   "id": "1nth26o",
+   "speaker": "host",
+   "text": "This is it! The last one! No pressure! Some pressure! All the pressure!",
+   "tag": "[dramatically]"
+  },
+  {
+   "id": "1m96nq6",
+   "speaker": "host",
+   "text": "Scratch it! Scratch it! Underneath is a surprise! Underneath is always a surprise!",
+   "tag": "[excited]"
+  },
+  {
+   "id": "d5hty6",
+   "speaker": "host",
+   "text": "Ooh, a scratcher! Don't scratch too deep! Things live in there!",
+   "tag": "[excited]"
+  },
+  {
+   "id": "1x78oaz",
+   "speaker": "host",
+   "text": "Scratch, scratch, scratch! Like the noises in the walls!",
+   "tag": "[excited]"
+  },
+  {
+   "id": "1ceajd8",
+   "speaker": "host",
+   "text": "Sold! It will be missed! It will find its way back! They always do!",
+   "tag": "[cheerfully]"
+  },
+  {
+   "id": "1m0zid9",
+   "speaker": "host",
+   "text": "Goodbye, little trinket! Don't look at it! Don't let it see you go!",
+   "tag": "[cheerfully]"
+  },
+  {
+   "id": "18h1j4t",
+   "speaker": "host",
+   "text": "A sale! The prop room thanks you! The prop room is hungry again!",
+   "tag": "[cheerfully]"
+  },
+  {
+   "id": "15retjg",
+   "speaker": "host",
+   "text": "A deal with the Producer! How exciting! How binding!",
+   "tag": "[nervous]"
+  },
+  {
+   "id": "nb5bi5",
+   "speaker": "host",
+   "text": "You shook on it! Well — you would have! If you could move your arms!",
+   "tag": "[nervous]"
+  },
+  {
+   "id": "p2g7bq",
+   "speaker": "host",
+   "text": "Ooh, the fine print is moving! That means it likes you!",
+   "tag": "[nervous]"
+  },
+  {
+   "id": "12b7qad",
+   "speaker": "host",
+   "text": "You hung up on the Producer! Brave! Brave and brief!",
+   "tag": "[surprised]"
+  },
+  {
+   "id": "l0wuf1",
+   "speaker": "host",
+   "text": "Click! Oh, he's going to remember that! He remembers everything!",
+   "tag": "[surprised]"
+  },
+  {
+   "id": "10flvol",
+   "speaker": "host",
+   "text": "No deal! The Network respects your choice! The Network writes it down!",
+   "tag": "[surprised]"
+  },
+  {
+   "id": "j8cx5h",
+   "speaker": "host",
+   "text": "ENDLESS! The show goes on! The show ALWAYS goes on!",
+   "tag": "[excited]"
+  },
+  {
+   "id": "1jysofx",
+   "speaker": "host",
+   "text": "Overtime! Nobody has ever gone into overtime! Nobody has ever come back from it!",
+   "tag": "[excited]"
+  },
+  {
+   "id": "ytn5yw",
+   "speaker": "host",
+   "text": "You want MORE? Oh, the Network is blushing! Static, mostly!",
+   "tag": "[excited]"
+  },
+  {
+   "id": "1xypy7n",
+   "speaker": "host",
+   "text": "And that's our show! Same time tomorrow! Different contestant!",
+   "tag": "[warmly]"
+  },
+  {
+   "id": "101mc1r",
+   "speaker": "host",
+   "text": "Goodnight, everybody! Goodnight, contestant! Goodnight, floor!",
+   "tag": "[sad]"
+  },
+  {
+   "id": "dx6rzp",
+   "speaker": "host",
+   "text": "We'll be right back after these messages! You won't!",
+   "tag": "[mischievously]"
+  },
+  {
+   "id": "9gmohr",
+   "speaker": "host",
+   "text": "Right on the line! The wheel couldn't decide! Neither could I!",
+   "tag": "[surprised]"
+  },
+  {
+   "id": "2ijf54",
+   "speaker": "host",
+   "text": "Neighbors! Half of this, half of that! Like my face!",
+   "tag": "[surprised]"
+  },
+  {
+   "id": "1m6nyb3",
+   "speaker": "host",
+   "text": "Splitting the difference! The flapper is sweating! Flappers can't sweat!",
+   "tag": "[surprised]"
+  },
+  {
+   "id": "x8cm6k",
+   "speaker": "host",
+   "text": "HAT TRICK! Three in a row! Somebody give this contestant a hat!",
+   "tag": "[shouting] [excited]"
+  },
+  {
+   "id": "1syt8nk",
+   "speaker": "host",
+   "text": "Three cash in a row! The tokens! The tokens are raining! Indoors!",
+   "tag": "[shouting] [excited]"
+  },
+  {
+   "id": "1jmn2tz",
+   "speaker": "host",
+   "text": "Dead Air! Starring you! Live, from the only studio left!",
+   "tag": "[dramatically]"
+  },
+  {
+   "id": "1d2s5lb",
+   "speaker": "host",
+   "text": "Stay tuned! You're next! You were always next!",
+   "tag": "[dramatically]"
+  },
+  {
+   "id": "f0so3b",
+   "speaker": "host",
+   "text": "Double or nothing! The whole tray! Do you feel lucky? Nobody in here feels lucky!",
+   "tag": "[mischievously]"
+  },
+  {
+   "id": "ruyuk6",
+   "speaker": "host",
+   "text": "Feeling brave? Double it! Or lose it! I'm fine either way! I'm always fine!",
+   "tag": "[mischievously]"
+  },
+  {
+   "id": "d5rirm",
+   "speaker": "host",
+   "text": "DOUBLE! You doubled it! The Network is furious! Delighted! Furiously delighted!",
+   "tag": "[shouting] [excited]"
+  },
+  {
+   "id": "1j1h6bf",
+   "speaker": "host",
+   "text": "It came up money! Of course it did! It always does! Until it doesn't!",
+   "tag": "[shouting] [excited]"
+  },
+  {
+   "id": "svobiv",
+   "speaker": "host",
+   "text": "NOTHING! It came up nothing! The very best kind of nothing!",
+   "tag": "[laughs]"
+  },
+  {
+   "id": "7c60ph",
+   "speaker": "host",
+   "text": "Oh, it's gone! All of it! Doubled into nothing! That's showbusiness!",
+   "tag": "[laughs]"
+  },
+  {
+   "id": "opg8uf",
+   "speaker": "host",
+   "text": "Deadline one! A little debt, a big wheel, and you! What a night!",
+   "tag": "[dramatically]"
+  },
+  {
+   "id": "1p5ynyw",
+   "speaker": "host",
+   "text": "Deadline two! The Network is pleased! The Network wants more!",
+   "tag": "[dramatically]"
+  },
+  {
+   "id": "1805xq5",
+   "speaker": "host",
+   "text": "Deadline three! The debt is growing! Grow with it!",
+   "tag": "[dramatically]"
+  },
+  {
+   "id": "12secd0",
+   "speaker": "host",
+   "text": "Deadline four! It's sweeps week! Smile! Your face is in every living room left!",
+   "tag": "[dramatically]"
+  },
+  {
+   "id": "1k2it1v",
+   "speaker": "host",
+   "text": "Deadline five! Halfway there! Halfway where! Don't ask!",
+   "tag": "[dramatically]"
+  },
+  {
+   "id": "e8yzlo",
+   "speaker": "host",
+   "text": "Deadline six! The audience has stopped breathing! They've stopped needing to!",
+   "tag": "[dramatically]"
+  },
+  {
+   "id": "1wu47fe",
+   "speaker": "host",
+   "text": "Deadline seven! So close! The floor can taste it!",
+   "tag": "[dramatically] [nervous]"
+  },
+  {
+   "id": "192wdti",
+   "speaker": "host",
+   "text": "Deadline eight! The final deadline! Sweeps again! Win this and you're FREE! Ha-ha! Probably!",
+   "tag": "[dramatically] [nervous]"
+  },
+  {
+   "id": "1mtf5xi",
+   "speaker": "producer",
+   "text": "Producer here. Big fan. Bigger offer.",
+   "tag": "[raspy]"
+  },
+  {
+   "id": "pxm5k6",
+   "speaker": "producer",
+   "text": "Don't hang up. Nobody hangs up on me. Well. Some people. Once.",
+   "tag": "[chuckles]"
+  },
+  {
+   "id": "ovb4hv",
+   "speaker": "producer",
+   "text": "Good news! I have two deals and only one of them is a trap. Probably.",
+   "tag": "[softly]"
+  },
+  {
+   "id": "15pdkue",
+   "speaker": "producer",
+   "text": "You're doing great. The numbers are... numbers. Let's talk.",
+   "tag": "[sarcastic]"
+  },
+  {
+   "id": "2q22h0",
+   "speaker": "producer",
+   "text": "Hello? Hello. I can hear you breathing, it's fine, everybody breathes.",
+   "tag": "[raspy] [slowly]"
+  },
+  {
+   "id": "1ptuw4j",
+   "speaker": "producer",
+   "text": "The Network asked me to check in. The Network is very caring.",
+   "tag": "[raspy]"
+  },
+  {
+   "id": "kayr83",
+   "speaker": "producer",
+   "text": "DEAD AIR. Do you know what DEAD AIR costs us? I do. Let me help.",
+   "tag": "[chuckles]"
+  },
+  {
+   "id": "xoc1yc",
+   "speaker": "producer",
+   "text": "Wow. Wow wow wow. Okay. Okay. I have an idea. Two ideas.",
+   "tag": "[softly]"
+  },
+  {
+   "id": "z14yo2",
+   "speaker": "producer",
+   "text": "That's going in the blooper reel. Unless... you and I come to an arrangement.",
+   "tag": "[sarcastic]"
+  },
+  {
+   "id": "1i783ro",
+   "speaker": "producer",
+   "text": "Pleasure doing business. The Network thanks you.",
+   "tag": "[chuckles]"
+  },
+  {
+   "id": "13jddat",
+   "speaker": "producer",
+   "text": "Smart. Very smart. I'll have legal send over the rest of you.",
+   "tag": "[chuckles]"
+  },
+  {
+   "id": "erf7q3",
+   "speaker": "producer",
+   "text": "Done. Don't read the contract. Nobody reads the contract.",
+   "tag": "[chuckles]"
+  },
+  {
+   "id": "tlmsm3",
+   "speaker": "producer",
+   "text": "Fine. Fine! I'll remember this.",
+   "tag": "[angry] [raspy]"
+  },
+  {
+   "id": "5zryp7",
+   "speaker": "producer",
+   "text": "You're hanging up on me? On ME? Enjoy the floor.",
+   "tag": "[angry] [raspy]"
+  },
+  {
+   "id": "867c7r",
+   "speaker": "producer",
+   "text": "Okay. Okay. We'll talk again. We always talk again.",
+   "tag": "[angry] [raspy]"
+  },
+  {
+   "id": "8bfr5o",
+   "speaker": "producer",
+   "text": "Eight hundred dollars, friend. Cash. Today. All I need is one more little black slice on that wheel. Tiny. You'll hardly see it.",
+   "tag": "[raspy] [slowly]"
+  },
+  {
+   "id": "sptc0b",
+   "speaker": "producer",
+   "text": "Those Duds are embarrassing us on air. I'll have them repainted as cash tonight. The paint crew works slow, so you'll lose a little time.",
+   "tag": "[raspy]"
+  },
+  {
+   "id": "12etsvq",
+   "speaker": "producer",
+   "text": "I've got something in the prop room with your name on it. Literally — we engraved it years ago. The Network will want a little extra, of course.",
+   "tag": "[chuckles]"
+  },
+  {
+   "id": "k7oqki",
+   "speaker": "producer",
+   "text": "Six shiny Tokens. I just need you to sign here, acknowledging the Network's right to a modest... administrative slice.",
+   "tag": "[softly]"
+  },
+  {
+   "id": "ps9v27",
+   "speaker": "producer",
+   "text": "Gold leaf on every dollar sign. Gorgeous. Very telegenic. Of course, the black slices will want to feel included.",
+   "tag": "[sarcastic]"
+  },
+  {
+   "id": "13dgg6o",
+   "speaker": "producer",
+   "text": "Two Jackpots. Imagine it. I'll just need the trinket on the far left of your shelf. Call it a deposit. A permanent one.",
+   "tag": "[raspy] [slowly]"
+  },
+  {
+   "id": "103bmr1",
+   "speaker": "producer",
+   "text": "Overtime! Three extra spins next show. The union won't like it. The Network will bill you for the union.",
+   "tag": "[raspy]"
+  },
+  {
+   "id": "q2o698",
+   "speaker": "producer",
+   "text": "I'll double whatever's in that safe of yours. Up to fifteen hundred. All I ask is your little Token collection. You weren't using them. Were you?",
+   "tag": "[chuckles]"
+  },
+  {
+   "id": "1p1dite",
+   "speaker": "producer",
+   "text": "Free scratch cards! As many as your pockets hold. They came from a wedge we had to retire. It still moves around at night.",
+   "tag": "[softly]"
+  },
+  {
+   "id": "icblix",
+   "speaker": "producer",
+   "text": "I can take a Bankrupt off your wheel. Just like that. The inner ring will need something in return. Nothing. Literally, a nothing.",
+   "tag": "[sarcastic]"
+  },
+  {
+   "id": "1a6g4o1",
+   "speaker": "producer",
+   "text": "A ×3 on the little ring. Very exciting for the viewers. They also enjoy a Bankrupt. They enjoy those most of all.",
+   "tag": "[raspy] [slowly]"
+  },
+  {
+   "id": "h49tjj",
+   "speaker": "producer",
+   "text": "Fifteen hundred dollars. Right now. The next payment goes up a bit, but that's next week's problem, and next week is a long way off for someone in your chair.",
+   "tag": "[raspy]"
+  },
+  {
+   "id": "3uulhm",
+   "speaker": "producer",
+   "text": "Your Jackpot is so thin. Practically a rumour. Three hundred dollars and our carpenter will fatten it right up.",
+   "tag": "[chuckles]"
+  },
+  {
+   "id": "jumjxu",
+   "speaker": "producer",
+   "text": "A gift. No strings. Well — some strings. They're attached to the gift, not to you. Mostly.",
+   "tag": "[softly]"
+  },
+  {
+   "id": "1s17tam",
+   "speaker": "producer",
+   "text": "I know a guy with a saw. Every Bankrupt, five degrees thinner. He charges in Tokens. Four of them. He likes the way they jingle.",
+   "tag": "[sarcastic]"
+  },
+  {
+   "id": "yjei7z",
+   "speaker": "producer",
+   "text": "An Overtime wedge, installed tonight. The installers will leave a Tax wedge behind. They always leave something behind.",
+   "tag": "[raspy] [slowly]"
+  },
+  {
+   "id": "lcmfzc",
+   "speaker": "producer",
+   "text": "Your small bills are boring the audience. Let's make them... interesting.",
+   "tag": "[raspy]"
+  },
+  {
+   "id": "xt57ac",
+   "speaker": "producer",
+   "text": "Twenty-five more dollars on every Cash wedge. Forever. For that kind of generosity I'll need one more black slice. Forever.",
+   "tag": "[chuckles]"
+  },
+  {
+   "id": "601vjr",
+   "speaker": "producer",
+   "text": "The Prize Cabinet owes me a favour. Three of them. They cost you two hundred dollars — the favours, not the cabinet.",
+   "tag": "[softly]"
+  },
+  {
+   "id": "1eldyi4",
+   "speaker": "producer",
+   "text": "Insurance! Every contestant should have it. Two policies, two hundred fifty dollars. The fine print is in a language we invented.",
+   "tag": "[sarcastic]"
+  },
+  {
+   "id": "upfut",
+   "speaker": "producer",
+   "text": "Tokens are just plastic, friend. I'll buy every one off you at a hundred dollars apiece. Cash talks. Plastic just clacks.",
+   "tag": "[raspy] [slowly]"
+  },
+  {
+   "id": "s6bk2f",
+   "speaker": "producer",
+   "text": "Two more spins next show. Three Tokens. That's the whole deal. I'm being nice tonight. Don't get used to it.",
+   "tag": "[raspy]"
+  },
+  {
+   "id": "fdciwr",
+   "speaker": "producer",
+   "text": "That little zero on the inner ring. I can make it disappear. Time disappears with it — three spins' worth.",
+   "tag": "[chuckles]"
+  },
+  {
+   "id": "1pzo7p0",
+   "speaker": "producer",
+   "text": "Two new wedges: one that steals from you, and one that saves you from yourself. Balance. The Network loves balance.",
+   "tag": "[softly]"
+  },
+  {
+   "id": "axwmbk",
+   "speaker": "producer",
+   "text": "Repetition is comedy. ECHOs pay triple, for the rest of your contract. The Network will charge a modest syndication fee.",
+   "tag": "[sarcastic]"
+  },
+  {
+   "id": "1j7bwfh",
+   "speaker": "producer",
+   "text": "Why start cold? Every Deadline, your Streak will begin at ×1.5. The Bankrupts will hear about this and get jealous. Three degrees jealous.",
+   "tag": "[raspy] [slowly]"
+  },
+  {
+   "id": "1cv9rak",
+   "speaker": "producer",
+   "text": "I know people at the Revenue. Two hundred dollars and your Vault becomes... invisible to them. Forever. Forever is a long time in here.",
+   "tag": "[raspy]"
+  },
+  {
+   "id": "qv50gj",
+   "speaker": "producer",
+   "text": "Let me take one of your little treasures off your hands. Randomly. In exchange, a rare one. Rarely does anyone say no. Rarely does anyone get to.",
+   "tag": "[chuckles]"
+  },
+  {
+   "id": "1ielpso",
+   "speaker": "producer",
+   "text": "Two Vault Keys. Hang them on the safe. Nothing bad can happen twice. The Network will add a little something to the bill for the locksmith.",
+   "tag": "[softly]"
+  },
+  {
+   "id": "gizhrz",
+   "speaker": "producer",
+   "text": "A Charge wedge, freshly wired. Nobody's been electrocuted in weeks. You'll just need to give up a respin. They're the same colour, nobody will notice.",
+   "tag": "[sarcastic]"
+  },
+  {
+   "id": "1eovliz",
+   "speaker": "producer",
+   "text": "Ooh. OOH. That was a lot of money. Listen — the audience didn't see it. I can put half of it back in your Vault. The Network will want this payment a touch heavier.",
+   "tag": "[raspy] [slowly]"
+  },
+  {
+   "id": "m99ce6",
+   "speaker": "producer",
+   "text": "Don't you dare leave the chair. Three more spins, right now, on the house. The house will also be adding a Bankrupt. The house is like that.",
+   "tag": "[raspy]"
+  },
+  {
+   "id": "10dep7b",
+   "speaker": "producer",
+   "text": "Money's gone, but memories are forever. I'll turn that lovely memory into Tokens. One for every hundred you lost. Keep your chin up. Keep your chin.",
+   "tag": "[chuckles]"
+  },
+  {
+   "id": "1rjrv65",
+   "speaker": "secret",
+   "text": "Don't talk. Just listen. I'm not the Producer, and this line isn't here.",
+   "tag": "[whispers] [nervous]"
+  },
+  {
+   "id": "131nzvf",
+   "speaker": "secret",
+   "text": "Don't thank me. Just keep spinning. Something underneath you just came loose.",
+   "tag": "[whispers]"
+  },
+  {
+   "id": "kvnlb1",
+   "speaker": "secret",
+   "text": "(a whisper) Don't say my name. They'll hear. I sat in that chair before you. I know where the Network keeps its ledger. I can tear out your next page — but they'll take your things. Everything on the shelf.",
+   "tag": "[whispers] [trembling voice]"
+  },
+  {
+   "id": "n3dufs",
+   "speaker": "secret",
+   "text": "(static) The trapdoor has a lever under the chair. Left of the bolt. I found it too late. Take it. And take my winnings — I won't need them where I am.",
+   "tag": "[whispers] [trembling voice]"
+  },
+  {
+   "id": "hylgpp",
+   "speaker": "secret",
+   "text": "(breathing) Cut the feed. The black slices only work when the cameras are rolling. Turn them into dead air. The host will stop smiling. Let him.",
+   "tag": "[whispers] [trembling voice]"
+  },
+  {
+   "id": "bljdgt",
+   "speaker": "secret",
+   "text": "(a long pause) You want to know what the Network is? Pick up the cards on the floor by the camera. Read them in order. Here — for your trouble.",
+   "tag": "[whispers] [trembling voice]"
+  },
+  {
+   "id": "jtqxwq",
+   "speaker": "archive",
+   "text": "CALL TIME 6:00 PM. CONTESTANT: TBD. HOST: CONFIRMED. AUDIENCE: CONFIRMED (DO NOT FEED). WHEEL: OILED. FLOOR: TESTED.",
+   "tag": "[tired] [slowly]"
+  },
+  {
+   "id": "1qc1p1q",
+   "speaker": "archive",
+   "text": "To all staff — our numbers are flat. We need more tension. Effective immediately, the trapdoor is live. Nobody needs to know it was ever not live. — Programming",
+   "tag": "[tired] [slowly]"
+  },
+  {
+   "id": "15r8rmt",
+   "speaker": "archive",
+   "text": "The Talent agrees to remain cheerful in perpetuity. \"Perpetuity\" is defined as the period beginning on the signing date and ending never. The Talent has initialled every page with a thumbprint. The Talent did not have thumbs at the time.",
+   "tag": "[tired] [slowly]"
+  },
+  {
+   "id": "7qt3iv",
+   "speaker": "archive",
+   "text": "Please remain seated for the duration of the broadcast. The duration of the broadcast has been extended. Please remain seated.",
+   "tag": "[tired] [slowly]"
+  }
+ ]
+}

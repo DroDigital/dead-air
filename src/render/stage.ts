@@ -12,6 +12,7 @@ import { HostView } from './scene/host';
 import { LeverView } from './scene/lever';
 import { PhoneView } from './scene/phone';
 import { ShelfView } from './scene/shelf';
+import { ShowLights } from './scene/showLights';
 import { StudioView } from './scene/studio';
 import { TrayView } from './scene/tray';
 import { CanvasPanel, panelMesh } from './scene/util';
@@ -83,6 +84,7 @@ export class Stage {
   readonly phone: PhoneView;
   readonly lever: LeverView;
   readonly marquee: Marquee;
+  readonly lights = new ShowLights();
   readonly vfx = new Vfx();
   private raycaster = new THREE.Raycaster();
   stats = { calls: 0, triangles: 0 };
@@ -117,6 +119,7 @@ export class Stage {
       this.phone.group,
       this.lever.group,
       this.marquee.mesh,
+      this.lights.group,
     );
     this.resize();
   }
@@ -169,6 +172,9 @@ export class Stage {
     this.phone.update(dt, time);
     this.lever.update(dt);
     this.marquee.update(dt);
+    this.lights.level = this.studio.lightLevel;
+    this.lights.spotLevel = this.studio.spotLevel;
+    this.lights.update(dt, time);
     this.vfx.update(dt);
     this.rig.apply(time, dt);
   }

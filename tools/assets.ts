@@ -13,6 +13,8 @@
  *   audio:   (WAV PCM16) resample to 22.05 kHz, one-pole lowpass, bitcrush → WAV
  *   font:    copied as-is
  */
+import { execFile } from 'node:child_process';
+import { existsSync } from 'node:fs';
 import { mkdir, readFile, writeFile, copyFile, stat } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -292,6 +294,54 @@ async function main(): Promise<void> {
     if (!index[e.id]) continue;
     lines.push(`| \`${e.id}\` | ${e.sourceUrl} | ${e.author} | ${e.license} | ${e.modifications} |`);
   }
+  // ElevenLabs-generated audio (voice-over, SFX, music) — see assets/elevenlabs.json.
+  const el = JSON.parse(await readFile(join(ROOT, 'assets', 'elevenlabs.json'), 'utf8')) as {
+    voices: { speaker: string; name: string; voiceId: string; design: string }[];
+    audio: { id: string; file: string; kind: string; model: string; prompt: string; replaces?: string }[];
+  };
+  const elIndex: Record<string, string> = {};
+  const elOut = join(ROOT, 'public', 'assets', 'audio', 'el');
+  await mkdir(elOut, { recursive: true });
+  await mkdir(join(ROOT, 'public', 'assets', 'audio', 'music'), { recursive: true });
+  const ff = (args: string[]) => new Promise<boolean>((res) => execFile('ffmpeg', args, (err) => res(!err)));
+  // Music provided by the project owner (assets/music.json) goes through the same conversion.
+  const music = JSON.parse(await readFile(join(ROOT, 'assets', 'music.json'), 'utf8')) as {
+    author: string;
+    tracks: { id: string; file: string; kind: string; title: string; use: string }[];
+  };
+  const jobs = [
+    ...el.audio.map((a) => ({ ...a, dir: 'elevenlabs' })),
+    ...music.tracks.map((t) => ({ id: t.id, file: t.file, kind: t.kind, dir: 'music' })),
+  ];
+  for (const a of jobs) {
+    const src = join(ROOT, 'assets-src', a.dir, a.file);
+    const name = a.id.replace(/^(el|track)\./, '') + '.mp3';
+    const sub = a.dir === 'music' ? 'music' : 'el';
+    const dst = join(ROOT, 'public', 'assets', 'audio', sub, name);
+    if (!existsSync(src)) continue;
+    // PS1-era crunch: mono 22.05 kHz with a 9 kHz top for effects; music keeps stereo at 32 kHz.
+    const af =
+      a.kind === 'music'
+        ? 'highpass=f=30,lowpass=f=12000,loudnorm=I=-19:TP=-1.5:LRA=11'
+        : a.kind === 'loop'
+          ? 'highpass=f=30,lowpass=f=9000,loudnorm=I=-22:TP=-2:LRA=11'
+          : 'silenceremove=start_periods=1:start_threshold=-50dB,highpass=f=40,lowpass=f=9000,loudnorm=I=-16:TP=-1.5:LRA=11';
+    const fmt = a.kind === 'music' ? ['-ac', '2', '-ar', '32000', '-b:a', '96k'] : ['-ac', '1', '-ar', '22050', '-b:a', '64k'];
+    const ok = existsSync(dst) || (await ff(['-y', '-hide_banner', '-loglevel', 'error', '-i', src, '-af', af, ...fmt, dst]));
+    if (ok) elIndex[a.id] = `assets/audio/${sub}/${name}`;
+    else console.warn(`· ${a.id}: ffmpeg not available or failed; skipped`);
+  }
+  await writeFile(join(ROOT, 'src', 'assets', 'audio.json'), JSON.stringify(elIndex, null, 2) + '\n');
+  // Procedural stand-ins that an ElevenLabs recording now replaces are no longer outstanding.
+  const replaced = el.audio.filter((a) => a.replaces && elIndex[a.id]).map((a) => a.replaces!);
+  for (let i = todo.length - 1; i >= 0; i--) if (replaced.some((r) => todo[i].includes(r))) todo.splice(i, 1);
+  lines.push('', '## Music', '', `Provided for this project by ${music.author}. Sources in \`assets-src/music\`.`, '', '| Track | Used for |', '|---|---|');
+  for (const t of music.tracks) if (elIndex[t.id]) lines.push(`| ${t.title} | ${t.use} |`);
+  lines.push('', '## Generated with ElevenLabs', '', 'Voice-over (custom-designed voices, `eleven_v4`), sound effects (`eleven_text_to_sound_v2`) and music (`eleven_music_v2_5`) were generated for this project with ElevenLabs. Prompts are listed in `assets/elevenlabs.json`; the voice script is `assets-src/vo/script.json`.', '');
+  lines.push('| Voice | Speaker | Design |', '|---|---|---|');
+  for (const v of el.voices) lines.push(`| ${v.name} | ${v.speaker} | ${v.design} |`);
+  lines.push('', '| Id | Kind | Model | Prompt |', '|---|---|---|---|');
+  for (const a of el.audio) if (elIndex[a.id]) lines.push(`| \`${a.id}\` | ${a.kind} | ${a.model} | ${a.prompt} |`);
   lines.push('', '## Libraries', '', '- three.js (MIT), GSAP (Standard "No Charge" licence), gltf-transform (MIT), sharp (Apache-2.0), meshoptimizer (MIT), Vite (MIT), Vitest (MIT).', '');
   await writeFile(join(ROOT, 'CREDITS.md'), lines.join('\n'));
   const todoDoc = [

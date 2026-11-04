@@ -46,6 +46,12 @@ export class Hud {
   tooltip: string | null = null;
   ticker = '';
   tickerRight = '';
+  /** Structured chyron (preferred over the plain ticker string when set). */
+  chyron: { deadline: string; spins: number; spinsMax: number; tray: number; streak: number; vault: number; debt: number } | null = null;
+  /** Displayed (rolling) values and flash timers for the chyron numbers. */
+  private roll = { tray: 0, vault: 0, trayFlash: 0, vaultFlash: 0, trayUp: true };
+  /** 0..1 danger level (last spin short of the Debt): reddens the chyron. */
+  danger = 0;
   arrows: ('up' | 'down' | 'left' | 'right')[] = [];
   banner: { text: string; sub: string; color: string; t: number; life: number } | null = null;
   fastMode = false;
@@ -71,6 +77,20 @@ export class Hud {
   }
 
   update(dt: number): void {
+    const c = this.chyron;
+    if (c) {
+      const r = this.roll;
+      const ease = (cur: number, to: number) => (Math.abs(to - cur) < 1 ? to : cur + (to - cur) * Math.min(1, dt * 7));
+      if (Math.round(r.tray) !== c.tray && r.trayFlash <= 0) {
+        r.trayFlash = 0.6;
+        r.trayUp = c.tray > r.tray;
+      }
+      if (Math.round(r.vault) !== c.vault && r.vaultFlash <= 0) r.vaultFlash = 0.6;
+      r.tray = ease(r.tray, c.tray);
+      r.vault = ease(r.vault, c.vault);
+      r.trayFlash = Math.max(0, r.trayFlash - dt);
+      r.vaultFlash = Math.max(0, r.vaultFlash - dt);
+    }
     if (this.payout !== this.lastPayout) {
       this.lastPayout = this.payout;
       this.payoutAge = 0;
@@ -101,6 +121,83 @@ export class Hud {
     return null;
   }
 
+  /** Segmented broadcast chyron: LIVE, Deadline, spin pips, Tray x Streak, Vault vs Debt. */
+  private drawChyron(ctx: CanvasRenderingContext2D, w: number, h: number, k: number, time: number): void {
+    const c = this.chyron!;
+    const r = this.roll;
+    const H = 12 * k;
+    const y = h - H;
+    const d = this.danger;
+    const red = Math.round(30 + 40 * d * (0.6 + 0.4 * Math.sin(time * 6)));
+    ctx.fillStyle = d > 0 ? 'rgba(' + red + ',4,2,0.88)' : 'rgba(10,4,2,0.86)';
+    ctx.fillRect(0, y, w, H);
+    ctx.fillStyle = '#ffb040';
+    ctx.globalAlpha = 0.5;
+    ctx.fillRect(0, y, w, k);
+    ctx.globalAlpha = 1;
+    let x = 0;
+    const seg = (sw: number, bg: string | null) => {
+      if (bg) {
+        ctx.fillStyle = bg;
+        ctx.fillRect(x, y + k, sw, H - k);
+      }
+      const x0 = x;
+      x += sw;
+      ctx.fillStyle = 'rgba(255,176,64,0.25)';
+      ctx.fillRect(x - k, y + 2 * k, k, H - 3 * k);
+      return x0;
+    };
+    // LIVE with a tally dot.
+    let x0 = seg(30 * k, '#a81c10');
+    const on = Math.floor(time * 1.5) % 2 === 0;
+    ctx.fillStyle = on ? '#ffffff' : '#ff8070';
+    ctx.fillRect(x0 + 3 * k, y + 5 * k, 3 * k, 3 * k);
+    drawText(ctx, 'LIVE', x0 + 18 * k, y + 3 * k, { align: 'center', scale: k, color: '#ffffff' });
+    // Deadline.
+    const dl = 'D' + c.deadline;
+    x0 = seg((textWidth(dl) + 8) * k, null);
+    drawText(ctx, dl, x0 + 4 * k, y + 3 * k, { scale: k, color: '#ffd040' });
+    // Spins as pips.
+    const pips = Math.min(14, Math.max(c.spinsMax, c.spins));
+    const pl = textWidth('SPINS') + 6;
+    x0 = seg((pips * 4 + pl + 3) * k, null);
+    drawText(ctx, 'SPINS', x0 + 3 * k, y + 3 * k, { scale: k, color: '#a08060' });
+    for (let i = 0; i < pips; i++) {
+      const left = i < c.spins;
+      const last = left && c.spins === 1;
+      ctx.fillStyle = left ? (last && Math.floor(time * 4) % 2 ? '#ff4030' : '#ffd040') : '#3a2414';
+      ctx.fillRect(x0 + (pl + i * 4) * k, y + 4 * k, 3 * k, 5 * k);
+    }
+    // Tray x Streak: the number rolls; the streak heats from pale to red.
+    const tray = 'TRAY $' + Math.round(r.tray);
+    const st = '\u00d7' + c.streak.toFixed(2);
+    x0 = seg((textWidth(tray) + textWidth(st) + 14) * k, null);
+    const tf = r.trayFlash > 0 && Math.floor(r.trayFlash * 10) % 2 === 0;
+    drawText(ctx, tray, x0 + 4 * k, y + 3 * k, { scale: k, color: tf ? (r.trayUp ? '#a0ffa0' : '#ff6050') : '#f0e0b0' });
+    const heat = Math.min(1, (c.streak - 1) / 2);
+    const sc = heat <= 0 ? '#c0b090' : heat < 0.5 ? '#ffd060' : heat < 0.85 ? '#ff9030' : Math.floor(time * 6) % 2 ? '#ff4020' : '#ffd060';
+    drawText(ctx, st, x0 + (8 + textWidth(tray)) * k, y + 3 * k, { scale: k, color: sc });
+    // Vault vs Debt with a progress bar; the Tray shows as a ghost on top.
+    const vt = 'VAULT $' + Math.round(r.vault) + '/' + c.debt;
+    const vw = Math.max(textWidth(vt) + 8, w / k - x / k - 2);
+    x0 = seg(vw * k, null);
+    const vf = r.vaultFlash > 0 && Math.floor(r.vaultFlash * 10) % 2 === 0;
+    const covered = r.vault >= c.debt;
+    drawText(ctx, vt, x0 + 4 * k, y + 3 * k, { scale: k, color: vf ? '#ffffff' : covered ? '#90ff90' : '#f0e0b0' });
+    const frac = Math.max(0, Math.min(1, r.vault / Math.max(1, c.debt)));
+    const bx = x0 + 4 * k;
+    const bw = (vw - 8) * k;
+    ctx.fillStyle = '#2a1a10';
+    ctx.fillRect(bx, y + 10 * k, bw, k);
+    ctx.fillStyle = covered ? '#60ff60' : frac > 0.66 ? '#ffd040' : '#ff7040';
+    ctx.fillRect(bx, y + 10 * k, Math.round(bw * frac), k);
+    const ghost = Math.max(0, Math.min(1, (r.vault + r.tray) / Math.max(1, c.debt))) - frac;
+    if (ghost > 0) {
+      ctx.fillStyle = 'rgba(160,255,160,0.45)';
+      ctx.fillRect(bx + Math.round(bw * frac), y + 10 * k, Math.round(bw * ghost), k);
+    }
+  }
+
   draw(ctx: CanvasRenderingContext2D, w: number, h: number, k: number, mouse: { x: number; y: number; inside: boolean }, time: number): void {
     // ---- Nav arrows (mouse play) ----
     this.arrowRects = [];
@@ -123,7 +220,8 @@ export class Hud {
     }
 
     // ---- Bottom chyron (broadcast ticker) ----
-    if (this.ticker) {
+    if (this.chyron) this.drawChyron(ctx, w, h, k, time);
+    else if (this.ticker) {
       const y = h - 11 * k;
       ctx.fillStyle = 'rgba(10,4,2,0.82)';
       ctx.fillRect(0, y, w, 11 * k);
@@ -133,7 +231,7 @@ export class Hud {
       drawText(ctx, this.ticker, 34 * k, y + 2 * k, { scale: k, color: '#f0e0b0' });
       if (this.tickerRight) drawText(ctx, this.tickerRight, w - 3 * k, y + 2 * k, { align: 'right', scale: k, color: '#a0e0a0' });
     }
-    if (this.hint && !this.choice) drawText(ctx, this.hint, w / 2, h - 21 * k, { align: 'center', scale: k, color: 'rgba(255,240,200,0.8)', shadow: '#000' });
+    if (this.hint && !this.choice) drawText(ctx, this.hint, w / 2, h - (this.chyron ? 23 : 21) * k, { align: 'center', scale: k, color: 'rgba(255,240,200,0.8)', shadow: '#000' });
 
     // ---- Banner (Deadline intro, SWEEPS, combos) ----
     if (this.banner) {
@@ -141,13 +239,37 @@ export class Hud {
       const slide = Math.min(1, b.t * 5) * (b.t > b.life - 0.25 ? (b.life - b.t) / 0.25 : 1);
       const bw = w * slide;
       const y = h * 0.3;
-      ctx.fillStyle = 'rgba(20,6,2,0.9)';
+      ctx.fillStyle = 'rgba(20,6,2,0.92)';
       ctx.fillRect(w / 2 - bw / 2, y, bw, 26 * k);
+      // Broadcast-graphics stripes scrolling behind the title.
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(w / 2 - bw / 2, y + k, bw, 24 * k);
+      ctx.clip();
+      ctx.fillStyle = b.color;
+      ctx.globalAlpha = 0.09;
+      const off = (b.t * 40 * k) % (12 * k);
+      for (let x = -26 * k; x < w + 26 * k; x += 12 * k) {
+        ctx.beginPath();
+        ctx.moveTo(x + off, y + 26 * k);
+        ctx.lineTo(x + off + 6 * k, y + 26 * k);
+        ctx.lineTo(x + off + 30 * k, y);
+        ctx.lineTo(x + off + 24 * k, y);
+        ctx.fill();
+      }
+      ctx.restore();
       ctx.fillStyle = b.color;
       ctx.fillRect(w / 2 - bw / 2, y, bw, k);
       ctx.fillRect(w / 2 - bw / 2, y + 26 * k - k, bw, k);
+      // A light sweep across the bar as it lands.
+      if (b.t < 0.6) {
+        const sx = w / 2 - bw / 2 + (b.t / 0.6) * bw;
+        ctx.fillStyle = 'rgba(255,255,255,0.35)';
+        ctx.fillRect(sx - 6 * k, y, 6 * k, 26 * k);
+      }
       if (slide > 0.9) {
-        drawText(ctx, b.text, w / 2, y + 4 * k, { align: 'center', scale: 2 * k, color: b.color, shadow: '#000' });
+        const pop = b.t < 0.32 ? -Math.round(Math.sin((b.t / 0.32) * Math.PI) * 2) * k : 0;
+        drawText(ctx, b.text, w / 2, y + 4 * k + pop, { align: 'center', scale: 2 * k, color: b.color, shadow: '#000' });
         drawText(ctx, b.sub, w / 2, y + 18 * k, { align: 'center', scale: k, color: '#f0e0c0' });
       }
     }

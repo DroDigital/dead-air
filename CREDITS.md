@@ -37,6 +37,53 @@ DEAD AIR — design, code, writing, procedural art, procedural audio and music: 
 | `sfx.scratch` | https://opengameart.org/content/rpg-sound-pack | artisticdude (OpenGameArt, "RPG Sound Pack") | CC0-1.0 | Source file "RPG Sound Pack/inventory/cloth.wav" from the zip. Converted to mono 22.05 kHz PCM16 with a one-pole lowpass at 7 kHz and 10-bit crush. Plays when a Scratch Card is used. |
 | `sfx.crank` | https://opengameart.org/content/rpg-sound-pack | artisticdude (OpenGameArt, "RPG Sound Pack") | CC0-1.0 | Source file "RPG Sound Pack/inventory/chainmail1.wav" from the zip. Converted to mono 22.05 kHz PCM16 with a one-pole lowpass at 7 kHz and 10-bit crush. Plays when the Prize Cabinet crank turns. |
 
+## Music
+
+Provided for this project by digitaldro (made with Suno). Sources in `assets-src/music`.
+
+| Track | Used for |
+|---|---|
+| Channel 98 | Title screen and menus |
+| The Final Round | The wheel (gameplay) |
+| Department Store Dreams | The Prize Cabinet |
+| Final Question | Debt deadline payment; a last spin that is short of the Debt |
+| Game-over cue | The floor opens |
+| Spin tension | Charging the lever and the spin |
+
+## Generated with ElevenLabs
+
+Voice-over (custom-designed voices, `eleven_v4`), sound effects (`eleven_text_to_sound_v2`) and music (`eleven_music_v2_5`) were generated for this project with ElevenLabs. Prompts are listed in `assets/elevenlabs.json`; the voice script is `assets-src/vo/script.json`.
+
+| Voice | Speaker | Design |
+|---|---|---|
+| DEAD AIR Host | host | Manic, relentlessly cheerful 1970s game-show host with something hollow underneath |
+| DEAD AIR Producer | producer | Gravelly, smooth, quietly menacing TV executive on a late-night phone call |
+| DEAD AIR Other Line | secret | A frightened woman whispering over a crossed phone line |
+| DEAD AIR Archivist | archive | Elderly, tired studio archivist reading memos into a tape recorder |
+
+| Id | Kind | Model | Prompt |
+|---|---|---|---|
+| `el.bankrupt` | sfx | eleven_text_to_sound_v2 | Game show bankrupt buzzer and descending muted trombone |
+| `el.groan` | sfx | eleven_text_to_sound_v2 | Studio audience groaning in disappointment |
+| `el.jackpot` | sfx | eleven_text_to_sound_v2 | Frantic ringing brass bells, register ding, coins |
+| `el.applause` | sfx | eleven_text_to_sound_v2 | Vintage studio audience applause on old tape |
+| `el.gasp` | sfx | eleven_text_to_sound_v2 | Studio audience gasping in shock |
+| `el.laugh` | sfx | eleven_text_to_sound_v2 | Warped 1970s laugh track |
+| `el.sting` | sfx | eleven_text_to_sound_v2 | Dramatic brass and timpani sting |
+| `el.trapdoor` | sfx | eleven_text_to_sound_v2 | Steel trapdoor bolts, fall into a shaft |
+| `el.static` | sfx | eleven_text_to_sound_v2 | CRT channel-change static burst |
+| `el.pickup` | sfx | eleven_text_to_sound_v2 | Bakelite phone handset picked up, open line |
+| `el.hangup` | sfx | eleven_text_to_sound_v2 | Bakelite handset slammed onto its cradle |
+| `el.fanfare` | sfx | eleven_text_to_sound_v2 | Out-of-tune 1970s winner fanfare |
+| `el.signoff` | sfx | eleven_text_to_sound_v2 | TV sign-off: CRT collapse, test tone, static |
+| `el.rimshot` | sfx | eleven_text_to_sound_v2 | Rimshot with sad slide whistle |
+| `el.register` | sfx | eleven_text_to_sound_v2 | Mechanical cash register and drawer |
+| `el.drumroll` | loop | eleven_text_to_sound_v2 | Snare drum roll (seamless loop) |
+| `el.heartbeat` | loop | eleven_text_to_sound_v2 | Heartbeat over a sub-bass drone (seamless loop) |
+| `el.ambience` | loop | eleven_text_to_sound_v2 | Abandoned TV studio room tone (seamless loop) |
+| `el.music_main` | music | eleven_music_v2_5 | Detuned 1970s game-show theme, organ, walking bass, brushes (instrumental) |
+| `el.music_lounge` | music | eleven_music_v2_5 | Warped music-box and Hammond intermission bossa (instrumental) |
+
 ## Libraries
 
 - three.js (MIT), GSAP (Standard "No Charge" licence), gltf-transform (MIT), sharp (Apache-2.0), meshoptimizer (MIT), Vite (MIT), Vitest (MIT).

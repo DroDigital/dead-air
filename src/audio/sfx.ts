@@ -4,6 +4,7 @@
  * 22.05 kHz, matching the asset pipeline). Every playback is varied (pitch/gain jitter) so
  * nothing repeats identically.
  */
+import elIndex from '../assets/audio.json';
 import index from '../assets/manifest.json';
 import type { Mixer } from './mixer';
 
@@ -60,7 +61,44 @@ type SfxId =
   | 'pickup'
   | 'hangup'
   | 'error'
-  | 'powerup';
+  | 'powerup'
+  | 'gasp'
+  | 'laugh'
+  | 'static'
+  | 'signoff'
+  | 'rimshot'
+  | 'register'
+  | 'fanfare'
+  | 'drumroll'
+  | 'heartbeat'
+  | 'roomtone'
+  | 'tension'
+  | 'gameoverCue';
+
+/** ElevenLabs recordings (assets/elevenlabs.json) take precedence over CC0 files and synthesis. */
+const EL_IDS: Partial<Record<SfxId, string>> = {
+  bankrupt: 'el.bankrupt',
+  groan: 'el.groan',
+  jackpot: 'el.jackpot',
+  applause: 'el.applause',
+  cheer: 'el.applause',
+  sting: 'el.sting',
+  trapdoor: 'el.trapdoor',
+  pickup: 'el.pickup',
+  hangup: 'el.hangup',
+  gasp: 'el.gasp',
+  laugh: 'el.laugh',
+  static: 'el.static',
+  signoff: 'el.signoff',
+  rimshot: 'el.rimshot',
+  register: 'el.register',
+  fanfare: 'el.fanfare',
+  drumroll: 'el.drumroll',
+  heartbeat: 'el.heartbeat',
+  roomtone: 'el.ambience',
+  tension: 'track.charge',
+  gameoverCue: 'track.gameover',
+};
 
 /** Map from manifest ids (real files) to SFX ids. */
 const FILE_IDS: Partial<Record<SfxId, string>> = {
@@ -172,6 +210,35 @@ export class Sfx {
     B('pickup', 0.6, (t, _i, _n, st) => (rnd(st) * 2 - 1) * env(t, 0.001, 0.03) * 0.5 + Math.sin(2 * Math.PI * 70 * t) * env(t, 0.005, 0.1) * 0.5);
     B('hangup', 0.3, (t, _i, _n, st) => (rnd(st) * 2 - 1) * env(t, 0.001, 0.04) + Math.sin(2 * Math.PI * 90 * t) * env(t, 0.002, 0.08));
     B('error', 0.25, (t) => sq(t * 140) * env(t, 0.002, 0.1) * 0.4);
+    B('gasp', 0.8, (t, _i, _n, st) => (rnd(st) * 2 - 1) * Math.sin(Math.min(1, t / 0.8) * Math.PI) * 0.5, 9, 3000);
+    B('laugh', 1.2, (t, _i, _n, st) => (rnd(st) * 2 - 1) * (0.5 + 0.5 * Math.sin(t * 40)) * Math.sin(Math.min(1, t / 1.2) * Math.PI) * 0.4, 9, 2500);
+    B('static', 0.6, (t, _i, _n, st) => (rnd(st) * 2 - 1) * env(t, 0.002, 0.3) * 0.6, 6, 8000);
+    B('signoff', 2.5, (t) => Math.sin(2 * Math.PI * 1000 * t) * (t < 2.2 ? 0.25 : (2.5 - t) * 0.8));
+    B('rimshot', 0.4, (t, _i, _n, st) => (rnd(st) * 2 - 1) * env(t, 0.001, 0.05) * 0.7 + (t > 0.15 ? (rnd(st) * 2 - 1) * env(t - 0.15, 0.001, 0.12) * 0.5 : 0));
+    B('register', 0.6, (t) => Math.sin(2 * Math.PI * 2100 * t) * env(t, 0.002, 0.25) * 0.4);
+    B('fanfare', 1.6, (t) => {
+      let s = 0;
+      [523, 659, 784, 1046].forEach((f, k) => {
+        const tt = t - k * 0.15;
+        if (tt > 0) s += sq(tt * f) * env(tt, 0.01, 0.8) * 0.12;
+      });
+      return s;
+    });
+    B('drumroll', 1, (t, _i, _n, st) => (rnd(st) * 2 - 1) * (0.4 + 0.6 * Math.abs(Math.sin(t * 90))) * 0.35, 9, 6000);
+    B('heartbeat', 1, (t) => Math.sin(2 * Math.PI * 50 * t) * (env(t, 0.005, 0.08) + (t > 0.25 ? env(t - 0.25, 0.005, 0.1) * 0.7 : 0)) * 0.8);
+    B('roomtone', 2, (_t, _i, _n, st) => {
+      st.a += ((rnd(st) * 2 - 1) - st.a) * 0.02;
+      return st.a * 0.8;
+    }, 10, 600);
+    B('tension', 2, (t, _i, _n, st) => (rnd(st) * 2 - 1) * (0.2 + 0.8 * (t / 2)) * 0.25 + Math.sin(2 * Math.PI * (80 + 200 * t) * t) * 0.15, 9, 4000);
+    B('gameoverCue', 1.6, (t) => {
+      let s = 0;
+      [392, 370, 349, 262].forEach((f, k) => {
+        const tt = t - k * 0.3;
+        if (tt > 0) s += sq(tt * f) * env(tt, 0.01, 0.4) * 0.12;
+      });
+      return s;
+    });
     B('powerup', 0.9, (t, _i, _n, st) => {
       const hum = sq(t * 60) * 0.15 + sq(t * 120) * 0.1;
       const clunk = (rnd(st) * 2 - 1) * env(t, 0.001, 0.03);
@@ -179,15 +246,19 @@ export class Sfx {
     }, 8, 3000);
   }
 
-  /** Replace procedural buffers with real converted files where available. */
+  /** Replace procedural buffers with real files where available: ElevenLabs first, then CC0. */
   async loadFiles(): Promise<void> {
     const idx = (index as { assets: Record<string, { type: string; url: string }> }).assets;
+    const el = elIndex as Record<string, string>;
+    const ids = new Set([...Object.keys(FILE_IDS), ...Object.keys(EL_IDS)] as SfxId[]);
     await Promise.all(
-      (Object.entries(FILE_IDS) as [SfxId, string][]).map(async ([sid, mid]) => {
-        const e = idx[mid];
-        if (!e || e.type !== 'audio') return;
+      [...ids].map(async (sid) => {
+        const elUrl = EL_IDS[sid] ? el[EL_IDS[sid]!] : undefined;
+        const e = FILE_IDS[sid] ? idx[FILE_IDS[sid]!] : undefined;
+        const url = elUrl ?? (e && e.type === 'audio' ? e.url : undefined);
+        if (!url) return;
         try {
-          const res = await fetch(e.url);
+          const res = await fetch(url);
           const buf = await this.mixer.ctx.decodeAudioData(await res.arrayBuffer());
           this.buffers.set(sid, buf);
         } catch {
@@ -195,6 +266,36 @@ export class Sfx {
         }
       }),
     );
+  }
+
+  /** A looping bed (drumroll, heartbeat, room tone). Returns a handle that fades it out. */
+  loop(id: SfxId, gain = 0.6, bus: 'sfx' | 'ambience' = 'sfx', fadeIn = 0.15, repeat = true): { stop: (fade?: number) => void; gain: GainNode } | null {
+    if (!this.mixer.running) return null;
+    const buf = this.buffers.get(id);
+    if (!buf) return null;
+    const c = this.mixer.ctx;
+    const src = c.createBufferSource();
+    src.buffer = buf;
+    src.loop = repeat;
+    const g = c.createGain();
+    g.gain.setValueAtTime(0, c.currentTime);
+    g.gain.linearRampToValueAtTime(gain, c.currentTime + fadeIn);
+    src.connect(g).connect(this.mixer.buses[bus]);
+    src.start();
+    return {
+      gain: g,
+      stop: (fade = 0.25) => {
+        const t = c.currentTime;
+        g.gain.cancelScheduledValues(t);
+        g.gain.setValueAtTime(g.gain.value, t);
+        g.gain.linearRampToValueAtTime(0, t + fade);
+        try {
+          src.stop(t + fade + 0.05);
+        } catch {
+          /* already ended */
+        }
+      },
+    };
   }
 
   play(id: SfxId, o: { pitch?: number; gain?: number; jitter?: number; delay?: number; pan?: number } = {}): AudioBufferSourceNode | null {

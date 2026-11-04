@@ -7,10 +7,11 @@ import { Mixer } from './audio/mixer';
 import { Music } from './audio/music';
 import { Sfx } from './audio/sfx';
 import { HOST_VOICE, PRODUCER_VOICE, SECRET_VOICE, Voice } from './audio/voice';
+import { VoPlayer, type VoMood } from './audio/vo';
 import { artifactDef } from './content/artifacts';
 import { bargainDef, fillDeal } from './content/bargains';
 import { COMBO_NAMES } from './game/combos';
-import { HOST_LINES, HOST_SILENT_LINES, type HostTrigger } from './content/hostLines';
+import { DEADLINE_LINES, HOST_LINES, HOST_SILENT_LINES, PRODUCER_ACCEPT, PRODUCER_HANGUP, SECRET_ACCEPT, type HostTrigger } from './content/hostLines';
 import { mutatorDef } from './content/mutators';
 import { scratchDef } from './content/scratchCards';
 import { WEDGES } from './content/wedges';
@@ -44,6 +45,13 @@ export class App {
   readonly sfx = new Sfx(this.mixer);
   readonly music = new Music(this.mixer);
   readonly voice = new Voice(this.mixer);
+  readonly vo = new VoPlayer(this.mixer);
+  private loops: { drum?: { stop: (f?: number) => void } | null; heart?: { stop: (f?: number) => void } | null } = {};
+  private lastSpinSaid = -1;
+  /** Spins the current Deadline started with (for the chyron pips). */
+  private spinsMax = 8;
+  private spinsMaxFor = -1;
+  private phoneTalk: number[] = [];
   readonly hud = new Hud();
   input!: Input;
   menus!: Menus;
@@ -98,6 +106,12 @@ export class App {
       onEndlessContinue: () => this.endlessContinue(),
       onRetire: () => this.retire(),
       onUiSound: (k) => this.sfx.play(k === 'select' ? 'button' : 'blip', { gain: 0.5 }),
+      onLoreNote: (text) => {
+        if (!text) return this.vo.stop();
+        this.sfx.play('static', { gain: 0.25, pitch: 0.7 });
+        this.vo.play('archive', text, { wear: 0.4, glitch: 0.05 });
+      },
+      loreVoiced: (text) => this.vo.has('archive', text),
       getMeta: () => this.meta,
       getSettings: () => this.settings,
       hasSave: () => this.runSlot.exists() && !!this.runSlot.load(),
@@ -105,9 +119,18 @@ export class App {
     });
     const firstGesture = () => {
       void this.mixer.resume().then(() => {
+        if (!this.game) {
+          this.music.setTrack('menu');
+          this.music.start();
+        }
         this.music.kick();
         this.music.startAmbience();
         this.mixer.setVolumes(this.settings);
+        // The broadcast greets whoever touched it first.
+        if (!this.game) {
+          const t = HOST_LINES.title[Math.floor(Math.random() * HOST_LINES.title.length)];
+          setTimeout(() => !this.game && this.vo.play('host', t, { wear: 0.25, glitch: 0.1 }), 600);
+        }
       });
       window.removeEventListener('pointerdown', firstGesture);
       window.removeEventListener('keydown', firstGesture);
@@ -134,6 +157,8 @@ export class App {
       this.sfx.play('powerup', { gain: 0.15, pitch: 0.8 + p * 0.6 });
     });
     await this.sfx.loadFiles();
+    void this.music.loadTracks();
+    this.vo.preload(Object.values(HOST_LINES).flat().map((text) => ({ speaker: 'host' as const, text })));
     this.loading = 1;
     await wait(0.3);
     loadingDone = true;
@@ -275,6 +300,7 @@ export class App {
       void e;
     });
     this.music.setDeadline(g.run.deadline);
+    this.music.setTrack('main');
     this.music.start();
     this.music.setLevel(1);
     this.stage.studio.openTrapdoor(0);
@@ -286,7 +312,48 @@ export class App {
   }
 
   /** Normal lighting, closed trapdoor, host at rest and an empty cabinet: the state every run starts from. */
+  /** Colour grade, danger tint and lighting mood follow the state of the show. */
+  private updateMood(dt: number): void {
+    const st = this.stage;
+    const r = this.game?.run;
+    const short = !!r && r.phase === 'AwaitAction' && r.spinsLeft <= 1 && r.vault + r.tray < r.debt;
+    const phone = r?.phase === 'PhoneCall';
+    const wear = r ? Math.min(1, (r.deadline - 1) / 8) : 0;
+    if (short) {
+      st.post.grade.setRGB(1.12, 0.86, 0.8);
+      st.post.sat = 0.75;
+    } else if (phone) {
+      st.post.grade.setRGB(0.88, 0.97, 1.1);
+      st.post.sat = 0.7;
+    } else {
+      // The picture yellows and fades as the run wears on.
+      st.post.grade.setRGB(1.02 + wear * 0.06, 0.98, 0.92 - wear * 0.1);
+      st.post.sat = 1 - wear * 0.25;
+    }
+    this.hud.danger += ((short ? 1 : 0) - this.hud.danger) * Math.min(1, dt * 3);
+    // Heartbeat in the vignette while the last spin is short.
+    const beat = short ? Math.pow(Math.max(0, Math.sin(this.time * 7.2)), 8) : 0;
+    st.post.vig = 0.05 * this.hud.danger + beat * 0.25;
+    st.post.flashAmt = Math.max(0, st.post.flashAmt - dt * 1.6);
+    if (short && st.lights.mode === 'idle') st.lights.setMode('tense');
+    else if (!short && !phone && st.lights.mode === 'tense') st.lights.setMode('idle');
+    st.lights.reducedFlashing = this.settings.reducedFlashing;
+    if (this.settings.reducedFlashing) st.post.shock = Math.min(st.post.shock, 0.3);
+  }
+
+  private stopHeartbeat(): void {
+    this.loops.heart?.stop(0.8);
+    this.loops.heart = null;
+  }
+
   private resetStageVisuals(): void {
+    this.stopHeartbeat();
+    this.stage.lights.setMode('idle');
+    this.stage.lights.onAir = true;
+    this.stage.rig.dollyTarget = 0;
+    this.loops.drum?.stop(0.05);
+    this.loops.drum = null;
+    this.vo.stop();
     const st = this.stage;
     st.post.fade = 1;
     st.rig.offset.set(0, 0, 0);
@@ -350,12 +417,19 @@ export class App {
     this.game = null;
     this.hud.choice = null;
     this.hud.ticker = '';
+    this.hud.chyron = null;
     this.hud.hint = '';
     this.choiceHandler = null;
     this.stage.phone.ringing = false;
     this.sfx.stopRinging();
+    this.vo.stop();
+    this.stopHeartbeat();
+    this.phoneTalk.forEach((t) => clearTimeout(t));
+    this.phoneTalk = [];
     this.stage.post.roll = 0;
     this.fsm.force('Menu');
+    this.music.setTrack('menu');
+    this.music.start();
     this.menus.show('title');
   }
 
@@ -376,6 +450,7 @@ export class App {
     if (!this.game) return;
     this.menus.hide();
     this.game.continueEndless();
+    this.music.start();
     void this.enterPhase();
   }
 
@@ -394,18 +469,33 @@ export class App {
   // ===================================================================================
   // Presentation helpers
   // ===================================================================================
-  private hostSay(trigger: HostTrigger, face: Parameters<Stage['host']['say']>[0] = 'talk', pose?: Parameters<Stage['host']['setPose']>[0]): void {
+  private hostSay(trigger: HostTrigger, face: Parameters<Stage['host']['say']>[0] = 'talk', pose?: Parameters<Stage['host']['setPose']>[0], text?: string): void {
     const silent = !!this.game?.run.marks.hostSilent;
     const pool = silent ? HOST_SILENT_LINES : HOST_LINES[trigger];
-    const line = pool[Math.floor(Math.random() * pool.length)];
-    const dur = silent ? 1.5 : this.voice.speak(line, HOST_VOICE, this.speed > 1 ? 1.4 : 1);
+    const line = silent ? pool[Math.floor(Math.random() * pool.length)] : (text ?? pool[Math.floor(Math.random() * pool.length)]);
+    const voiced = silent ? 0 : this.vo.play('host', line, this.hostMood(trigger));
+    if (voiced) this.voice.stop();
+    const dur = silent ? 1.5 : voiced || this.voice.speak(line, HOST_VOICE, this.speed > 1 ? 1.4 : 1);
     this.stage.host.say(face, dur);
     if (pose) this.stage.host.setPose(pose);
-    if (this.settings.captions) this.hud.caption('HOST', line, '#7dffa8', dur / (this.speed > 1 ? 1.5 : 1));
+    if (this.settings.captions) this.hud.caption('HOST', line, '#7dffa8', voiced ? dur : dur / (this.speed > 1 ? 1.5 : 1));
+  }
+
+  /** The host's voice wears out with the show: more tape wear each Deadline, glitches when it goes wrong. */
+  private hostMood(trigger: HostTrigger): VoMood {
+    const r = this.game?.run;
+    const d = r?.deadline ?? 1;
+    const wear = Math.min(1, (d - 1) / 8);
+    const bad = trigger === 'debtMissed' || trigger === 'gameOver';
+    const glitch = bad ? 0.75 : trigger === 'bankrupt' ? 0.3 : d >= 7 ? 0.22 : d >= 5 ? 0.1 : r?.mutator ? 0.12 : 0;
+    return { wear, glitch, powerDown: trigger === 'gameOver' };
   }
 
   private producerSay(text: string, secret: boolean): number {
-    const dur = this.voice.speak(text, secret ? SECRET_VOICE : PRODUCER_VOICE, 1.2);
+    const deadAir = this.game?.run.phone?.reason === 'deadAir';
+    const voiced = this.vo.play(secret ? 'secret' : 'producer', text, { wear: 0, glitch: deadAir ? 0.3 : 0 });
+    if (voiced) this.voice.stop();
+    const dur = voiced || this.voice.speak(text, secret ? SECRET_VOICE : PRODUCER_VOICE, 1.2);
     if (this.settings.captions) this.hud.caption(secret ? '???' : 'THE PRODUCER', text, secret ? '#c080ff' : '#ff9060', dur);
     return dur;
   }
@@ -416,6 +506,7 @@ export class App {
     const r = g.run;
     const d = r.deadline > BALANCE.deadlinesPerRun ? `∞${r.deadline}` : `${r.deadline}/8`;
     this.hud.ticker = `D${d}  SPINS ${r.spinsLeft}  TRAY $${r.tray} ×${r.streak.toFixed(2)}  VAULT $${r.vault}/${r.debt}`;
+    this.hud.chyron = { deadline: d, spins: r.spinsLeft, spinsMax: Math.max(this.spinsMax, r.spinsLeft), tray: r.tray, streak: r.streak, vault: r.vault, debt: r.debt };
     this.hud.tickerRight = '';
     this.hud.corner = `TOK ${r.tokens}`;
   }
@@ -490,6 +581,9 @@ export class App {
     this.target = null;
     this.hud.hint = '';
     this.stage.phone.ringing = r.phase === 'PhoneCall' && !this.phoneAnswered;
+    const shortLast = r.phase === 'AwaitAction' && r.spinsLeft === 1 && r.vault + r.tray < r.debt;
+    this.music.setTrack(r.phase === 'PhoneCall' ? 'phone' : r.phase === 'Shop' || r.phase === 'Conversion' || r.phase === 'WedgeReplace' ? 'shop' : shortLast ? 'deadline' : 'main');
+    if (r.phase !== 'AwaitAction') this.stopHeartbeat();
     switch (r.phase) {
       case 'PackageSelect':
         if (this.introShownFor !== r.deadline) await this.deadlineIntro();
@@ -499,7 +593,13 @@ export class App {
       case 'AwaitAction':
         this.fsm.force('AwaitAction');
         this.setChoice(null, null);
-        this.hud.hint = this.stage.rig.station === 'center' ? 'HOLD SPACE (OR THE LEVER) TO SPIN' : '';
+        this.hud.hint = this.stage.rig.station === 'center' ? (g.canGamble() ? 'HOLD SPACE TO SPIN · [D] DOUBLE OR NOTHING' : 'HOLD SPACE (OR THE LEVER) TO SPIN') : '';
+        if (r.spinsLeft === 1 && this.lastSpinSaid !== r.deadline * 1000 + r.spinsLeft) {
+          this.lastSpinSaid = r.deadline * 1000 + r.spinsLeft;
+          this.hostSay('lastSpin', 'shock', 'point');
+          this.hud.showBanner('LAST SPIN', r.vault + r.tray >= r.debt ? 'THE DEBT IS COVERED' : `$${r.debt - r.vault - r.tray} SHORT`, r.vault + r.tray >= r.debt ? '#80ff80' : '#ff5040', 1.8 / this.speed);
+          if (r.vault + r.tray < r.debt) this.loops.heart ??= this.sfx.loop('heartbeat', 0.5, 'sfx', 1.5);
+        }
         break;
       case 'Nudge':
         this.fsm.force('Resolving');
@@ -544,17 +644,24 @@ export class App {
       this.fsm.force('DeadlineIntro');
       this.music.setDeadline(r.deadline);
       this.stage.rig.go('center', 0.5);
+      this.stage.rig.craneIn();
+      this.stage.lights.setMode('party');
+      this.stage.lights.applause = 1.6;
+      this.stage.post.shock = 0.3;
       const mut = mutatorDef(r.mutator);
       const title = r.deadline > BALANCE.deadlinesPerRun ? `ENDLESS ${r.deadline}` : `DEADLINE ${r.deadline}`;
       this.hud.showBanner(title, `THE NETWORK WANTS $${r.debt}`, mut ? '#ff5040' : '#ffd040', 2.6 / this.speed);
       this.stage.marquee.set(`DEADLINE ${r.deadline} — $${r.debt} DUE`, '#ffd040', true);
       this.sfx.play('sting', { gain: 0.6 });
-      this.hostSay(r.deadline === 1 ? 'intro' : mut ? 'sweep' : 'package', 'grin', 'present');
+      if (r.deadline > BALANCE.deadlinesPerRun) this.hostSay('endless', 'grin', 'present');
+      else if (r.deadline === 1 && Math.random() < 0.5) this.hostSay('intro', 'grin', 'present');
+      else this.hostSay(mut ? 'sweep' : 'package', 'grin', 'present', DEADLINE_LINES[r.deadline - 1]);
       await wait(1.6 / this.speed);
       if (mut) {
         this.hud.showBanner(`SWEEPS: ${mut.name}`, mut.text, '#ff5040', 3 / this.speed);
         this.stage.post.roll = 0.6;
         this.sfx.play('buzz', { gain: 0.4 });
+        this.sfx.play('static', { gain: 0.5 });
         await wait(1.8 / this.speed);
         this.stage.post.roll = 0;
       }
@@ -604,6 +711,8 @@ export class App {
     if (!g || g.run.phase !== 'AwaitAction' || this.busy || this.charge || this.menus.open) return;
     if (this.stage.rig.station !== 'center') this.stage.rig.go('center');
     this.charge = { t: 0, peek: false, lastTick: 0 };
+    this.loops.drum?.stop(0.05);
+    this.loops.drum = this.sfx.loop('tension', 0.6, 'sfx', 0.25, false) ?? this.sfx.loop('drumroll', 0.32, 'sfx', 0.3);
     this.fsm.force('Charging');
     this.hud.hint = g.canPeek() ? 'RELEASE IN THE GREEN · [E] PEEK' : 'RELEASE IN THE GREEN';
     this.updateArrows();
@@ -626,6 +735,11 @@ export class App {
     await this.withBusy(async () => {
       this.fsm.force('Spinning');
       this.hud.payout = null;
+      this.stage.rig.dollyTarget = 1;
+      if (g.run.spinsLeft > this.spinsMax || this.spinsMaxFor !== g.run.deadline) {
+        this.spinsMax = g.run.spinsLeft;
+        this.spinsMaxFor = g.run.deadline;
+      }
       const outcome = g.spin(power, { peek });
       this.sfx.play('lever', { gain: 0.8 });
       this.stage.lever.pull = 1;
@@ -726,7 +840,9 @@ export class App {
       if (c === 'deadAir') continue;
       st.vfx.float(st.wheel.group.position.clone().add(new THREE.Vector3(0, 1.2, 0)), COMBO_NAMES[c], '#ff70ff', 2, 1.6);
     }
-    if (res.combos.some((c) => c !== 'deadAir') && Math.random() < 0.5) this.hostSay('combo', 'grin', 'cheer');
+    if (res.combos.includes('hatTrick')) this.hostSay('hatTrick', 'shock', 'cheer');
+    else if (res.combos.includes('neighbors') && Math.random() < 0.5) this.hostSay('neighbors', 'shock', 'point');
+    else if (res.combos.some((c) => c !== 'deadAir') && Math.random() < 0.5) this.hostSay('combo', 'grin', 'cheer');
 
     // Notes (prize effects).
     const tally = new Map<string, number>();
@@ -734,6 +850,10 @@ export class App {
     for (const [n, c] of [...tally].slice(0, 4)) this.hud.toast(c > 1 ? `${n} ×${c}` : n);
 
     const big = p.cash >= Math.max(500, g.run.debt * 0.5);
+    st.rig.dollyTarget = 0;
+    // The tension cue ends when the wheel lands.
+    this.loops.drum?.stop(0.35);
+    this.loops.drum = null;
     if (p.bankrupt && !p.bankruptBlocked) await this.bankruptDrama(p.trayLost, p.deadAir);
     else if (p.bankruptBlocked) {
       this.hud.toast('BANKRUPT BLOCKED!', '#80ffff');
@@ -743,7 +863,14 @@ export class App {
       if (big) {
         this.hitstop = 0.18;
         if (this.settings.screenShake) st.rig.shake(0.5);
+        st.rig.punch(-6);
+        st.post.shock = 0.5;
+        st.lights.setMode('party');
+        st.lights.applause = 2.5;
         this.sfx.play('cheer', { gain: 0.6 });
+      } else if (p.cash >= 150) {
+        st.rig.punch(-2.5);
+        st.lights.applause = 1.2;
       }
       this.sfx.play('cascade', { gain: Math.min(1, 0.3 + p.cash / 1500), pitch: 1 });
     }
@@ -751,11 +878,21 @@ export class App {
       this.sfx.play('jackpot', { gain: 0.8 });
       if (!this.settings.reducedFlashing) st.vfx.confetti(st.post.width, 100);
       st.studio.accent.color.setRGB(1.2, 1.0, 0.3);
+      st.rig.punch(-9);
+      st.post.shock = 0.8;
+      st.post.flashColor.setRGB(1, 0.85, 0.4);
+      st.post.flashAmt = this.settings.reducedFlashing ? 0.15 : 0.45;
+      st.lights.setMode('party');
+      st.lights.applause = 3.5;
       st.studio.accent.pos.set(0, 2.5, 0.5);
       setTimeout(() => st.studio.accent.color.setRGB(0, 0, 0), 1500);
       this.hostSay('jackpot', 'shock', 'cheer');
     } else if (big) this.hostSay('bigWin', 'grin', 'cheer');
-    else if (p.landedKind === 'dud' && Math.random() < 0.5) this.hostSay('dud', 'wink', 'shrug');
+    else if (p.landedKind === 'dud') {
+      this.sfx.play('rimshot', { gain: 0.55 });
+      if (Math.random() < 0.35) this.sfx.play('laugh', { gain: 0.35, pitch: 0.85, delay: 0.5 });
+      if (Math.random() < 0.5) this.hostSay('dud', 'wink', 'shrug');
+    }
     else if (p.landedKind === 'tax') this.hostSay('tax', 'grin', 'point');
     else if (p.landedKind === 'mystery' && Math.random() < 0.4) this.hostSay('mystery', 'talk', 'present');
     else if (p.landedKind === 'artifact') this.hostSay('artifact', 'grin', 'present');
@@ -782,6 +919,10 @@ export class App {
     const st = this.stage;
     this.sfx.play('bankrupt', { gain: 0.9 });
     if (this.settings.screenShake) st.rig.shake(1);
+    st.rig.tilt(0.12 * (Math.random() < 0.5 ? -1 : 1), 1.4);
+    st.rig.punch(5);
+    st.post.shock = 1;
+    st.lights.setMode('alarm');
     // Lights out for half a second (a gentle dim with Reduced Flashing).
     st.studio.lightLevel = this.settings.reducedFlashing ? 0.45 : 0;
     st.wheel.bulbsOn = this.settings.reducedFlashing ? 0.4 : 0;
@@ -795,10 +936,13 @@ export class App {
     this.mixer.setMuffle(0);
     this.music.setLevel(1, 2);
     this.sfx.play('groan', { gain: 0.6 });
+    if (lost >= 300) this.sfx.play('gasp', { gain: 0.5 });
+    if (Math.random() < 0.3) this.sfx.play('laugh', { gain: 0.3, pitch: 0.7, delay: 1.2 });
     if (lost > 0) st.vfx.float(st.tray.group.position.clone().add(new THREE.Vector3(0, 0.4, 0)), `-$${lost}`, '#ff4040', 1, 1.8);
     st.marquee.set(deadAir ? 'DEAD AIR' : 'BANKRUPT', '#ff3020', true);
     this.hostSay('bankrupt', 'grin', 'shrug');
     if (deadAir) {
+      this.sfx.play('static', { gain: 0.6 });
       this.stage.post.roll = 1;
       await wait(0.8);
     }
@@ -939,10 +1083,21 @@ export class App {
     this.stage.phone.offHook = 1;
     this.stage.post.roll = 0.15;
     this.stage.rig.go('left');
+    this.stage.lights.setMode('tense');
     this.music.setLevel(0.25);
     this.hud.hint = '';
     const ph = g.run.phone!;
-    this.producerSay(ph.intro, ph.reason === 'secret');
+    this.sfx.play('static', { gain: 0.2, pitch: 1.3 });
+    const secret = ph.reason === 'secret';
+    // The caller pitches each deal in turn; choosing anything cuts them off.
+    let at = this.producerSay(ph.intro, secret) + 0.5;
+    for (const o of ph.offers) {
+      const line = bargainDef(o.bargainId).line;
+      if (!this.vo.has(secret ? 'secret' : 'producer', line)) continue;
+      const delay = at;
+      this.phoneTalk.push(window.setTimeout(() => this.producerSay(line, secret), delay * 1000));
+      at += this.vo.duration(secret ? 'secret' : 'producer', line) + 0.6;
+    }
     this.showPhoneOffers();
   }
 
@@ -968,20 +1123,29 @@ export class App {
         footer: '1-3 OR CLICK',
       },
       (i) => {
+        this.phoneTalk.forEach((t) => clearTimeout(t));
+        this.phoneTalk = [];
         this.setChoice(null, null);
         this.stage.phone.offHook = 0;
         this.stage.post.roll = 0;
         this.music.setLevel(1, 1.5);
         if (i < ph.offers.length) {
           const b = bargainDef(ph.offers[i].bargainId);
-          this.producerSay(secret ? '(the line goes quiet. somewhere below you, something unlocks.)' : 'Pleasure doing business. The Network thanks you.', secret);
+          const d = this.producerSay(secret ? SECRET_ACCEPT : PRODUCER_ACCEPT[Math.floor(Math.random() * PRODUCER_ACCEPT.length)], secret);
+          if (!secret) setTimeout(() => !this.vo.speaking && this.game && this.hostSay('dealTaken', 'grin', 'point'), (d + 0.5) * 1000);
           g.phoneAccept(i);
           this.hud.toast('DEAL.', '#ff9060');
           void b;
           this.layoutSig = '';
         } else {
           g.phoneHangUp();
-          this.sfx.play('hangup');
+          const d = secret ? 0 : this.producerSay(PRODUCER_HANGUP[Math.floor(Math.random() * PRODUCER_HANGUP.length)], false);
+          setTimeout(() => {
+            this.vo.stop();
+            this.sfx.play('hangup');
+            this.sfx.play('static', { gain: 0.15, pitch: 1.6 });
+            if (!secret) setTimeout(() => this.game && this.hostSay('dealRefused', 'shock', 'point'), 500);
+          }, Math.max(0, d - 0.2) * 1000);
           this.hud.toast('CLICK.', '#c0c0c0');
         }
         this.phoneAnswered = false;
@@ -998,6 +1162,7 @@ export class App {
     await this.withBusy(async () => {
       this.fsm.force('DeadlineEnd');
       this.setChoice(null, null);
+      this.music.setTrack('deadline');
       st.rig.go('down', 0.5);
       await wait(0.6);
       if (e.deposit && e.deposit.amount > 0) {
@@ -1012,10 +1177,12 @@ export class App {
       st.marquee.set(`PAYMENT DUE: $${e.debt}`, '#ffd040', true);
       this.hud.showBanner(e.paid ? 'PAID' : 'SHORT', e.paid ? `$${e.debt} TO THE NETWORK` : `VAULT $${e.vaultBefore} OF $${e.debt}`, e.paid ? '#80ff80' : '#ff3020', 2.2);
       if (e.paid) {
+        this.sfx.play('register', { gain: 0.6 });
         st.vault.setVault(e.vaultAfter);
         st.vault.shake = 0.4;
         this.sfx.play('thunk', { pitch: 0.8 });
         this.sfx.play('applause', { gain: 0.4 });
+        st.lights.applause = 2;
         if (e.saved) this.hud.toast('THE TRAPDOOR LEVER SAVED YOU', '#ffd040');
         this.hostSay('debtPaid', 'grin', 'cheer');
         await wait(1.6 / this.speed);
@@ -1033,7 +1200,8 @@ export class App {
     await this.withBusy(async () => {
       this.fsm.force('GameOver');
       this.runSlot.clear();
-      this.music.stop();
+      this.stopHeartbeat();
+      this.music.tapeStop(1.8);
       st.rig.go('center', 0.4);
       await wait(0.4);
       // Lights die one by one.
@@ -1041,11 +1209,15 @@ export class App {
       this.sfx.play('powerup', { pitch: 0.5, gain: 0.5 });
       await wait(0.4);
       st.studio.spotLevel = 0;
+      st.lights.setMode('off');
+      st.lights.onAir = false;
       await wait(0.4);
       st.studio.lightLevel = 0.15;
       st.host.expression = 'dead';
+      this.hostSay('gameOver', 'dead', 'slump');
       await wait(0.6);
       this.sfx.play('trapdoor', { gain: 1 });
+      this.sfx.play('gameoverCue', { gain: 0.8, delay: 0.5, jitter: 0 });
       if (this.settings.screenShake) st.rig.shake(1.2);
       const t0 = performance.now();
       while (performance.now() - t0 < 900) {
@@ -1056,6 +1228,7 @@ export class App {
         await wait(1 / 60);
       }
       st.post.fade = 0;
+      this.sfx.play('signoff', { gain: 0.5, delay: 2.2 });
     });
     const r = g.run;
     if (!r.marks.metaApplied) {
@@ -1066,6 +1239,7 @@ export class App {
     }
     this.game = null;
     this.hud.ticker = '';
+    this.hud.chyron = null;
   }
 
   private async victory(): Promise<void> {
@@ -1074,8 +1248,11 @@ export class App {
     await this.withBusy(async () => {
       this.fsm.force('Victory');
       st.rig.go('center', 0.5);
-      this.sfx.play('jackpot');
-      this.sfx.play('applause', { gain: 0.8 });
+      this.sfx.play('fanfare', { gain: 0.8 });
+      st.lights.setMode('party');
+      st.lights.applause = 5;
+      st.rig.punch(-8);
+      this.sfx.play('applause', { gain: 0.8, delay: 0.6 });
       if (!this.settings.reducedFlashing) st.vfx.confetti(st.post.width, 160);
       st.marquee.set('PAID IN FULL — PAID IN FULL —', '#80ff80', true);
       this.hostSay('victory', 'grin', 'cheer');
@@ -1218,6 +1395,8 @@ export class App {
       if (this.target) return this.endTarget();
       if (g) {
         this.charge = null;
+        this.loops.drum?.stop(0.1);
+        this.loops.drum = null;
         this.menus.show('pause', null);
       }
       return;
@@ -1292,7 +1471,7 @@ export class App {
     }
     if (a.type === 'nav') {
       this.stage.rig.nav(a.dir);
-      this.hud.hint = this.stage.rig.station === 'center' && g.run.phase === 'AwaitAction' ? 'HOLD SPACE (OR THE LEVER) TO SPIN' : g.run.phase === 'Shop' ? this.hud.hint : '';
+      this.hud.hint = this.stage.rig.station === 'center' && g.run.phase === 'AwaitAction' ? (g.canGamble() ? 'HOLD SPACE TO SPIN · [D] DOUBLE OR NOTHING' : 'HOLD SPACE (OR THE LEVER) TO SPIN') : g.run.phase === 'Shop' ? this.hud.hint : '';
       if (g.run.phase === 'PhoneCall' && !this.phoneAnswered) this.hud.hint = 'THE PHONE IS RINGING — [ENTER] TO ANSWER';
       this.updateArrows();
       return;
@@ -1337,6 +1516,7 @@ export class App {
       if (k === ',' || k === '<') return this.moveSelected(-1);
       if (k === '.' || k === '>') return this.moveSelected(1);
       if (k === 'x' && this.stage.shelf.selected >= 0) return this.sellSelected();
+      if (k === 'd' && g.run.phase === 'AwaitAction') return this.offerGamble();
       if (k === 'h' && g.run.phase === 'PhoneCall' && this.phoneAnswered) return this.pickChoice(this.hud.choice ? this.hud.choice.options.length - 1 : 0);
     }
   }
@@ -1395,11 +1575,96 @@ export class App {
     if (before > 0) {
       this.sfx.play('cascade', { gain: 0.5, pitch: 0.8 });
       setTimeout(() => this.sfx.play('thunk'), 300);
+      if (before >= 200) this.sfx.play('register', { gain: 0.4, delay: 0.15 });
       if (res.lost) this.hud.toast(`LOST $${res.lost} ON THE WAY`, '#ff8060');
       if (res.keptStreak) this.hud.toast('STREAK KEPT', '#80ffff');
       if (Math.random() < 0.6) this.hostSay('deposit', 'talk', 'present');
     }
     this.sync(false);
+  }
+
+  /** Double or Nothing: confirm, then a drumroll and a coin flip on the marquee. */
+  private offerGamble(): void {
+    const g = this.game;
+    if (!g || this.busy || this.charge || this.menus.open) return;
+    if (!g.canGamble()) {
+      this.sfx.play('error');
+      this.hud.toast(g.run.marks.gambledAt === g.run.deadline ? 'ALREADY GAMBLED THIS DEADLINE' : `NEED $${BALANCE.gambleMin} IN THE TRAY`, '#ff8060');
+      return;
+    }
+    const stake = g.run.tray;
+    this.hostSay('gambleOffer', 'grin', 'present');
+    this.stage.rig.go('center');
+    this.setChoice(
+      {
+        title: 'DOUBLE OR NOTHING?',
+        lines: [`STAKE THE WHOLE TRAY: $${stake}`, `EVEN ODDS. WIN: $${stake * 2}, STREAK STANDS. LOSE: $0, STREAK RESETS.`, 'ONCE PER DEADLINE.'],
+        options: [
+          { label: `DOUBLE IT ($${stake * 2})`, detail: '50/50. The house always says it is fair.', color: '#ffd040' },
+          { label: 'WALK AWAY', detail: `Keep $${stake} riding.` },
+        ],
+        selected: 1,
+        layout: 'cards',
+        accent: '#ffd040',
+        footer: '1-2 OR CLICK',
+      },
+      (i) => {
+        this.setChoice(null, null);
+        if (i === 0) void this.playGamble();
+        else this.hud.toast('WALKED AWAY', '#c0c0c0');
+      },
+    );
+  }
+
+  private async playGamble(): Promise<void> {
+    const g = this.game!;
+    const st = this.stage;
+    await this.withBusy(async () => {
+      this.fsm.force('Resolving');
+      const res = g.gamble();
+      const drum = this.sfx.loop('drumroll', 0.45, 'sfx', 0.2);
+      st.lights.setMode('tense');
+      st.host.say('static', 2.2);
+      // The marquee flips between the two outcomes, slowing down, and lands on the result.
+      let delay = 0.06;
+      let face = 0;
+      while (delay < 0.32) {
+        face ^= 1;
+        st.marquee.set(face ? 'DOUBLE' : 'NOTHING', face ? '#ffd040' : '#ff4030', false);
+        st.wheel.bulbsOn = face ? 1 : 0.3;
+        this.sfx.play('nixie', { pitch: face ? 1.4 : 0.9, gain: 0.5 });
+        await wait(delay / Math.max(1, this.speed * 0.7));
+        delay *= 1.16;
+      }
+      drum?.stop(0.05);
+      st.wheel.bulbsOn = 1;
+      if (res.won) {
+        st.marquee.set(`DOUBLE! $${res.tray}`, '#ffd040', true);
+        this.sfx.play('jackpot', { gain: 0.8 });
+        this.sfx.play('applause', { gain: 0.6, delay: 0.3 });
+        st.rig.punch(-8);
+        st.post.shock = 0.6;
+        st.lights.setMode('party');
+        st.lights.applause = 3;
+        if (!this.settings.reducedFlashing) st.vfx.confetti(st.post.width, 70);
+        st.vfx.float(st.tray.group.position.clone().add(new THREE.Vector3(0, 0.4, 0)), `+$${res.stake}`, '#80ff80', 2, 1.8);
+        this.hostSay('gambleWin', 'shock', 'cheer');
+      } else {
+        st.marquee.set('NOTHING.', '#ff3020', true);
+        this.sfx.play('bankrupt', { gain: 0.8 });
+        this.sfx.play('groan', { gain: 0.6, delay: 0.4 });
+        if (this.settings.screenShake) st.rig.shake(0.8);
+        st.rig.tilt(0.1, 1.2);
+        st.post.shock = 1;
+        st.lights.setMode('alarm');
+        st.tray.setAmount(0, false);
+        st.vfx.float(st.tray.group.position.clone().add(new THREE.Vector3(0, 0.4, 0)), `-$${res.stake}`, '#ff4040', 2, 1.8);
+        this.hostSay('gambleLose', 'grin', 'shrug');
+      }
+      this.sync(true);
+      await wait(1.2 / this.speed);
+    });
+    void this.enterPhase();
   }
 
   private useCard(i: number): void {
@@ -1413,6 +1678,7 @@ export class App {
     const id = g.run.scratch[i];
     g.useScratch(i);
     this.sfx.play('scratch');
+    if (Math.random() < 0.4) this.hostSay('scratch', 'grin', 'point');
     this.hud.toast(`${scratchDef(id).name.toUpperCase()}!`, '#ffe080');
     this.layoutSig = '';
     this.sync(false);
@@ -1467,6 +1733,7 @@ export class App {
     this.stage.shelf.selected = -1;
     this.sfx.play('cascade', { gain: 0.4, pitch: 1.6 });
     this.hud.toast(`SOLD +${v} TOK`);
+    if (Math.random() < 0.5) this.hostSay('sell', 'wink', 'present');
     this.sync(false);
   }
 
@@ -1508,6 +1775,9 @@ export class App {
       }
     } else this.idleTimer = 0;
     this.music.setBuzz(st.studio.lightLevel);
+    this.updateMood(dt);
+    st.host.mouthAmp = this.vo.speaking ? this.vo.amplitude() : -1;
+    if (this.vo.speaking) st.host.talking = Math.max(st.host.talking, 0.15);
     st.post.roll = Math.max(g?.run.phase === 'PhoneCall' && !this.phoneAnswered ? 0.7 : 0, st.post.roll - dt * 0.4);
     if (this.settings.reducedFlashing) st.post.roll = Math.min(st.post.roll, 0.25);
     st.update(dt, this.time, this.speed);

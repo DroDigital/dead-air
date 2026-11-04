@@ -21,7 +21,30 @@ uniform float uDither;
 uniform float uFade;
 uniform vec3 uFlash;
 uniform float uFlashAmt;
+uniform float uGlow;
+uniform vec3 uGrade;
+uniform float uSat;
+uniform float uGrain;
+uniform float uTime;
 varying vec2 vUv;
+
+float hash(vec2 p) { return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
+
+// Bright-pass bloom on the low-res frame: a sparse 12-tap star, cheap and pixel-crunchy.
+vec3 glow(vec2 uv) {
+  vec2 px = 1.0 / uRes;
+  vec3 acc = vec3(0.0);
+  for (int i = 1; i <= 3; i++) {
+    float r = float(i) * 2.0;
+    vec3 s1 = texture2D(tScene, uv + vec2(px.x * r, 0.0)).rgb;
+    vec3 s2 = texture2D(tScene, uv - vec2(px.x * r, 0.0)).rgb;
+    vec3 s3 = texture2D(tScene, uv + vec2(0.0, px.y * r)).rgb;
+    vec3 s4 = texture2D(tScene, uv - vec2(0.0, px.y * r)).rgb;
+    vec3 b = max(s1 - 0.62, 0.0) + max(s2 - 0.62, 0.0) + max(s3 - 0.62, 0.0) + max(s4 - 0.62, 0.0);
+    acc += b / float(i);
+  }
+  return acc * 0.22;
+}
 
 float bayer4(vec2 p) {
   int x = int(mod(p.x, 4.0));
@@ -33,6 +56,11 @@ float bayer4(vec2 p) {
 
 void main() {
   vec3 c = texture2D(tScene, vUv).rgb;
+  c += glow(vUv) * uGlow;
+  // Mood grade: tint + saturation (danger drains colour toward red, phone calls go cold).
+  float l = dot(c, vec3(0.299, 0.587, 0.114));
+  c = mix(vec3(l), c, uSat) * uGrade;
+  c += (hash(floor(vUv * uRes) + fract(uTime) * 91.0) - 0.5) * uGrain;
   c = mix(c, uFlash, uFlashAmt);
   c *= uFade;
   vec4 ui = texture2D(tUi, vUv);
@@ -52,6 +80,8 @@ uniform float uCrt;
 uniform float uTime;
 uniform float uRoll;
 uniform float uScanStrength;
+uniform float uShock;
+uniform float uVig;
 varying vec2 vUv;
 
 vec2 barrel(vec2 uv, float k) {
@@ -67,7 +97,7 @@ void main() {
     gl_FragColor = vec4(texture2D(tLow, uv).rgb, 1.0);
     return;
   }
-  uv = barrel(uv, 0.06);
+  uv = barrel(uv, 0.06 + uShock * 0.05);
   if (uv.x < 0.0 || uv.x > 1.0 || uv.y < 0.0 || uv.y > 1.0) { gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0); return; }
   // Tracking roll: a band that drifts down and shears lines sideways.
   float band = 0.0;
@@ -80,7 +110,7 @@ void main() {
     uv.x += uRoll * 0.004 * sin(uTime * 13.0 + line * 0.3);
   }
   float px = 1.0 / uRes.x;
-  float fr = 0.6 + 0.6 * uRoll;
+  float fr = 0.6 + 0.6 * uRoll + uShock * 3.5;
   vec3 col;
   col.r = texture2D(tLow, uv + vec2(px * fr, 0.0)).r;
   col.g = texture2D(tLow, uv).g;
@@ -90,7 +120,7 @@ void main() {
   col *= mix(1.0, 0.72 + 0.28 * s * s, uScanStrength);
   // Vignette.
   vec2 v = uv * (1.0 - uv.yx);
-  col *= pow(clamp(v.x * v.y * 18.0, 0.0, 1.0), 0.28);
+  col *= pow(clamp(v.x * v.y * 18.0, 0.0, 1.0), 0.28 + uVig);
   col += band * 0.12;
   gl_FragColor = vec4(col, 1.0);
 }
@@ -114,6 +144,18 @@ export class PostFx {
   flashAmt = 0;
   flashColor = new THREE.Color(1, 1, 1);
   dither = true;
+  /** Bloom strength (0 = off). */
+  glow = 0.9;
+  /** Colour grade target (multiplier) and saturation; eased every frame. */
+  readonly grade = new THREE.Color(1.02, 0.98, 0.92);
+  sat = 1;
+  private gradeNow = new THREE.Color(1.02, 0.98, 0.92);
+  private satNow = 1;
+  grain = 0.035;
+  /** Impact shock 0..1 (chromatic split + barrel kick), decays on its own. */
+  shock = 0;
+  /** Extra vignette (heartbeat pulses, danger). */
+  vig = 0;
 
   constructor(private renderer: THREE.WebGLRenderer) {
     const mk = () =>
@@ -146,6 +188,11 @@ export class PostFx {
         uFade: { value: 1 },
         uFlash: { value: this.flashColor },
         uFlashAmt: { value: 0 },
+        uGlow: { value: 0.9 },
+        uGrade: { value: new THREE.Color(1, 1, 1) },
+        uSat: { value: 1 },
+        uGrain: { value: 0.035 },
+        uTime: { value: 0 },
       },
       vertexShader: FS_VERT,
       fragmentShader: DITHER_FRAG,
@@ -160,6 +207,8 @@ export class PostFx {
         uTime: { value: 0 },
         uRoll: { value: 0 },
         uScanStrength: { value: 1 },
+        uShock: { value: 0 },
+        uVig: { value: 0 },
       },
       vertexShader: FS_VERT,
       fragmentShader: CRT_FRAG,
@@ -212,6 +261,15 @@ export class PostFx {
     this.ditherMat.uniforms.uDither.value = this.dither ? 1 : 0;
     this.ditherMat.uniforms.uFade.value = this.fade;
     this.ditherMat.uniforms.uFlashAmt.value = this.flashAmt;
+    const du = this.ditherMat.uniforms;
+    this.gradeNow.lerp(this.grade, 0.06);
+    this.satNow += (this.sat - this.satNow) * 0.06;
+    (du.uGrade.value as THREE.Color).copy(this.gradeNow);
+    du.uSat.value = this.satNow;
+    du.uGlow.value = this.glow;
+    du.uGrain.value = this.grain;
+    du.uTime.value = time;
+    this.shock = Math.max(0, this.shock - 0.035);
     this.quad.material = this.ditherMat;
     r.setRenderTarget(this.rtLow);
     r.render(this.fsScene, this.camera);
@@ -229,6 +287,8 @@ export class PostFx {
     this.crtMat.uniforms.uCrt.value = this.crt ? 1 : 0;
     this.crtMat.uniforms.uTime.value = time;
     this.crtMat.uniforms.uRoll.value = this.roll;
+    this.crtMat.uniforms.uShock.value = this.shock;
+    this.crtMat.uniforms.uVig.value = this.vig;
     this.crtMat.uniforms.uScanStrength.value = vp.k >= 2 ? 1 : 0.35;
     this.quad.material = this.crtMat;
     r.render(this.fsScene, this.camera);

@@ -66,6 +66,8 @@ export const BALANCE = {
   bankruptRemovable: false,
   /** A wedge can be gilded at most this many times. */
   maxGild: 2,
+  /** Double or Nothing: minimum Tray to stake, once per Deadline, even odds (EV-neutral). */
+  gambleMin: 300,
   /** Narrowing cannot take a Bankrupt below this nominal width. */
   bankruptMinWidth: 10,
   gildCost: 3,
