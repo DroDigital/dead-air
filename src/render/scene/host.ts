@@ -26,6 +26,9 @@ export class HostView {
   talking = 0;
   /** Live voice amplitude 0..1 from the VO player (−1 = no recording; flap procedurally). */
   mouthAmp = -1;
+  /** Smoothed voice energy driving gestures, and a 0..1 twitch when the broadcast glitches. */
+  private energy = 0;
+  twitch = 0;
   private mouthOpen = 0;
   private faceTimer = 0;
   private lastStep = -1;
@@ -193,14 +196,22 @@ export class HostView {
     const sway = Math.sin(t * 1.3) * 0.04;
     this.torso.rotation.z = sway;
     this.head.rotation.z = Math.sin(t * 0.9) * 0.06 + (this.talking > 0 ? Math.sin(t * 9) * 0.04 : 0);
-    this.head.rotation.x = this.pose === 'slump' ? 0.5 : 0;
+    // Talking: the head nods on stressed syllables and the body leans into the line.
+    const amp = Math.max(0, this.mouthAmp);
+    this.energy += (amp - this.energy) * 0.5;
+    const e = this.energy;
+    this.head.rotation.x = (this.pose === 'slump' ? 0.5 : 0) - e * 0.12;
+    this.torso.rotation.x = -e * 0.06;
+    this.head.rotation.y = Math.sin(t * 2.1) * 0.08 * e;
+    // A glitching host jerks his head (tape dropouts, late Deadlines).
+    if (this.twitch > 0 && Math.random() < this.twitch * 0.35) this.head.rotation.z += (Math.random() - 0.5) * 0.5 * this.twitch;
     // Arm poses (rotation.z lifts sideways, rotation.x forward).
     const set = (arm: { upper: THREE.Group; lower: THREE.Group }, side: number, uz: number, ux: number, lx: number) => {
       arm.upper.rotation.z = side * uz;
       arm.upper.rotation.x = ux;
       arm.lower.rotation.x = lx;
     };
-    const wob = Math.sin(t * 3) * 0.08;
+    const wob = Math.sin(t * 3) * 0.08 + this.energy * 0.25 * Math.sin(t * 7);
     switch (this.pose) {
       case 'present':
         set(this.armL, -1, 1.1 + wob, -0.3, -0.4);

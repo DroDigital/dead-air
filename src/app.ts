@@ -12,6 +12,7 @@ import { artifactDef } from './content/artifacts';
 import { bargainDef, fillDeal } from './content/bargains';
 import { COMBO_NAMES } from './game/combos';
 import { DEADLINE_LINES, HOST_LINES, HOST_SILENT_LINES, PRODUCER_ACCEPT, PRODUCER_HANGUP, SECRET_ACCEPT, type HostTrigger } from './content/hostLines';
+import { challengeText } from './content/challenges';
 import { mutatorDef } from './content/mutators';
 import { scratchDef } from './content/scratchCards';
 import { WEDGES } from './content/wedges';
@@ -286,6 +287,16 @@ export class App {
       this.runSlot.save(this.game.snapshot());
     });
     g.bus.on('deadlineEnd', (e) => this.pendingEnds.push(e));
+    g.bus.on('challenge', () => {
+      const ch = g.challenge();
+      if (!ch) return;
+      setTimeout(() => {
+        this.hud.showBanner("SPONSOR'S CHALLENGE", `${ch.def.name} — +${ch.def.reward} TOKEN${ch.def.reward > 1 ? 'S' : ''}`, '#80ff80', 2.2 / this.speed);
+        this.sfx.play('register', { gain: 0.6 });
+        this.sfx.play('applause', { gain: 0.35, delay: 0.2 });
+        this.stage.lights.applause = 2;
+      }, 900);
+    });
     g.bus.on('trigger', (t) => {
       this.stage.shelf.trigger(t.slot);
       this.sfx.play('blip', { pitch: 1.4 + t.slot * 0.1, gain: 0.4 });
@@ -509,6 +520,15 @@ export class App {
     this.hud.chyron = { deadline: d, spins: r.spinsLeft, spinsMax: Math.max(this.spinsMax, r.spinsLeft), tray: r.tray, streak: r.streak, vault: r.vault, debt: r.debt };
     this.hud.tickerRight = '';
     this.hud.corner = `TOK ${r.tokens}`;
+    const ch = g.challenge();
+    this.hud.challenge = ch
+      ? {
+          name: ch.def.name,
+          text: challengeText(ch.def, r).toUpperCase(),
+          prog: ch.def.mode === 'count' ? `${Math.min(ch.progress, ch.target)}/${ch.target}` : ch.def.id === 'streak' ? `(×${ch.progress.toFixed(2)})` : `($${Math.round(ch.progress)})`,
+          done: ch.done,
+        }
+      : null;
   }
 
   /** Push the current run state to every view. */
@@ -657,6 +677,12 @@ export class App {
       else if (r.deadline === 1 && Math.random() < 0.5) this.hostSay('intro', 'grin', 'present');
       else this.hostSay(mut ? 'sweep' : 'package', 'grin', 'present', DEADLINE_LINES[r.deadline - 1]);
       await wait(1.6 / this.speed);
+      const chal = g.challenge();
+      if (chal) {
+        this.hud.showBanner(`SPONSOR: ${chal.def.name}`, `${challengeText(chal.def, r).toUpperCase()} — +${chal.def.reward} TOK`, '#ffc040', 2.2 / this.speed);
+        this.sfx.play('blip', { pitch: 1.5, gain: 0.4 });
+        await wait(1.4 / this.speed);
+      }
       if (mut) {
         this.hud.showBanner(`SWEEPS: ${mut.name}`, mut.text, '#ff5040', 3 / this.speed);
         this.stage.post.roll = 0.6;
@@ -873,6 +899,8 @@ export class App {
         st.lights.applause = 1.2;
       }
       this.sfx.play('cascade', { gain: Math.min(1, 0.3 + p.cash / 1500), pitch: 1 });
+      st.coins.burst(st.tray.group.position.clone().add(new THREE.Vector3(0, 0.15, 0)), Math.min(40, 4 + Math.round(p.cash / 25)));
+      if (big || p.cash >= 200) st.wheel.lightShow('win');
     }
     if (p.resolvedKind === 'jackpot' || p.landedKind === 'jackpot') {
       this.sfx.play('jackpot', { gain: 0.8 });
@@ -884,6 +912,8 @@ export class App {
       st.post.flashAmt = this.settings.reducedFlashing ? 0.15 : 0.45;
       st.lights.setMode('party');
       st.lights.applause = 3.5;
+      st.wheel.lightShow('jackpot', 3.5);
+      st.coins.rain(90);
       st.studio.accent.pos.set(0, 2.5, 0.5);
       setTimeout(() => st.studio.accent.color.setRGB(0, 0, 0), 1500);
       this.hostSay('jackpot', 'shock', 'cheer');
@@ -923,6 +953,7 @@ export class App {
     st.rig.punch(5);
     st.post.shock = 1;
     st.lights.setMode('alarm');
+    st.wheel.lightShow('bankrupt', 1.8);
     // Lights out for half a second (a gentle dim with Reduced Flashing).
     st.studio.lightLevel = this.settings.reducedFlashing ? 0.45 : 0;
     st.wheel.bulbsOn = this.settings.reducedFlashing ? 0.4 : 0;
@@ -1777,6 +1808,8 @@ export class App {
     this.music.setBuzz(st.studio.lightLevel);
     this.updateMood(dt);
     st.host.mouthAmp = this.vo.speaking ? this.vo.amplitude() : -1;
+    st.host.twitch = this.game ? Math.max(0, (this.game.run.deadline - 4) / 6) * (this.vo.speaking ? 1 : 0.3) : 0;
+    st.wheel.reducedFlashing = this.settings.reducedFlashing;
     if (this.vo.speaking) st.host.talking = Math.max(st.host.talking, 0.15);
     st.post.roll = Math.max(g?.run.phase === 'PhoneCall' && !this.phoneAnswered ? 0.7 : 0, st.post.roll - dt * 0.4);
     if (this.settings.reducedFlashing) st.post.roll = Math.min(st.post.roll, 0.25);

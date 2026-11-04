@@ -21,7 +21,7 @@ Open the printed URL. Other scripts:
 | Command | What it does |
 |---|---|
 | `npm run build` | Typecheck (strict) + production build to `dist/` |
-| `npm test` | 163 Vitest tests: rules, wheel physics, determinism, saves and migrations, content, text coverage, regressions, simulator smoke tests |
+| `npm test` | 168 Vitest tests: rules, wheel physics, determinism, saves and migrations, content, text coverage, regressions, simulator smoke tests |
 | `npm run sim -- --runs 5000 --seed 1` | Headless balance simulator (all bot policies, multi-threaded) |
 | `npm run assets` | Convert `/assets-src` → `/public/assets` (PS1 conformance), regenerate the runtime index, CREDITS.md, ASSETS_TODO.md |
 | `npm run assets -- --fetch` | Download any missing CC0/OFL sources first, then convert |
@@ -37,6 +37,7 @@ You stay seated and look between four stations (**arrow keys / WASD**, mouse whe
 
 - **CENTER — the wheel.** Hold **SPACE** (or hold the red lever) to charge, release to spin. The gauge needle sweeps; releasing in the **green band** biases the wheel toward high-value wedges. With the Glass Eye or a Peek card, press **E** while charging to see where it will land.
 - **DOWN — Tray & Vault.** Winnings land in the glass **Tray** (at risk). Every spin you don't deposit grows your **Streak** (+0.25, cash only). **ENTER** / the red **DEPOSIT** button sweeps the Tray into the **Vault** (safe) and resets the Streak. **1–3** scratch a card.
+- **Sponsor's Challenge.** Each Deadline opens with one goal (score a combo, ride the Streak to ×2, hold a big Tray, ride four spins without depositing, three sweet-spot releases, land a prize). It shows top left and pays 1–2 Tokens.
 - **D — Double or Nothing.** Once per Deadline, with $300+ in the Tray: stake all of it on an even-odds flip. Win and it doubles (the Streak stands); lose and it's gone (the Streak resets).
 - **LEFT — shelf & phone.** Up to 6 artifacts; they trigger left → right, so order matters. **1–6** select, click another slot (or **, .**) to move, **X** twice to sell. When the phone rings, **ENTER** answers.
 - **RIGHT — Prize Cabinet & debt board.** Spend Tokens: **1–6** buy, **R**/crank reroll, **X** remove, **G** gild, **+/-** widen/narrow (then pick a wedge on the wheel with ←/→ + ENTER), **N** done.
