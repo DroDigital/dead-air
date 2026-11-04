@@ -52,6 +52,8 @@ export class Hud {
   private roll = { tray: 0, vault: 0, trayFlash: 0, vaultFlash: 0, trayUp: true };
   /** 0..1 danger level (last spin short of the Debt): reddens the chyron. */
   danger = 0;
+  /** The Sponsor's Challenge line (top left). */
+  challenge: { name: string; text: string; prog: string; done: boolean } | null = null;
   arrows: ('up' | 'down' | 'left' | 'right')[] = [];
   banner: { text: string; sub: string; color: string; t: number; life: number } | null = null;
   fastMode = false;
@@ -327,6 +329,12 @@ export class Hud {
       lines.forEach((l, i) => drawText(ctx, l, x + 3 * k, y + 3 * k + i * LINE_H * k, { scale: k, color: i === 0 ? '#ffd870' : '#e8e0d0' }));
     }
 
+    if (this.challenge && !this.choice) {
+      const c = this.challenge;
+      const y0 = (this.payout ? 26 : 3) * k;
+      drawText(ctx, `SPONSOR: ${c.name}`, 3 * k, y0, { scale: k, color: c.done ? '#80ff80' : '#ffc040', shadow: '#000' });
+      drawText(ctx, c.done ? 'DONE' : `${c.text} ${c.prog}`, 3 * k, y0 + 9 * k, { scale: k, color: c.done ? '#60c060' : 'rgba(255,230,180,0.8)', shadow: '#000' });
+    }
     if (this.corner && !this.choice) drawText(ctx, this.corner, w - 3 * k, (this.payout ? 26 : 3) * k, { align: 'right', scale: k, color: '#ffc040', shadow: '#000' });
     if (this.fastMode && !this.choice) drawText(ctx, 'FAST >>', 3 * k, (this.payout ? 26 : 3) * k, { scale: k, color: '#80ff80', shadow: '#000' });
 

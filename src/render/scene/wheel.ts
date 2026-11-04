@@ -59,6 +59,9 @@ export class WheelView {
   /** Streak drives bulb chase speed. */
   streak = 1;
   bulbsOn = 1;
+  /** A timed bulb show over the chase: win sweep, jackpot strobe, Bankrupt red. */
+  private show: { kind: 'win' | 'jackpot' | 'bankrupt'; t: number; life: number } | null = null;
+  reducedFlashing = false;
   private chase = 0;
   private colorblind = false;
   private flapJiggle = 0;
@@ -399,13 +402,40 @@ export class WheelView {
     this.chase += dt * rate;
     const c = new THREE.Color();
     const hot = Math.min(1, (this.streak - 1) / 2);
+    const sh = this.show;
+    if (sh) {
+      sh.t += dt;
+      if (sh.t > sh.life) this.show = null;
+    }
     for (let i = 0; i < BULBS; i++) {
       const on = (Math.floor(this.chase) + i) % 4 === 0 || (hot > 0.5 && (Math.floor(this.chase) + i) % 4 === 2);
-      const b = (on ? 1 : 0.18) * this.bulbsOn;
-      c.setRGB(b, b * (0.82 - 0.4 * hot), b * (0.35 - 0.3 * hot));
+      let b = (on ? 1 : 0.18) * this.bulbsOn;
+      if (sh) {
+        const f = i / BULBS;
+        if (sh.kind === 'win') {
+          // Two bright heads racing round the rim in gold.
+          const head = (sh.t * 1.6) % 1;
+          const d = Math.min(Math.abs(f - head), Math.abs(f - ((head + 0.5) % 1)));
+          b = (d < 0.06 ? 1 : 0.25) * this.bulbsOn;
+          c.setRGB(b, b * 0.85, b * 0.3);
+        } else if (sh.kind === 'jackpot') {
+          // Rainbow strobe (steady rainbow with Reduced Flashing).
+          const strobe = this.reducedFlashing ? 1 : Math.floor(sh.t * 12 + i) % 2 ? 1 : 0.3;
+          c.setHSL((f + sh.t * 0.8) % 1, 1, 0.5 * strobe * this.bulbsOn);
+        } else {
+          // Bankrupt: everything red, pulsing down.
+          const pulse = this.reducedFlashing ? 0.6 : 0.35 + 0.65 * Math.abs(Math.sin(sh.t * 9));
+          b = pulse * this.bulbsOn * (1 - sh.t / sh.life * 0.6);
+          c.setRGB(b, b * 0.05, b * 0.03);
+        }
+      } else c.setRGB(b, b * (0.82 - 0.4 * hot), b * (0.35 - 0.3 * hot));
       this.bulbs.setColorAt(i, c);
     }
     if (this.bulbs.instanceColor) this.bulbs.instanceColor.needsUpdate = true;
+  }
+
+  lightShow(kind: 'win' | 'jackpot' | 'bankrupt', seconds = 2.2): void {
+    this.show = { kind, t: 0, life: seconds };
   }
 
   /** Wheel-local angle under the pointer. */

@@ -8,6 +8,7 @@ import { CameraRig } from './cameraRig';
 import { PSX_SHARED } from './psxMaterial';
 import { PostFx } from './postfx';
 import { CabinetView } from './scene/cabinet';
+import { CoinShower } from './scene/coins';
 import { HostView } from './scene/host';
 import { LeverView } from './scene/lever';
 import { PhoneView } from './scene/phone';
@@ -85,6 +86,7 @@ export class Stage {
   readonly lever: LeverView;
   readonly marquee: Marquee;
   readonly lights = new ShowLights();
+  readonly coins = new CoinShower();
   readonly vfx = new Vfx();
   private raycaster = new THREE.Raycaster();
   stats = { calls: 0, triangles: 0 };
@@ -120,6 +122,7 @@ export class Stage {
       this.lever.group,
       this.marquee.mesh,
       this.lights.group,
+      this.coins.mesh,
     );
     this.resize();
   }
@@ -175,6 +178,7 @@ export class Stage {
     this.lights.level = this.studio.lightLevel;
     this.lights.spotLevel = this.studio.spotLevel;
     this.lights.update(dt, time);
+    this.coins.update(dt);
     this.vfx.update(dt);
     this.rig.apply(time, dt);
   }
