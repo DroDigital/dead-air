@@ -37,6 +37,19 @@ DEAD AIR — design, code, writing, procedural art, procedural audio and music: 
 | `sfx.scratch` | https://opengameart.org/content/rpg-sound-pack | artisticdude (OpenGameArt, "RPG Sound Pack") | CC0-1.0 | Source file "RPG Sound Pack/inventory/cloth.wav" from the zip. Converted to mono 22.05 kHz PCM16 with a one-pole lowpass at 7 kHz and 10-bit crush. Plays when a Scratch Card is used. |
 | `sfx.crank` | https://opengameart.org/content/rpg-sound-pack | artisticdude (OpenGameArt, "RPG Sound Pack") | CC0-1.0 | Source file "RPG Sound Pack/inventory/chainmail1.wav" from the zip. Converted to mono 22.05 kHz PCM16 with a one-pole lowpass at 7 kHz and 10-bit crush. Plays when the Prize Cabinet crank turns. |
 
+## Music
+
+Provided for this project by digitaldro (made with Suno). Sources in `assets-src/music`.
+
+| Track | Used for |
+|---|---|
+| Channel 98 | Title screen and menus |
+| The Final Round | The wheel (gameplay) |
+| Department Store Dreams | The Prize Cabinet |
+| Final Question | Debt deadline payment; a last spin that is short of the Debt |
+| Game-over cue | The floor opens |
+| Spin tension | Charging the lever and the spin |
+
 ## Generated with ElevenLabs
 
 Voice-over (custom-designed voices, `eleven_v4`), sound effects (`eleven_text_to_sound_v2`) and music (`eleven_music_v2_5`) were generated for this project with ElevenLabs. Prompts are listed in `assets/elevenlabs.json`; the voice script is `assets-src/vo/script.json`.

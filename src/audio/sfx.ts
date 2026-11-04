@@ -4,7 +4,7 @@
  * 22.05 kHz, matching the asset pipeline). Every playback is varied (pitch/gain jitter) so
  * nothing repeats identically.
  */
-import elIndex from '../assets/el.json';
+import elIndex from '../assets/audio.json';
 import index from '../assets/manifest.json';
 import type { Mixer } from './mixer';
 
@@ -71,7 +71,9 @@ type SfxId =
   | 'fanfare'
   | 'drumroll'
   | 'heartbeat'
-  | 'roomtone';
+  | 'roomtone'
+  | 'tension'
+  | 'gameoverCue';
 
 /** ElevenLabs recordings (assets/elevenlabs.json) take precedence over CC0 files and synthesis. */
 const EL_IDS: Partial<Record<SfxId, string>> = {
@@ -94,6 +96,8 @@ const EL_IDS: Partial<Record<SfxId, string>> = {
   drumroll: 'el.drumroll',
   heartbeat: 'el.heartbeat',
   roomtone: 'el.ambience',
+  tension: 'track.charge',
+  gameoverCue: 'track.gameover',
 };
 
 /** Map from manifest ids (real files) to SFX ids. */
@@ -226,6 +230,15 @@ export class Sfx {
       st.a += ((rnd(st) * 2 - 1) - st.a) * 0.02;
       return st.a * 0.8;
     }, 10, 600);
+    B('tension', 2, (t, _i, _n, st) => (rnd(st) * 2 - 1) * (0.2 + 0.8 * (t / 2)) * 0.25 + Math.sin(2 * Math.PI * (80 + 200 * t) * t) * 0.15, 9, 4000);
+    B('gameoverCue', 1.6, (t) => {
+      let s = 0;
+      [392, 370, 349, 262].forEach((f, k) => {
+        const tt = t - k * 0.3;
+        if (tt > 0) s += sq(tt * f) * env(tt, 0.01, 0.4) * 0.12;
+      });
+      return s;
+    });
     B('powerup', 0.9, (t, _i, _n, st) => {
       const hum = sq(t * 60) * 0.15 + sq(t * 120) * 0.1;
       const clunk = (rnd(st) * 2 - 1) * env(t, 0.001, 0.03);
@@ -256,14 +269,14 @@ export class Sfx {
   }
 
   /** A looping bed (drumroll, heartbeat, room tone). Returns a handle that fades it out. */
-  loop(id: SfxId, gain = 0.6, bus: 'sfx' | 'ambience' = 'sfx', fadeIn = 0.15): { stop: (fade?: number) => void; gain: GainNode } | null {
+  loop(id: SfxId, gain = 0.6, bus: 'sfx' | 'ambience' = 'sfx', fadeIn = 0.15, repeat = true): { stop: (fade?: number) => void; gain: GainNode } | null {
     if (!this.mixer.running) return null;
     const buf = this.buffers.get(id);
     if (!buf) return null;
     const c = this.mixer.ctx;
     const src = c.createBufferSource();
     src.buffer = buf;
-    src.loop = true;
+    src.loop = repeat;
     const g = c.createGain();
     g.gain.setValueAtTime(0, c.currentTime);
     g.gain.linearRampToValueAtTime(gain, c.currentTime + fadeIn);
@@ -276,7 +289,11 @@ export class Sfx {
         g.gain.cancelScheduledValues(t);
         g.gain.setValueAtTime(g.gain.value, t);
         g.gain.linearRampToValueAtTime(0, t + fade);
-        src.stop(t + fade + 0.05);
+        try {
+          src.stop(t + fade + 0.05);
+        } catch {
+          /* already ended */
+        }
       },
     };
   }

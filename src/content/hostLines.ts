@@ -32,7 +32,10 @@ export type HostTrigger =
   | 'gameOver'
   | 'neighbors'
   | 'hatTrick'
-  | 'title';
+  | 'title'
+  | 'gambleOffer'
+  | 'gambleWin'
+  | 'gambleLose';
 
 export const HOST_LINES: Record<HostTrigger, readonly string[]> = {
   intro: [
@@ -216,6 +219,18 @@ export const HOST_LINES: Record<HostTrigger, readonly string[]> = {
   title: [
     'Dead Air! Starring you! Live, from the only studio left!',
     "Stay tuned! You're next! You were always next!",
+  ],
+  gambleOffer: [
+    'Double or nothing! The whole tray! Do you feel lucky? Nobody in here feels lucky!',
+    "Feeling brave? Double it! Or lose it! I'm fine either way! I'm always fine!",
+  ],
+  gambleWin: [
+    'DOUBLE! You doubled it! The Network is furious! Delighted! Furiously delighted!',
+    "It came up money! Of course it did! It always does! Until it doesn't!",
+  ],
+  gambleLose: [
+    'NOTHING! It came up nothing! The very best kind of nothing!',
+    "Oh, it's gone! All of it! Doubled into nothing! That's showbusiness!",
   ],
 };
 

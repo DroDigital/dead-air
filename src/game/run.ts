@@ -988,6 +988,35 @@ export class Game implements PayoutHost {
     return res;
   }
 
+  /** Double or Nothing is offered once per Deadline when the Tray holds at least BALANCE.gambleMin. */
+  canGamble(): boolean {
+    const r = this.run;
+    return r.phase === 'AwaitAction' && r.tray >= BALANCE.gambleMin && r.marks.gambledAt !== r.deadline;
+  }
+
+  /**
+   * Stake the whole Tray on an even-odds flip (the events stream, so replays stay deterministic).
+   * Win: the Tray doubles and the Streak stands. Lose: the Tray empties and the Streak resets.
+   * Expected value is exactly zero; it trades certainty for variance.
+   */
+  gamble(): { won: boolean; stake: number; tray: number } {
+    this.assertPhase('AwaitAction');
+    if (!this.canGamble()) throw new Error('Double or Nothing is not available');
+    const run = this.run;
+    const stake = run.tray;
+    run.marks.gambledAt = run.deadline;
+    const won = this.rng.events.chance(0.5);
+    if (won) this.addTray(stake, 'gamble');
+    else {
+      this.addTray(-stake, 'gamble');
+      run.streak = this.streakBase();
+      run.cashRun = 0;
+      this.bus.emit('streak', { value: run.streak });
+    }
+    this.changed('gamble');
+    return { won, stake, tray: run.tray };
+  }
+
   canUseScratch(i: number): boolean {
     const id = this.run.scratch[i];
     if (!id) return false;

@@ -223,8 +223,21 @@
    "lines": [
     "1jmn2tz",
     "1d2s5lb",
+    "f0so3b",
+    "ruyuk6",
+    "d5rirm",
+    "1j1h6bf",
+    "svobiv",
+    "7c60ph",
     "opg8uf",
-    "1p5ynyw",
+    "1p5ynyw"
+   ],
+   "prompt": "[dramatically] Dead Air! Starring you! Live, from the only studio left! [long pause] [dramatically] Stay tuned! You're next! You were always next! [long pause] [mischievously] Double or nothing! The whole tray! Do you feel lucky? Nobody in here feels lucky! [long pause] [mischievously] Feeling brave? Double it! Or lose it! I'm fine either way! I'm always fine! [long pause] [shouting] [excited] DOUBLE! You doubled it! The Network is furious! Delighted! Furiously delighted! [long pause] [shouting] [excited] It came up money! Of course it did! It always does! Until it doesn't! [long pause] [laughs] NOTHING! It came up nothing! The very best kind of nothing! [long pause] [laughs] Oh, it's gone! All of it! Doubled into nothing! That's showbusiness! [long pause] [dramatically] Deadline one! A little debt, a big wheel, and you! What a night! [long pause] [dramatically] Deadline two! The Network is pleased! The Network wants more!"
+  },
+  {
+   "id": "host13",
+   "speaker": "host",
+   "lines": [
     "1805xq5",
     "12secd0",
     "1k2it1v",
@@ -232,7 +245,7 @@
     "1wu47fe",
     "192wdti"
    ],
-   "prompt": "[dramatically] Dead Air! Starring you! Live, from the only studio left! [long pause] [dramatically] Stay tuned! You're next! You were always next! [long pause] [dramatically] Deadline one! A little debt, a big wheel, and you! What a night! [long pause] [dramatically] Deadline two! The Network is pleased! The Network wants more! [long pause] [dramatically] Deadline three! The debt is growing! Grow with it! [long pause] [dramatically] Deadline four! It's sweeps week! Smile! Your face is in every living room left! [long pause] [dramatically] Deadline five! Halfway there! Halfway where! Don't ask! [long pause] [dramatically] Deadline six! The audience has stopped breathing! They've stopped needing to! [long pause] [dramatically] [nervous] Deadline seven! So close! The floor can taste it! [long pause] [dramatically] [nervous] Deadline eight! The final deadline! Sweeps again! Win this and you're FREE! [laughs] Ha-ha! [short pause] [mischievously] Probably!"
+   "prompt": "[dramatically] Deadline three! The debt is growing! Grow with it! [long pause] [dramatically] Deadline four! It's sweeps week! Smile! Your face is in every living room left! [long pause] [dramatically] Deadline five! Halfway there! Halfway where! Don't ask! [long pause] [dramatically] Deadline six! The audience has stopped breathing! They've stopped needing to! [long pause] [dramatically] [nervous] Deadline seven! So close! The floor can taste it! [long pause] [dramatically] [nervous] Deadline eight! The final deadline! Sweeps again! Win this and you're FREE! [laughs] Ha-ha! [short pause] [mischievously] Probably!"
   },
   {
    "id": "producer1",
@@ -1114,6 +1127,42 @@
    "speaker": "host",
    "text": "Stay tuned! You're next! You were always next!",
    "tag": "[dramatically]"
+  },
+  {
+   "id": "f0so3b",
+   "speaker": "host",
+   "text": "Double or nothing! The whole tray! Do you feel lucky? Nobody in here feels lucky!",
+   "tag": "[mischievously]"
+  },
+  {
+   "id": "ruyuk6",
+   "speaker": "host",
+   "text": "Feeling brave? Double it! Or lose it! I'm fine either way! I'm always fine!",
+   "tag": "[mischievously]"
+  },
+  {
+   "id": "d5rirm",
+   "speaker": "host",
+   "text": "DOUBLE! You doubled it! The Network is furious! Delighted! Furiously delighted!",
+   "tag": "[shouting] [excited]"
+  },
+  {
+   "id": "1j1h6bf",
+   "speaker": "host",
+   "text": "It came up money! Of course it did! It always does! Until it doesn't!",
+   "tag": "[shouting] [excited]"
+  },
+  {
+   "id": "svobiv",
+   "speaker": "host",
+   "text": "NOTHING! It came up nothing! The very best kind of nothing!",
+   "tag": "[laughs]"
+  },
+  {
+   "id": "7c60ph",
+   "speaker": "host",
+   "text": "Oh, it's gone! All of it! Doubled into nothing! That's showbusiness!",
+   "tag": "[laughs]"
   },
   {
    "id": "opg8uf",

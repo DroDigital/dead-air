@@ -5,10 +5,10 @@
  * Falls back to a procedural loop with the same behaviour when the files aren't available.
  * Also the ambience bed: recorded room tone (or synthesised), HVAC rumble, fluorescent buzz.
  */
-import elIndex from '../assets/el.json';
+import elIndex from '../assets/audio.json';
 import type { Mixer } from './mixer';
 
-export type Track = 'main' | 'lounge';
+export type Track = 'menu' | 'main' | 'shop' | 'phone' | 'deadline';
 const EL = elIndex as Record<string, string>;
 
 const PROG = [
@@ -72,9 +72,22 @@ export class Music {
         return null;
       }
     };
-    const [main, lounge, room] = await Promise.all([get('el.music_main'), get('el.music_lounge'), get('el.ambience')]);
-    if (main) this.tracks.main = main;
-    if (lounge) this.tracks.lounge = lounge;
+    // The project's own score first; ElevenLabs tracks fill any gap.
+    const [menu, main, shop, deadline, elMain, lounge, room] = await Promise.all([
+      get('track.menu'),
+      get('track.main'),
+      get('track.shop'),
+      get('track.deadline'),
+      get('el.music_main'),
+      get('el.music_lounge'),
+      get('el.ambience'),
+    ]);
+    const m = main ?? elMain;
+    if (m) this.tracks.main = m;
+    if (menu ?? m) this.tracks.menu = (menu ?? m)!;
+    if (shop ?? lounge) this.tracks.shop = (shop ?? lounge)!;
+    if (lounge ?? shop) this.tracks.phone = (lounge ?? shop)!;
+    if (deadline ?? m) this.tracks.deadline = (deadline ?? m)!;
     if (room) this.roomTone = room;
     if (this.playing && this.tracks.main && !this.playingFile) {
       // Swap the procedural loop for the recording without a gap.
@@ -88,11 +101,15 @@ export class Music {
     return !!this.tracks.main;
   }
 
-  /** Crossfade to another track (lounge for the Cabinet/phone, main for the wheel). */
+  /** Crossfade to another track: menu, the wheel, the Cabinet, the phone, the deadline. */
   setTrack(t: Track): void {
     if (t === this.track) return;
     this.track = t;
     if (this.playingFile) this.startFile(1.6);
+  }
+
+  get currentTrack(): Track {
+    return this.track;
   }
 
   private startFile(xfade = 0.05): void {
@@ -109,17 +126,19 @@ export class Music {
     }
     const src = c.createBufferSource();
     src.buffer = buf;
-    src.playbackRate.value = this.fileRate;
-    this.wowGain.connect(src.detune);
+    // The title music plays clean; in-show tracks wear with the Deadline.
+    const rate = this.track === 'menu' ? 1 : this.fileRate;
+    src.playbackRate.value = rate;
+    if (this.track !== 'menu') this.wowGain.connect(src.detune);
     const g = c.createGain();
     g.gain.setValueAtTime(0, now);
     g.gain.linearRampToValueAtTime(1, now + xfade);
     src.connect(g).connect(this.fileTone);
     // Start lounge from the top, main from a random bar so repeats don't line up.
-    const offset = this.track === 'main' && prev ? Math.random() * (buf.duration * 0.5) : 0;
+    const offset = 0;
     src.start(now, offset);
     const XF = 2.5;
-    const left = (buf.duration - offset) / this.fileRate;
+    const left = (buf.duration - offset) / rate;
     this.playingFile = { src, g, track: this.track, next: now + left - XF };
     if (this.fileTimer !== null) clearInterval(this.fileTimer);
     this.fileTimer = window.setInterval(() => {
@@ -140,14 +159,15 @@ export class Music {
     f.src.stop(now + xf + 0.05);
     const src = c.createBufferSource();
     src.buffer = buf;
-    src.playbackRate.value = this.fileRate;
-    this.wowGain.connect(src.detune);
+    const rate = f.track === 'menu' ? 1 : this.fileRate;
+    src.playbackRate.value = rate;
+    if (f.track !== 'menu') this.wowGain.connect(src.detune);
     const g = c.createGain();
     g.gain.setValueAtTime(0, now);
     g.gain.linearRampToValueAtTime(1, now + xf);
     src.connect(g).connect(this.fileTone);
     src.start(now);
-    this.playingFile = { src, g, track: f.track, next: now + buf.duration / this.fileRate - xf };
+    this.playingFile = { src, g, track: f.track, next: now + buf.duration / rate - xf };
   }
 
   /** Deadline 1 is clean; each Deadline adds detune, slows the tempo and deepens the warble. */
@@ -161,7 +181,7 @@ export class Music {
     // Recorded tracks: the tape runs slower and duller every Deadline.
     this.fileRate = 1 - Math.min(0.12, k * 0.014);
     const t = this.mixer.ctx.currentTime;
-    if (this.playingFile) this.playingFile.src.playbackRate.setTargetAtTime(this.fileRate, t, 1.5);
+    if (this.playingFile && this.playingFile.track !== 'menu') this.playingFile.src.playbackRate.setTargetAtTime(this.fileRate, t, 1.5);
     this.fileTone.frequency.setTargetAtTime(12000 - Math.min(8000, k * 1100), t, 1);
   }
 

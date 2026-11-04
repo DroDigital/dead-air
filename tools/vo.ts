@@ -60,6 +60,9 @@ const HOST_TAG: Partial<Record<HostTrigger, string>> = {
   neighbors: '[surprised]',
   hatTrick: '[shouting] [excited]',
   title: '[dramatically]',
+  gambleOffer: '[mischievously]',
+  gambleWin: '[shouting] [excited]',
+  gambleLose: '[laughs]',
 };
 
 /** Per-trigger tag rotation so a batch doesn't read every line the same way. */
@@ -127,8 +130,8 @@ interface Batch {
   prompt: string;
 }
 
-function batches(): Batch[] {
-  const lines = allLines();
+function batches(onlyMissing = false): Batch[] {
+  const lines = allLines().filter((l) => !onlyMissing || !existsSync(join(OUT, `${l.id}.mp3`)));
   const out: Batch[] = [];
   const bySpeaker = new Map<Speaker, Line[]>();
   for (const l of lines) bySpeaker.set(l.speaker, [...(bySpeaker.get(l.speaker) ?? []), l]);
@@ -138,7 +141,7 @@ function batches(): Batch[] {
     const flush = () => {
       if (!cur.length) return;
       const prompt = cur.map((l) => `${l.tag} ${direct(l.text)}`).join(' [long pause] ');
-      out.push({ id: `${sp}${out.filter((b) => b.speaker === sp).length + 1}`, speaker: sp, lines: cur.map((l) => l.id), prompt });
+      out.push({ id: `${onlyMissing ? 'p' : ''}${sp}${out.filter((b) => b.speaker === sp).length + 1}`, speaker: sp, lines: cur.map((l) => l.id), prompt });
       cur = [];
       len = 0;
     };
@@ -263,8 +266,9 @@ function index(): void {
 }
 
 const [cmd, a1, a2] = process.argv.slice(2);
-if (cmd === 'script') {
-  const bs = batches();
+if (cmd === 'script' || cmd === 'pending') {
+  // `pending` batches only the lines that have no clip yet (after adding new lines).
+  const bs = batches(cmd === 'pending');
   mkdirSync(SRC, { recursive: true });
   writeFileSync(join(SRC, 'script.json'), JSON.stringify({ voices: VOICES, batches: bs, lines: allLines() }, null, 1));
   const chars = bs.reduce((n, b) => n + b.prompt.length, 0);
@@ -272,4 +276,4 @@ if (cmd === 'script') {
   for (const b of bs) console.log(b.id, b.lines.length, b.prompt.length);
 } else if (cmd === 'split') split(a1, a2);
 else if (cmd === 'index') index();
-else console.log('usage: vo.ts script | split <batch> <file> | index');
+else console.log('usage: vo.ts script | pending | split <batch> <file> | index');

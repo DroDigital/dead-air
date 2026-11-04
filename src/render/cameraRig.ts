@@ -1,5 +1,7 @@
 /**
- * Seated camera: eased ~0.25 s looks between fixed stations, idle head sway, shake.
+ * Seated camera: eased ~0.25 s looks between fixed stations, idle head sway, shake, plus the
+ * broadcast moves — an FOV punch on impacts, a dutch tilt on Bankrupt, a slow dolly toward the
+ * wheel while it spins, and a crane-down when a Deadline opens.
  */
 import gsap from 'gsap';
 import * as THREE from 'three';
@@ -37,6 +39,18 @@ export class CameraRig {
   sway = 1;
   /** Extra look offset (e.g. phone call lean). */
   readonly offset = new THREE.Vector3();
+  /** FOV kick in degrees (negative = zoom in); springs back. */
+  private punchV = 0;
+  private punchX = 0;
+  /** Dutch tilt (radians); eases to `rollTarget`. */
+  private roll = 0;
+  rollTarget = 0;
+  /** 0..1 dolly toward the wheel (spinning). */
+  private dolly = 0;
+  dollyTarget = 0;
+  /** Crane offset (metres up/back), eased to zero. */
+  private crane = new THREE.Vector3();
+  private baseFov = STATIONS.center.fov;
   onMove?: (s: Station) => void;
 
   constructor(aspect: number) {
@@ -63,8 +77,7 @@ export class CameraRig {
       onUpdate: () => {
         this.eye.set(state.ex, state.ey, state.ez);
         this.target.set(state.tx, state.ty, state.tz);
-        this.camera.fov = state.fov;
-        this.camera.updateProjectionMatrix();
+        this.baseFov = state.fov;
       },
       onComplete: () => {
         this.tween = null;
@@ -83,19 +96,51 @@ export class CameraRig {
     this.shakeAmt = Math.max(this.shakeAmt, amount);
   }
 
+  /** A quick zoom kick (degrees of FOV; negative zooms in). */
+  punch(deg: number): void {
+    this.punchV += deg * 18;
+  }
+
+  /** Dutch tilt that holds for `seconds`, then rights itself. */
+  tilt(rad: number, seconds = 0.8): void {
+    this.rollTarget = rad;
+    setTimeout(() => {
+      if (this.rollTarget === rad) this.rollTarget = 0;
+    }, seconds * 1000);
+  }
+
+  /** Start from a high, wide crane position and settle into the seat. */
+  craneIn(): void {
+    this.crane.set(0, 1.4, 1.6);
+  }
+
   get moving(): boolean {
     return !!this.tween;
   }
 
   apply(time: number, dt = 0): void {
+    // Springs and eases for the broadcast moves.
+    const d = Math.min(0.05, dt);
+    this.punchV += (-this.punchX * 90 - this.punchV * 14) * d;
+    this.punchX += this.punchV * d;
+    this.roll += (this.rollTarget - this.roll) * Math.min(1, d * 6);
+    this.dolly += (this.dollyTarget - this.dolly) * Math.min(1, d * 1.2);
+    this.crane.multiplyScalar(Math.max(0, 1 - d * 1.1));
+    const fov = this.baseFov + this.punchX - this.dolly * 7 + this.crane.length() * 6;
+    if (Math.abs(fov - this.camera.fov) > 1e-3) {
+      this.camera.fov = fov;
+      this.camera.updateProjectionMatrix();
+    }
     const sx = Math.sin(time * 0.37) * 0.012 + Math.sin(time * 0.91) * 0.005;
     const sy = Math.sin(time * 0.53) * 0.008 + Math.sin(time * 1.3) * 0.003;
     this.shakeAmt = Math.max(0, this.shakeAmt - dt * 1.8);
     const k = this.shakeAmt * this.shakeAmt;
     const shx = (Math.random() - 0.5) * 0.08 * k;
     const shy = (Math.random() - 0.5) * 0.08 * k;
-    this.camera.position.set(this.eye.x + sx * this.sway + shx, this.eye.y + sy * this.sway + shy, this.eye.z);
+    const dz = this.station === 'center' ? -this.dolly * 0.35 : 0;
+    this.camera.position.set(this.eye.x + sx * this.sway + shx + this.crane.x, this.eye.y + sy * this.sway + shy + this.crane.y, this.eye.z + dz + this.crane.z);
     this.camera.lookAt(this.target.x + this.offset.x + sx * 0.6 * this.sway, this.target.y + this.offset.y, this.target.z + this.offset.z);
+    if (Math.abs(this.roll) > 1e-4) this.camera.rotateZ(this.roll);
   }
 
   setAspect(a: number): void {

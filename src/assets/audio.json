@@ -18,5 +18,11 @@
   "el.heartbeat": "assets/audio/el/heartbeat.mp3",
   "el.ambience": "assets/audio/el/ambience.mp3",
   "el.music_main": "assets/audio/el/music_main.mp3",
-  "el.music_lounge": "assets/audio/el/music_lounge.mp3"
+  "el.music_lounge": "assets/audio/el/music_lounge.mp3",
+  "track.menu": "assets/audio/music/menu.mp3",
+  "track.main": "assets/audio/music/main.mp3",
+  "track.shop": "assets/audio/music/shop.mp3",
+  "track.deadline": "assets/audio/music/deadline.mp3",
+  "track.gameover": "assets/audio/music/gameover.mp3",
+  "track.charge": "assets/audio/music/charge.mp3"
 }
