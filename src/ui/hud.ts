@@ -54,6 +54,8 @@ export class Hud {
   corner = '';
   /** The payout breakdown line (broadcast graphic), e.g. "$100 → ×2 → ×1.75 = $350". */
   payout: { text: string; color: string } | null = null;
+  private lastPayout: { text: string; color: string } | null = null;
+  private payoutAge = 0;
 
   caption(speaker: string, text: string, color: string, seconds: number): void {
     this.captions = [{ speaker, text, color, t: 0, life: Math.max(2, seconds + 1.2) }];
@@ -69,6 +71,13 @@ export class Hud {
   }
 
   update(dt: number): void {
+    if (this.payout !== this.lastPayout) {
+      this.lastPayout = this.payout;
+      this.payoutAge = 0;
+    } else if (this.payout) {
+      this.payoutAge += dt;
+      if (this.payoutAge > 5) this.payout = null;
+    }
     for (const c of this.captions) c.t += dt;
     this.captions = this.captions.filter((c) => c.t < c.life);
     for (const t of this.toasts) t.t += dt;
@@ -124,8 +133,6 @@ export class Hud {
       drawText(ctx, this.ticker, 34 * k, y + 2 * k, { scale: k, color: '#f0e0b0' });
       if (this.tickerRight) drawText(ctx, this.tickerRight, w - 3 * k, y + 2 * k, { align: 'right', scale: k, color: '#a0e0a0' });
     }
-    if (this.corner && !this.choice) drawText(ctx, this.corner, w - 3 * k, (this.payout ? 26 : 3) * k, { align: 'right', scale: k, color: '#ffc040', shadow: '#000' });
-    if (this.fastMode) drawText(ctx, 'FAST >>', 3 * k, (this.payout ? 26 : 3) * k, { scale: k, color: '#80ff80', shadow: '#000' });
     if (this.hint && !this.choice) drawText(ctx, this.hint, w / 2, h - 21 * k, { align: 'center', scale: k, color: 'rgba(255,240,200,0.8)', shadow: '#000' });
 
     // ---- Banner (Deadline intro, SWEEPS, combos) ----
@@ -163,7 +170,7 @@ export class Hud {
 
     // ---- Captions ----
     const cap = this.captions[0];
-    if (cap) {
+    if (cap && !this.choice) {
       const lines = wrapText(cap.text, 46);
       const shown = Math.ceil(cap.t * 40);
       let left = shown;
@@ -198,6 +205,9 @@ export class Hud {
       lines.forEach((l, i) => drawText(ctx, l, x + 3 * k, y + 3 * k + i * LINE_H * k, { scale: k, color: i === 0 ? '#ffd870' : '#e8e0d0' }));
     }
 
+    if (this.corner && !this.choice) drawText(ctx, this.corner, w - 3 * k, (this.payout ? 26 : 3) * k, { align: 'right', scale: k, color: '#ffc040', shadow: '#000' });
+    if (this.fastMode && !this.choice) drawText(ctx, 'FAST >>', 3 * k, (this.payout ? 26 : 3) * k, { scale: k, color: '#80ff80', shadow: '#000' });
+
     // ---- Cursor ----
     if (this.showCursor && mouse.inside) {
       ctx.fillStyle = '#000';
@@ -213,7 +223,7 @@ export class Hud {
     const layout = c.layout ?? (c.options.length <= 3 && c.options.every((o) => (o.detail ?? '').length < 200) ? 'cards' : 'list');
     const lines = (c.lines ?? []).flatMap((l) => wrapText(l, 48));
     const pad = 6 * k;
-    ctx.fillStyle = 'rgba(8,4,2,0.72)';
+    ctx.fillStyle = 'rgba(8,4,2,0.94)';
     const top = 10 * k;
     const panelH = h - 24 * k;
     ctx.fillRect(8 * k, top, w - 16 * k, panelH);
@@ -244,9 +254,12 @@ export class Hud {
         ctx.fillRect(x, y + ch - k, cw, k);
         drawText(ctx, `${i + 1}`, x + 3 * k, y + 3 * k, { scale: k, color: '#806040' });
         const labLines = wrapText(o.label, Math.floor(cw / (6 * k)) - 1);
-        labLines.forEach((l, j) => drawText(ctx, l, x + cw / 2, y + (4 + j * LINE_H) * k, { align: 'center', scale: k, color: o.disabled ? '#605040' : (o.color ?? '#ffffff') }));
+        labLines.forEach((l, j) => drawText(ctx, l, x + cw / 2, y + (7 + j * LINE_H) * k, { align: 'center', scale: k, color: o.disabled ? '#605040' : (o.color ?? '#ffffff') }));
         const det = wrapText(o.detail ?? '', Math.floor(cw / (6 * k)) - 1);
-        det.slice(0, 11).forEach((l, j) => drawText(ctx, l, x + 3 * k, y + (6 + (labLines.length + j) * LINE_H) * k, { scale: k, color: o.disabled ? '#504030' : '#c8bca0' }));
+        const room = Math.max(0, Math.floor((ch / k - 7 - labLines.length * LINE_H - 2) / LINE_H));
+        const detShown = det.slice(0, room);
+        if (det.length > room && room > 0) detShown[room - 1] = detShown[room - 1].replace(/.$/, '') + '…';
+        detShown.forEach((l, j) => drawText(ctx, l, x + 3 * k, y + (7 + (labLines.length + j) * LINE_H) * k, { scale: k, color: o.disabled ? '#504030' : '#c8bca0' }));
       }
     } else {
       const rowH = 11 * k;

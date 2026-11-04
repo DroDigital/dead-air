@@ -4,3 +4,5 @@ dist
 *.log
 .recall
 sim-out
+playtest-out
+scenario-out

@@ -72,6 +72,9 @@ const FILE_IDS: Partial<Record<SfxId, string>> = {
   bell: 'sfx.phone_bell',
   lever: 'sfx.lever',
   jackpot: 'sfx.jackpot_bells',
+  button: 'sfx.button',
+  scratch: 'sfx.scratch',
+  crank: 'sfx.crank',
 };
 
 export class Sfx {

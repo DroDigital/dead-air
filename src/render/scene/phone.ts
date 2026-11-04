@@ -16,7 +16,8 @@ export class PhoneView {
     const g = this.group;
     g.position.set(-1.65, 0.81, 1.95);
     g.rotation.y = Math.PI / 2 - 0.4;
-    const black = psxMaterial({ color: 0x1a1414, wrap: 0.5 });
+    // Oxblood bakelite: dark enough to be a phone, light enough to read against the dark table.
+    const black = psxMaterial({ color: 0x6a1a1a, wrap: 0.5 });
     const body = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.15, 0.1, 8), black);
     body.position.y = 0.05;
     body.scale.z = 0.8;

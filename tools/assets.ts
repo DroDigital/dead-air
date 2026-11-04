@@ -174,26 +174,38 @@ async function convertModel(e: Entry): Promise<number> {
   return countTris();
 }
 
-/** Minimal PCM16 WAV processing: mono, 22.05 kHz, lowpass, bitcrush. */
+/** WAV → mono, 22.05 kHz, one-pole lowpass at 7 kHz, 10-bit crush. Reads 8/16/24/32-bit PCM and 32/64-bit float. */
 async function convertAudio(e: Entry): Promise<void> {
   const buf = await readFile(join(SRC, e.src));
-  if (buf.toString('ascii', 0, 4) !== 'RIFF') throw new Error('not a WAV');
+  if (buf.toString('ascii', 0, 4) !== 'RIFF' || buf.toString('ascii', 8, 12) !== 'WAVE') throw new Error('not a WAV');
   let off = 12;
-  let fmt: { ch: number; rate: number; bits: number } | null = null;
+  let fmt: { tag: number; ch: number; rate: number; bits: number } | null = null;
   let pcm: Buffer | null = null;
   while (off < buf.length - 8) {
     const id = buf.toString('ascii', off, off + 4);
     const len = buf.readUInt32LE(off + 4);
-    if (id === 'fmt ') fmt = { ch: buf.readUInt16LE(off + 10), rate: buf.readUInt32LE(off + 12), bits: buf.readUInt16LE(off + 22) };
-    if (id === 'data') pcm = buf.subarray(off + 8, off + 8 + len);
+    if (id === 'fmt ') fmt = { tag: buf.readUInt16LE(off + 8), ch: buf.readUInt16LE(off + 10), rate: buf.readUInt32LE(off + 12), bits: buf.readUInt16LE(off + 22) };
+    if (id === 'data') pcm = buf.subarray(off + 8, Math.min(buf.length, off + 8 + len));
     off += 8 + len + (len & 1);
   }
-  if (!fmt || !pcm || fmt.bits !== 16) throw new Error('unsupported WAV (need PCM16)');
-  const frames = pcm.length / 2 / fmt.ch;
+  if (!fmt || !pcm) throw new Error('WAV has no fmt/data chunk');
+  const bytes = fmt.bits / 8;
+  const isFloat = fmt.tag === 3;
+  const sample = (at: number): number => {
+    if (isFloat) return fmt!.bits === 64 ? pcm!.readDoubleLE(at) : pcm!.readFloatLE(at);
+    switch (fmt!.bits) {
+      case 8: return (pcm![at] - 128) / 128;
+      case 16: return pcm!.readInt16LE(at) / 32768;
+      case 24: return pcm!.readIntLE(at, 3) / 8388608;
+      case 32: return pcm!.readInt32LE(at) / 2147483648;
+      default: throw new Error(`unsupported sample size ${fmt!.bits}`);
+    }
+  };
+  const frames = Math.floor(pcm.length / (bytes * fmt.ch));
   const mono = new Float32Array(frames);
   for (let i = 0; i < frames; i++) {
     let s = 0;
-    for (let c = 0; c < fmt.ch; c++) s += pcm.readInt16LE((i * fmt.ch + c) * 2) / 32768;
+    for (let c = 0; c < fmt.ch; c++) s += sample((i * fmt.ch + c) * bytes);
     mono[i] = s / fmt.ch;
   }
   const outRate = 22050;
