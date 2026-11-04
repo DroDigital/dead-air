@@ -259,7 +259,7 @@
       "sourceUrl": "https://github.com/google/fonts/tree/main/ofl/silkscreen",
       "author": "Jason Kottke",
       "license": "OFL-1.1",
-      "modifications": "None. No longer used by the game's text (kept for the itch.io art generator); the in-game HUD, cards and in-world text use the game's own 5×7 bitmap font."
+      "modifications": "None. Used for menus. In-world text uses the game's own 5×7 bitmap font."
     },
     {
       "id": "font.terminal",
@@ -272,46 +272,7 @@
       "sourceUrl": "https://github.com/google/fonts/tree/main/ofl/vt323",
       "author": "Peter Hull",
       "license": "OFL-1.1",
-      "modifications": "None. No longer used by the game's text (kept for the itch.io art generator)."
-    },
-    {
-      "id": "font.title",
-      "type": "font",
-      "src": "fonts/HennyPenny-Regular.ttf",
-      "out": "fonts/HennyPenny-Regular.ttf",
-      "fetch": {
-        "url": "https://raw.githubusercontent.com/google/fonts/main/ofl/hennypenny/HennyPenny-Regular.ttf"
-      },
-      "sourceUrl": "https://github.com/google/fonts/tree/main/ofl/hennypenny",
-      "author": "Brownfox",
-      "license": "OFL-1.1",
-      "modifications": "None (Reserved Font Name \"Henny Penny\"; ligatures are switched off in CSS, not in the file). Title and menus: logo, headings, buttons."
-    },
-    {
-      "id": "font.body",
-      "type": "font",
-      "src": "fonts/PatrickHand-Regular.ttf",
-      "out": "fonts/PatrickHand-Regular.ttf",
-      "fetch": {
-        "url": "https://raw.githubusercontent.com/google/fonts/main/ofl/patrickhand/PatrickHand-Regular.ttf"
-      },
-      "sourceUrl": "https://github.com/google/fonts/tree/main/ofl/patrickhand",
-      "author": "Patrick Wagesreiter",
-      "license": "OFL-1.1",
-      "modifications": "None. Menu labels and small print."
-    },
-    {
-      "id": "font.memo",
-      "type": "font",
-      "src": "fonts/SpecialElite-Regular.ttf",
-      "out": "fonts/SpecialElite-Regular.ttf",
-      "fetch": {
-        "url": "https://raw.githubusercontent.com/google/fonts/main/apache/specialelite/SpecialElite-Regular.ttf"
-      },
-      "sourceUrl": "https://github.com/google/fonts/tree/main/apache/specialelite",
-      "author": "Astigmatic (Brian J. Bonislawsky)",
-      "license": "Apache-2.0",
-      "modifications": "None. Typewriter face for the Prop Room's archive notes."
+      "modifications": "None. Used for long-form text (lore, credits)."
     },
     {
       "id": "sfx.flapper",

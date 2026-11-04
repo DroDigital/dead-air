@@ -10,7 +10,6 @@ import { LORE } from '../content/lore';
 import { STAKES, STARTING_WHEELS } from '../content/wheels';
 import type { Settings } from '../core/config';
 import { desktop } from '../core/desktop';
-import { displayCase } from './textcase';
 import { randomSeedString } from '../core/rng';
 import { UNLOCKS, endlessUnlocked, isUnlocked, maxStake, unlockedWheels, type MetaState, type RatingsBreakdown, type Unlock } from '../game/meta';
 
@@ -41,21 +40,6 @@ export interface MenuCallbacks {
 }
 
 type Page = 'title' | 'new' | 'settings' | 'collection' | 'credits' | 'pause' | 'abandon' | 'summary' | null;
-
-/**
- * Show capitalised UI strings in title case for the title face (see textcase.ts). Only text
- * written entirely in capitals changes; form values, lore and descriptions are untouched.
- */
-function recase(root: HTMLElement): void {
-  const walk = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
-  for (let n = walk.nextNode(); n; n = walk.nextNode()) {
-    const parent = n.parentElement;
-    if (!parent || parent.closest('option, textarea, .note, .pt, code')) continue;
-    const t = n.nodeValue ?? '';
-    const c = displayCase(t);
-    if (c !== t) n.nodeValue = c;
-  }
-}
 
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
 
@@ -189,7 +173,7 @@ export class Menus {
     const meta = this.cb.getMeta();
     if (p === 'title') {
       html = `<div class="panel title">
-        <div class="logo">Dead<span>Air</span></div>
+        <div class="logo">DEAD<span>AIR</span></div>
         <div class="tag">a prize-wheel gambling roguelite</div>
         <div class="col">
           ${this.cb.hasSave() ? this.btn('CONTINUE BROADCAST', () => this.cb.onContinue()) : ''}
@@ -307,7 +291,7 @@ export class Menus {
         <h2>CREDITS</h2>
         <p>DEAD AIR — design, code, writing, procedural art, sound and music made for this project.</p>
         <table class="credits"><tr><th>ASSET</th><th>AUTHOR</th><th>LICENCE</th><th>SOURCE</th></tr>${rows}</table>
-        <p class="small">Libraries: three.js (MIT), GSAP. Fonts: Henny Penny (Brownfox, OFL), Patrick Hand (Patrick Wagesreiter, OFL), Special Elite (Astigmatic, Apache 2.0). Full list in CREDITS.md.</p>
+        <p class="small">Libraries: three.js (MIT), GSAP. Fonts: Silkscreen (Jason Kottke, OFL), VT323 (Peter Hull, OFL). Full list in CREDITS.md.</p>
         <div class="row">${this.btn('BACK', () => this.show('title'))}</div>
       </div>`;
     } else if (p === 'pause') {
@@ -344,7 +328,6 @@ export class Menus {
     }
     this.cb.onLoreNote?.(null);
     this.root.innerHTML = html;
-    recase(this.root);
     this.root.querySelectorAll<HTMLDetailsElement>('details[data-lore]').forEach((d) =>
       d.addEventListener('toggle', () => {
         if (d.open) this.root.querySelectorAll<HTMLDetailsElement>('details[data-lore]').forEach((o) => o !== d && (o.open = false));

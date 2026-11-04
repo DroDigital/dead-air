@@ -126,8 +126,8 @@ No text, no labels, no grid lines.
 
 ## 4 · Title lettering plate
 
-The title itself stays in **Henny Penny** (your pick), lettered by me so it's exact and editable.
-GPT makes the ornamental plate around it.
+GPT makes the ornamental plate. The title lettering goes on top in the game, so it stays exact and
+editable; the optional prompt below has GPT letter it instead.
 
 File: `assets-src/art/title-plate.png` · **1536×1024** · transparent
 
@@ -324,6 +324,5 @@ brass trim · audience seats seen from the front, empty.
 - **Host:** a 2D sprite in the 3D studio, so he becomes a cut-out on stage, drawn on twos (12 fps) with
   each pose's A/B drawings alternating. The face sheet composites onto the blank mint screen, the TALK
   mouths are driven by the voice, and SMILE A/B boil while idle.
-- **UI:** the menus, HUD, captions and phone cards are rebuilt at full screen resolution from the panel and
-  HUD kits, with Henny Penny for the title and headings.
+- **UI:** the menus, HUD, captions and phone cards are rebuilt from the panel and HUD kits.
 - **itch.io art:** regenerated from the same pieces, plus the screenshots you skipped earlier.

@@ -73,18 +73,6 @@
       "type": "font",
       "url": "assets/fonts/VT323-Regular.ttf"
     },
-    "font.title": {
-      "type": "font",
-      "url": "assets/fonts/HennyPenny-Regular.ttf"
-    },
-    "font.body": {
-      "type": "font",
-      "url": "assets/fonts/PatrickHand-Regular.ttf"
-    },
-    "font.memo": {
-      "type": "font",
-      "url": "assets/fonts/SpecialElite-Regular.ttf"
-    },
     "sfx.flapper": {
       "type": "audio",
       "url": "assets/audio/flapper.wav"

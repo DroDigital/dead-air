@@ -36,7 +36,7 @@ const clickMenu = (label) => page.locator('#menus button', { hasText: label }).f
 await page.locator('#menus button', { hasText: 'THE PROP ROOM' }).first().click();
 await page.waitForTimeout(200);
 let text = await page.locator('#menus').innerText();
-check('prop room renders', /PROP ROOM/i.test(text) && !/undefined|NaN|\[object/.test(text), `${text.length} chars`);
+check('prop room renders', /PROP ROOM/.test(text) && !/undefined|NaN|\[object/.test(text), `${text.length} chars`);
 await clickMenu('BACK');
 await page.locator('#menus button', { hasText: 'CREDITS' }).first().click();
 await page.waitForTimeout(200);
@@ -117,7 +117,7 @@ check('continue restores the saved run', continued);
 await page.evaluate(() => window.deadAir.abandon());
 await page.waitForFunction(() => window.deadAir.menus.page === 'summary', null, { timeout: 20000 }).then(() => true, () => false);
 const summaryTitle = await page.locator('#menus h2').first().textContent().catch(() => '');
-check('abandon shows the end-of-run summary and records Ratings', /THAT'S OUR SHOW/i.test(summaryTitle), summaryTitle);
+check('abandon shows the end-of-run summary and records Ratings', /THAT'S OUR SHOW/.test(summaryTitle), summaryTitle);
 await clickMenu('BACK TO TITLE');
 
 // ---- 7. Fast mode toggles from the keyboard and shows its tag ----------------------------
@@ -157,7 +157,7 @@ await page.keyboard.up(' ');
 const victory = await page.waitForFunction(() => window.deadAir.menus.page === 'summary', null, { timeout: 60000 }).then(() => true, () => false);
 const winTitle = victory ? await page.locator('#menus h2').first().textContent() : '';
 const endlessButton = await page.locator('#menus button', { hasText: 'KEEP BROADCASTING' }).count();
-check('paying Deadline 8 shows the victory summary with Endless on offer', victory && /PAID/i.test(winTitle) && endlessButton === 1, `title "${winTitle}", endless button ${endlessButton}`);
+check('paying Deadline 8 shows the victory summary with Endless on offer', victory && /PAID/.test(winTitle) && endlessButton === 1, `title "${winTitle}", endless button ${endlessButton}`);
 if (victory && endlessButton) {
   await clickMenu('KEEP BROADCASTING');
   await page.waitForFunction(() => window.deadAir.game && window.deadAir.game.run.phase === 'Conversion', null, { timeout: 20000 }).then(() => true, () => false);

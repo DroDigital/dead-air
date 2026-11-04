@@ -201,15 +201,6 @@ function flattenModel(root: THREE.Object3D): THREE.Object3D {
 // ---------------------------------------------------------------------------------------
 // Loader
 // ---------------------------------------------------------------------------------------
-/** CSS font-family each font asset registers as. */
-const FONT_FAMILIES: Record<string, string> = {
-  'font.pixel': 'DeadAirPixel',
-  'font.terminal': 'DeadAirTerminal',
-  'font.title': 'DeadAirTitle',
-  'font.body': 'DeadAirBody',
-  'font.memo': 'DeadAirMemo',
-};
-
 export class Assets {
   private textures = new Map<string, THREE.Texture>();
   private models = new Map<string, THREE.Object3D>();
@@ -242,7 +233,7 @@ export class Assets {
             conformToPsx(g.scene);
             this.models.set(id, flattenModel(g.scene));
           } else if (e?.type === 'font') {
-            const name = FONT_FAMILIES[id] ?? 'DeadAirTerminal';
+            const name = id === 'font.pixel' ? 'DeadAirPixel' : 'DeadAirTerminal';
             const ff = new FontFace(name, `url(${e.url})`);
             await ff.load();
             document.fonts.add(ff);
