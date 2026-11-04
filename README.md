@@ -26,11 +26,45 @@ Open the printed URL. Other scripts:
 | `npm run assets` | Convert `/assets-src` → `/public/assets` (PS1 conformance), regenerate the runtime index, CREDITS.md, ASSETS_TODO.md |
 | `npm run assets -- --fetch` | Download any missing CC0/OFL sources first, then convert |
 | `npm run playtest -- --minutes 6` | Automated playtest through the real UI in headless Chromium (keyboard, mouse, menus). Checks game invariants and on-screen text after every step. Flags: `--boost --jump8 --doom --reload --unlock`. Needs `npm run preview` running (port 4173, or `--url`) and Playwright with a Chromium build: `npm i --no-save playwright && npx playwright install chromium`. |
-| `npx tsx tools/vo.ts script \| pending \| split <batch> <file> \| index` | Voice-over script, batch splitting and the runtime clip index (see the file header) |
+| `npm run desktop` | Build, then run the game in the desktop launcher (Electron) |
+| `npm run desktop:dev` | Desktop launcher pointed at a running `npm run dev` (hot reload, DevTools) |
+| `npm run dist:mac` / `dist:win` / `dist:linux` | Package the desktop app into `release/` (see **Desktop builds**) |
+| `npx tsx tools/desktop-icon.ts` | Redraw the app icon (`desktop/icon.png`) |
+| `npx tsx tools/vo.ts script \| pending \| split <batch> <file> \| cut <speaker> <old> <new> [spans] \| index` | Voice-over script, batch splitting, shortening a line to some of its sentences without re-recording, and the runtime clip index (see the file header) |
 | `npx tsx tools/music-key.ts [--write]` | Estimate each music track's key and tuning and choose the shared key; `--write` stores the shifts the asset pipeline applies |
 | `node tools/scenarios.mjs` | 11 scripted checks for paths random play rarely reaches (Prize Room, every setting, quitting mid-spin, continue, abandon, Endless). Same setup as the playtest. |
 
 Dev extras: `?gui` (lil-gui tuning panel, dev builds only), `?debug` (draw-call/triangle readout).
+
+## Desktop builds
+
+The desktop launcher (`desktop/`) wraps the production build in Electron for **macOS, Windows and Linux**. It serves `dist/` from a private `app://dead-air/` origin (so asset fetches and saves behave exactly as on the web), remembers window size/position/fullscreen, keeps the display awake while the window is focused (gamepad play), and adds **QUIT TO DESKTOP** on the title screen and a **FULLSCREEN / WINDOWED** toggle in Settings. **F11** or **Alt+Enter** toggles fullscreen (and **Ctrl+Cmd+F** on macOS). Without a usable GPU it falls back to software WebGL.
+
+| Platform | `release/` output | Notes |
+|---|---|---|
+| macOS (universal: Apple Silicon + Intel) | `.dmg`, `.zip` | Ad-hoc signed, not notarized: the first launch of a browser download needs right-click → **Open** (or `xattr -cr "/Applications/DEAD AIR.app"`). For a Developer ID build, remove `identity: '-'` from `electron-builder.yml` and set the `MAC_CSC_LINK` / `MAC_CSC_KEY_PASSWORD` secrets. |
+| Windows x64 | NSIS installer `.exe`, portable `.exe` | Unsigned: SmartScreen shows **More info → Run anyway** once. |
+| Linux x64 | `.AppImage`, `.deb`, `.tar.gz` | `chmod +x` the AppImage. |
+
+Build each platform on its own OS (`npm run dist:mac` on a Mac, etc.); CI does all three. Saves live in the per-user data folder: `~/Library/Application Support/DEAD AIR` (macOS), `%APPDATA%\DEAD AIR` (Windows), `~/.config/DEAD AIR` (Linux). Launcher flags: `--fullscreen`, `--windowed`, `--devtools`.
+
+## Releases & itch.io
+
+`.github/workflows/release.yml` runs on every `v*` tag (and on demand from the Actions tab):
+
+1. tests + web build, then the desktop app on macOS, Windows and Linux runners;
+2. a **GitHub Release** with every installer and a web `.zip` (tags only);
+3. a **butler** push to itch.io: channels `windows`, `mac`, `linux` (the unpacked apps, so the itch app installs and patches them) and `html5` (the browser version), each with the release version.
+
+To turn on the itch.io push, add a repository **secret** `BUTLER_API_KEY` (from itch.io → Settings → API keys) and a repository **variable** `ITCH_GAME` set to `<itch-user>/<game-slug>`. Without them the push is skipped with a warning. On the itch.io edit page, tick **This file will be played in the browser** on the `html5` upload once. Release:
+
+```bash
+git tag v0.1.0
+```
+
+```bash
+git push origin v0.1.0
+```
 
 ## How to play
 
@@ -62,15 +96,18 @@ A standard gamepad is supported: use the **D-pad / left stick** to look and navi
 ```
 src/
   main.ts, app.ts          entry + app controller (FSM, flow, input routing, autosave)
-  core/                    rng (sfc32 streams), fsm, events, save (versioned + migrations), config
+  core/                    rng (sfc32 streams), fsm, events, save (versioned + migrations), config, desktop bridge
   game/                    rules core — no DOM/Three: wheel physics, payout, combos, run, shop, hooks, balance, meta
   content/                 wedges (23), artifacts (50), scratch cards (12), bargains (37), mutators (8), host lines (95), lore (22), starting wheels (4), stakes (4)
   assets/                  id-based loader with procedural fallbacks; generated runtime manifest
   render/                  PSX material, post chain, camera rig, VFX, stage, scene/* (studio, wheel, tray, vault, shelf, cabinet, host, phone, lever, props)
   audio/                   mixer (buses), SFX, music (context tracks with tape wear), voice-over player with per-speaker effect chains, gibberish fallback voice
   ui/                      input, HUD/chyrons, tooltips, DOM menus, bitmap font
+desktop/                   desktop launcher: Electron main process, preload bridge, app icon
 sim/                       bot policies + simulator
 tools/                     asset pipeline (assets.ts), browser harnesses (playtest.mjs, scenarios.mjs, shared Playwright loader browser.mjs), screenshot helper (shot.mjs)
+electron-builder.yml       desktop packaging (macOS / Windows / Linux targets)
+.github/workflows/         release.yml: build all platforms, GitHub Release, itch.io push
 tests/                     Vitest suites (rng, wheel, payout, artifacts, run, shop/phone, saves, content, text, regressions, sim)
 assets/manifest.json       licensing source of truth
 ```
