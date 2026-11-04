@@ -4,6 +4,9 @@
   "version": "0.1.0",
   "type": "module",
   "description": "DEAD AIR \u2014 a prize-wheel gambling roguelite in a rotting TV studio.",
+  "author": "DroDigital",
+  "main": "desktop/main.cjs",
+  "desktopName": "dead-air.desktop",
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit -p tsconfig.json && vite build",
@@ -13,7 +16,13 @@
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "sim": "tsx sim/runSim.ts",
     "playtest": "node tools/playtest.mjs",
-    "assets": "tsx tools/assets.ts"
+    "assets": "tsx tools/assets.ts",
+    "desktop": "npm run build && electron .",
+    "desktop:dev": "electron . --dev-url=http://localhost:5173/",
+    "dist:desktop": "npm run build && electron-builder",
+    "dist:mac": "npm run build && electron-builder --mac",
+    "dist:win": "npm run build && electron-builder --win",
+    "dist:linux": "npm run build && electron-builder --linux"
   },
   "dependencies": {
     "gsap": "3.15.0",
@@ -25,6 +34,8 @@
     "@gltf-transform/functions": "4.5.1",
     "@types/node": "22.19.0",
     "@types/three": "0.187.0",
+    "electron": "44.9.2",
+    "electron-builder": "26.17.0",
     "lil-gui": "0.21.0",
     "meshoptimizer": "1.3.0",
     "sharp": "0.35.5",

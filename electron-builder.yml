@@ -1,0 +1,78 @@
+# DEAD AIR desktop packaging (electron-builder). See README "Desktop builds".
+appId: com.drodigital.deadair
+productName: DEAD AIR
+copyright: Copyright © DroDigital
+artifactName: dead-air-${version}-${os}-${arch}.${ext}
+
+directories:
+  output: release
+  buildResources: desktop
+
+# Vite already bundles three/gsap into dist/, so no node_modules ship with the app.
+files:
+  - dist/**/*
+  - desktop/main.cjs
+  - desktop/preload.cjs
+  - desktop/icon.png
+  - package.json
+  - '!node_modules/**/*'
+asar: true
+compression: normal
+
+mac:
+  icon: desktop/icon.png
+  category: public.app-category.games
+  target:
+    - target: dmg
+      arch: universal
+    - target: zip
+      arch: universal
+  # Ad-hoc signature: enough for Apple Silicon to run the app (it is not notarized, so a
+  # browser download needs right-click > Open once). For a Developer ID signature, delete this
+  # line and set the CSC_LINK / CSC_KEY_PASSWORD secrets (see README "Desktop builds").
+  identity: '-'
+  darkModeSupport: true
+
+dmg:
+  title: DEAD AIR ${version}
+
+win:
+  icon: desktop/icon.png
+  target:
+    - target: nsis
+      arch: x64
+    - target: portable
+      arch: x64
+
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: DEAD AIR
+
+portable:
+  artifactName: dead-air-${version}-win-portable.${ext}
+
+linux:
+  icon: desktop/icon.png
+  category: Game
+  executableName: dead-air
+  syncDesktopName: true
+  synopsis: A prize-wheel gambling roguelite in a rotting TV studio.
+  maintainer: DroDigital
+  target:
+    - target: AppImage
+      arch: x64
+    - target: deb
+      arch: x64
+    - target: tar.gz
+      arch: x64
+  desktop:
+    entry:
+      Name: DEAD AIR
+      Comment: A prize-wheel gambling roguelite in a rotting TV studio.
+      Categories: Game;
+
+publish: null
