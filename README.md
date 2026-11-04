@@ -27,6 +27,7 @@ Open the printed URL. Other scripts:
 | `npm run assets -- --fetch` | Download any missing CC0/OFL sources first, then convert |
 | `npm run playtest -- --minutes 6` | Automated playtest through the real UI in headless Chromium (keyboard, mouse, menus). Checks game invariants and on-screen text after every step. Flags: `--boost --jump8 --doom --reload --unlock`. Needs `npm run preview` running (port 4173, or `--url`) and Playwright with a Chromium build: `npm i --no-save playwright && npx playwright install chromium`. |
 | `npx tsx tools/vo.ts script \| pending \| split <batch> <file> \| index` | Voice-over script, batch splitting and the runtime clip index (see the file header) |
+| `npx tsx tools/music-key.ts [--write]` | Estimate each music track's key and tuning and choose the shared key; `--write` stores the shifts the asset pipeline applies |
 | `node tools/scenarios.mjs` | 11 scripted checks for paths random play rarely reaches (Prize Room, every setting, quitting mid-spin, continue, abandon, Endless). Same setup as the playtest. |
 
 Dev extras: `?gui` (lil-gui tuning panel, dev builds only), `?debug` (draw-call/triangle readout).
@@ -50,8 +51,8 @@ You stay seated and look between four stations (**arrow keys / WASD**, mouse whe
 
 ## Sound
 
-- **Music:** the project's own score: *Channel 98* (title), *The Final Round* (the wheel), *Department Store Dreams* (Prize Cabinet), *Final Question* (deadline payment, and a short last spin), a spin-tension cue and a game-over cue. The tape slows and dulls a little every Deadline.
-- **Voices:** every host, Producer, secret-caller and archive line is voiced with custom ElevenLabs voices (`eleven_v4` with audio tags) and placed through a per-speaker effect chain at runtime. The host's mouth on the CRT follows the voice.
+- **Music:** the project's own score: *Channel 98* (title), *The Final Round* (the wheel), *Department Store Dreams* (Prize Cabinet), *Final Question* (deadline payment, and a short last spin), a spin-tension cue and a game-over cue. Every tonal track is pitched into A minor (its relative C major for the two cues; tempo unchanged, tuning corrected to A440) so crossfades between contexts stay in key, and tonal cues follow the tape speed. The tape slows and dulls a little every Deadline.
+- **Voices:** every host, Producer, secret-caller and archive line (all 214, including every Prop Room note) is voiced with custom ElevenLabs voices (`eleven_v4` with audio tags) and placed through a per-speaker effect chain at runtime. The host's mouth on the CRT follows the voice.
 - **Effects:** ElevenLabs-generated crowd, buzzer, bells, fanfare, phone, static, trapdoor and room tone, plus CC0 recordings for the small mechanical cues.
 
 ## Project layout

@@ -269,7 +269,7 @@ export class Sfx {
   }
 
   /** A looping bed (drumroll, heartbeat, room tone). Returns a handle that fades it out. */
-  loop(id: SfxId, gain = 0.6, bus: 'sfx' | 'ambience' = 'sfx', fadeIn = 0.15, repeat = true): { stop: (fade?: number) => void; gain: GainNode } | null {
+  loop(id: SfxId, gain = 0.6, bus: 'sfx' | 'ambience' = 'sfx', fadeIn = 0.15, repeat = true, rate = 1): { stop: (fade?: number) => void; gain: GainNode } | null {
     if (!this.mixer.running) return null;
     const buf = this.buffers.get(id);
     if (!buf) return null;
@@ -277,6 +277,7 @@ export class Sfx {
     const src = c.createBufferSource();
     src.buffer = buf;
     src.loop = repeat;
+    src.playbackRate.value = rate;
     const g = c.createGain();
     g.gain.setValueAtTime(0, c.currentTime);
     g.gain.linearRampToValueAtTime(gain, c.currentTime + fadeIn);

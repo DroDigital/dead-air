@@ -381,6 +381,66 @@
     "7qt3iv"
    ],
    "prompt": "[tired] [slowly] CALL TIME 6:00 PM. CONTESTANT: TBD. HOST: CONFIRMED. AUDIENCE: CONFIRMED (DO NOT FEED). WHEEL: OILED. FLOOR: TESTED. [long pause] [tired] [slowly] To all staff — our numbers are flat. We need more tension. Effective immediately, the trapdoor is live. Nobody needs to know it was ever not live. — Programming [long pause] [tired] [slowly] The Talent agrees to remain cheerful in perpetuity. \"Perpetuity\" is defined as the period beginning on the signing date and ending never. The Talent has initialled every page with a thumbprint. The Talent did not have thumbs at the time. [long pause] [tired] [slowly] Please remain seated for the duration of the broadcast. The duration of the broadcast has been extended. Please remain seated."
+  },
+  {
+   "id": "archive2",
+   "speaker": "archive",
+   "lines": [
+    "1oqswiq",
+    "10hcwy5",
+    "14y8den"
+   ],
+   "prompt": "[tired] [slowly] 24 wedges, gold leaf, chrome trim, 96 marquee bulbs, one leather flapper (genuine). Flapper sourced locally. Do not ask the supplier where. Do not ask the supplier anything. [long pause] [tired] [slowly] A photo of a brass bell on a rope. Someone has written on the back: \"We rang it for every Jackpot. In 1979 it rang by itself. We took it down. It still rings, sometimes, in the prop room.\" [long pause] [tired] [slowly] \"Hi, it's me. The Producer. Your Producer. I just wanted to say I believe in you. The Network believes in you. Pick up. Pick up. I can see you. Pick up.\""
+  },
+  {
+   "id": "archive3",
+   "speaker": "archive",
+   "lines": [
+    "syhoje",
+    "1af75f7",
+    "7qa5bs"
+   ],
+   "prompt": "[tired] [slowly] Any silence longer than four seconds will be considered Dead Air. Dead Air is a breach of contract. Breaches of contract are resolved in the basement. The basement is resolved in the sub-basement. [long pause] [tired] [slowly] SMILE. [short pause] SMILE. [short pause] SMILE WIDER. [short pause] DO NOT LOOK AT THE CEILING. [short pause] SMILE. [short pause] THEY CAN TELL WHEN YOU ARE NOT SMILING. [long pause] [tired] [slowly] Swatch #44, \"Showtime Burgundy\". The stain was already there when it arrived. The stain is larger now. Nobody has spilled anything."
+  },
+  {
+   "id": "archive4",
+   "speaker": "archive",
+   "lines": [
+    "q8m7k2",
+    "yafu6g",
+    "nz36go"
+   ],
+   "prompt": "[tired] [slowly] NAME: (scratched out). I agree to play until my debt is paid. I understand the debt grows. I understand the debt grows. I understand the debt grows. (repeated to the bottom of the page, in smaller and smaller writing) [long pause] [tired] [slowly] MON: Double Bankrupts. TUE: No Safe Bets. WED: The Audit. THU: Null Signal. FRI: Blackout. SAT: redacted. SUN: We do not broadcast on Sunday. We broadcast on Sunday. [long pause] [tired] [slowly] Replaced bulb over the wheel again. It keeps swinging. There is no draft in here. Replaced bulb over the phone. It flickers in a pattern. I wrote the pattern down. It spells my name."
+  },
+  {
+   "id": "archive5",
+   "speaker": "archive",
+   "lines": [
+    "2j8ugv",
+    "k2q6ds",
+    "hmi732",
+    "1snj94v"
+   ],
+   "prompt": "[tired] [slowly] Dear Contestant, congratulations on your continued employment. Your debt has been restructured into a more exciting format. Please do not attempt to contact the Network. The Network will contact you. [long pause] [tired] [slowly] HOST: And with that payment, you are free! (Beat.) (Longer beat.) HOST: …Free to play again! (Applause sign. The applause sign does not turn off.) [long pause] [tired] [slowly] A film can labelled \"RERUNS\". It is warm. Holding it, you can hear a crowd laughing at a joke that has not been told yet. [long pause] [tired] [slowly] Mannequins: 14. Mannequin hands: 29. Mannequin hands accounted for: 28. If found, do not hold hands with the missing mannequin hand."
+  },
+  {
+   "id": "archive6",
+   "speaker": "archive",
+   "lines": [
+    "k05c3d",
+    "1t6m84w",
+    "1sqcib3"
+   ],
+   "prompt": "[tired] [slowly] A hand-drawn floor plan. Directly below the contestant chair: a square labelled \"THE AUDIENCE (OVERFLOW)\". An arrow points down. Beneath it, another square. Another arrow. [long pause] [tired] [slowly] \"If you hang up on him enough times, the line clicks. That's me. I'm still in the building. I'm under the floor. I can help. Hang up on him.\" — the last one [long pause] [tired] [slowly] Read in order: THE [short pause] SHOW [short pause] IS [short pause] NOT [short pause] BROADCAST [short pause] ANYWHERE. [short pause] THERE [short pause] IS [short pause] NO [short pause] NETWORK. [short pause] THERE [short pause] IS [short pause] ONLY [short pause] THE [short pause] WHEEL. [short pause] AND [short pause] THE [short pause] WHEEL [short pause] IS [short pause] HUNGRY."
+  },
+  {
+   "id": "archive7",
+   "speaker": "archive",
+   "lines": [
+    "qfrlql",
+    "eqpcmz"
+   ],
+   "prompt": "[tired] [slowly] The colour bars are in the wrong order. In the centre circle, where the station logo should be, there is a small photograph of the chair you are sitting in. You are in it. [long pause] [tired] [slowly] IN: 11:58 PM. OUT: — . IN: 11:58 PM. OUT: — . IN: 11:58 PM. OUT: — . The card has been punched so many times it is mostly holes."
   }
  ],
  "lines": [
@@ -1558,6 +1618,114 @@
    "id": "7qt3iv",
    "speaker": "archive",
    "text": "Please remain seated for the duration of the broadcast. The duration of the broadcast has been extended. Please remain seated.",
+   "tag": "[tired] [slowly]"
+  },
+  {
+   "id": "1oqswiq",
+   "speaker": "archive",
+   "text": "24 wedges, gold leaf, chrome trim, 96 marquee bulbs, one leather flapper (genuine). Flapper sourced locally. Do not ask the supplier where. Do not ask the supplier anything.",
+   "tag": "[tired] [slowly]"
+  },
+  {
+   "id": "10hcwy5",
+   "speaker": "archive",
+   "text": "A photo of a brass bell on a rope. Someone has written on the back: \"We rang it for every Jackpot. In 1979 it rang by itself. We took it down. It still rings, sometimes, in the prop room.\"",
+   "tag": "[tired] [slowly]"
+  },
+  {
+   "id": "14y8den",
+   "speaker": "archive",
+   "text": "\"Hi, it's me. The Producer. Your Producer. I just wanted to say I believe in you. The Network believes in you. Pick up. Pick up. I can see you. Pick up.\"",
+   "tag": "[tired] [slowly]"
+  },
+  {
+   "id": "syhoje",
+   "speaker": "archive",
+   "text": "Any silence longer than four seconds will be considered Dead Air. Dead Air is a breach of contract. Breaches of contract are resolved in the basement. The basement is resolved in the sub-basement.",
+   "tag": "[tired] [slowly]"
+  },
+  {
+   "id": "1af75f7",
+   "speaker": "archive",
+   "text": "SMILE. / SMILE. / SMILE WIDER. / DO NOT LOOK AT THE CEILING. / SMILE. / THEY CAN TELL WHEN YOU ARE NOT SMILING.",
+   "tag": "[tired] [slowly]"
+  },
+  {
+   "id": "7qa5bs",
+   "speaker": "archive",
+   "text": "Swatch #44, \"Showtime Burgundy\". The stain was already there when it arrived. The stain is larger now. Nobody has spilled anything.",
+   "tag": "[tired] [slowly]"
+  },
+  {
+   "id": "q8m7k2",
+   "speaker": "archive",
+   "text": "NAME: [scratched out]. I agree to play until my debt is paid. I understand the debt grows. I understand the debt grows. I understand the debt grows. (repeated to the bottom of the page, in smaller and smaller writing)",
+   "tag": "[tired] [slowly]"
+  },
+  {
+   "id": "yafu6g",
+   "speaker": "archive",
+   "text": "MON: Double Bankrupts. TUE: No Safe Bets. WED: The Audit. THU: Null Signal. FRI: Blackout. SAT: [REDACTED]. SUN: We do not broadcast on Sunday. We broadcast on Sunday.",
+   "tag": "[tired] [slowly]"
+  },
+  {
+   "id": "nz36go",
+   "speaker": "archive",
+   "text": "Replaced bulb over the wheel again. It keeps swinging. There is no draft in here. Replaced bulb over the phone. It flickers in a pattern. I wrote the pattern down. It spells my name.",
+   "tag": "[tired] [slowly]"
+  },
+  {
+   "id": "2j8ugv",
+   "speaker": "archive",
+   "text": "Dear Contestant, congratulations on your continued employment. Your debt has been restructured into a more exciting format. Please do not attempt to contact the Network. The Network will contact you.",
+   "tag": "[tired] [slowly]"
+  },
+  {
+   "id": "k2q6ds",
+   "speaker": "archive",
+   "text": "HOST: And with that payment, you are free! (Beat.) (Longer beat.) HOST: …Free to play again! (Applause sign. The applause sign does not turn off.)",
+   "tag": "[tired] [slowly]"
+  },
+  {
+   "id": "hmi732",
+   "speaker": "archive",
+   "text": "A film can labelled \"RERUNS\". It is warm. Holding it, you can hear a crowd laughing at a joke that has not been told yet.",
+   "tag": "[tired] [slowly]"
+  },
+  {
+   "id": "1snj94v",
+   "speaker": "archive",
+   "text": "Mannequins: 14. Mannequin hands: 29. Mannequin hands accounted for: 28. If found, do not hold hands with the missing mannequin hand.",
+   "tag": "[tired] [slowly]"
+  },
+  {
+   "id": "k05c3d",
+   "speaker": "archive",
+   "text": "A hand-drawn floor plan. Directly below the contestant chair: a square labelled \"THE AUDIENCE (OVERFLOW)\". An arrow points down. Beneath it, another square. Another arrow.",
+   "tag": "[tired] [slowly]"
+  },
+  {
+   "id": "1t6m84w",
+   "speaker": "archive",
+   "text": "\"If you hang up on him enough times, the line clicks. That's me. I'm still in the building. I'm under the floor. I can help. Hang up on him.\" — the last one",
+   "tag": "[tired] [slowly]"
+  },
+  {
+   "id": "1sqcib3",
+   "speaker": "archive",
+   "text": "Read in order: THE / SHOW / IS / NOT / BROADCAST / ANYWHERE. / THERE / IS / NO / NETWORK. / THERE / IS / ONLY / THE / WHEEL. / AND / THE / WHEEL / IS / HUNGRY.",
+   "tag": "[tired] [slowly]"
+  },
+  {
+   "id": "qfrlql",
+   "speaker": "archive",
+   "text": "The colour bars are in the wrong order. In the centre circle, where the station logo should be, there is a small photograph of the chair you are sitting in. You are in it.",
+   "tag": "[tired] [slowly]"
+  },
+  {
+   "id": "eqpcmz",
+   "speaker": "archive",
+   "text": "IN: 11:58 PM. OUT: — . IN: 11:58 PM. OUT: — . IN: 11:58 PM. OUT: — . The card has been punched so many times it is mostly holes.",
    "tag": "[tired] [slowly]"
   }
  ]

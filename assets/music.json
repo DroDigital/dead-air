@@ -2,11 +2,69 @@
   "note": "Music provided by the project owner (digitaldro, made with Suno). Sources in assets-src/music, converted by `npm run assets` (needs ffmpeg).",
   "author": "digitaldro (made with Suno)",
   "tracks": [
-    { "id": "track.menu", "file": "menu_channel98.mp3", "kind": "music", "title": "Channel 98", "use": "Title screen and menus" },
-    { "id": "track.main", "file": "wheel_final_round.mp3", "kind": "music", "title": "The Final Round", "use": "The wheel (gameplay)" },
-    { "id": "track.shop", "file": "shop_department_store.mp3", "kind": "music", "title": "Department Store Dreams", "use": "The Prize Cabinet" },
-    { "id": "track.deadline", "file": "deadline_final_question.mp3", "kind": "music", "title": "Final Question", "use": "Debt deadline payment; a last spin that is short of the Debt" },
-    { "id": "track.gameover", "file": "gameover_cue.mp3", "kind": "sfx", "title": "Game-over cue", "use": "The floor opens" },
-    { "id": "track.charge", "file": "charge_tension.mp3", "kind": "sfx", "title": "Spin tension", "use": "Charging the lever and the spin" }
-  ]
+    {
+      "id": "track.menu",
+      "file": "menu_channel98.mp3",
+      "kind": "music",
+      "title": "Channel 98",
+      "use": "Title screen and menus",
+      "key": "G minor",
+      "shift": 2,
+      "cents": -2
+    },
+    {
+      "id": "track.main",
+      "file": "wheel_final_round.mp3",
+      "kind": "music",
+      "title": "The Final Round",
+      "use": "The wheel (gameplay)",
+      "key": "G minor",
+      "shift": 2,
+      "cents": 0
+    },
+    {
+      "id": "track.shop",
+      "file": "shop_department_store.mp3",
+      "kind": "music",
+      "title": "Department Store Dreams",
+      "use": "The Prize Cabinet",
+      "key": "C minor",
+      "shift": -3,
+      "cents": -6
+    },
+    {
+      "id": "track.deadline",
+      "file": "deadline_final_question.mp3",
+      "kind": "music",
+      "title": "Final Question",
+      "use": "Debt deadline payment; a last spin that is short of the Debt",
+      "key": "C minor",
+      "shift": -3,
+      "cents": -1
+    },
+    {
+      "id": "track.gameover",
+      "file": "gameover_cue.mp3",
+      "kind": "sfx",
+      "title": "Game-over cue",
+      "use": "The floor opens",
+      "key": "C major",
+      "shift": 0,
+      "cents": 4
+    },
+    {
+      "id": "track.charge",
+      "file": "charge_tension.mp3",
+      "kind": "sfx",
+      "title": "Spin tension",
+      "use": "Charging the lever and the spin",
+      "key": "C major",
+      "shift": 0,
+      "cents": -2
+    }
+  ],
+  "target": {
+    "signature": "C major / A minor",
+    "why": "Least total shift across the score (weighted toward the wheel theme), so crossfades stay in one key."
+  }
 }

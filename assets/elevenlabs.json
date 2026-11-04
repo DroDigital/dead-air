@@ -169,7 +169,10 @@
       "file": "music_lounge.mp3",
       "kind": "music",
       "model": "eleven_music_v2_5",
-      "prompt": "Warped music-box and Hammond intermission bossa (instrumental)"
+      "prompt": "Warped music-box and Hammond intermission bossa (instrumental)",
+      "key": "A minor",
+      "shift": 0,
+      "cents": -3
     }
   ]
 }

@@ -17,8 +17,8 @@ import { DEADLINE_LINES, HOST_LINES, PRODUCER_ACCEPT, PRODUCER_HANGUP, SECRET_AC
 import { LORE } from '../src/content/lore';
 import { voId } from '../src/audio/voId';
 
-/** Archive notes read aloud in the Prop Room (budget: the first four). */
-export const ARCHIVE_VOICED = 4;
+/** Archive notes read aloud in the Prop Room (all of them). */
+export const ARCHIVE_VOICED = Infinity;
 
 export type Speaker = 'host' | 'producer' | 'secret' | 'archive';
 export const VOICES: Record<Speaker, { id: string; name: string }> = {
@@ -94,7 +94,10 @@ export function direct(text: string): string {
     .replace(/^\(static\) /, '[exhales] ')
     .replace(/^\(breathing\) /, '[breathless] ')
     .replace(/^\(a long pause\) /, '[pause] ')
-    .replace(/ \/ /g, ' [short pause] ');
+    .replace(/ \/ /g, ' [short pause] ')
+    // Bracketed words inside a note are read aloud, not taken as directions.
+    .replace(/\[scratched out\]/g, '(scratched out)')
+    .replace(/\[REDACTED\]/g, 'redacted');
 }
 
 interface Line {

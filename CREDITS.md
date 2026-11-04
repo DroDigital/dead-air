@@ -39,16 +39,16 @@ DEAD AIR — design, code, writing, procedural art, procedural audio and music: 
 
 ## Music
 
-Provided for this project by digitaldro (made with Suno). Sources in `assets-src/music`.
+Provided for this project by digitaldro (made with Suno). Sources in `assets-src/music`. Every tonal track is pitched into C major / A minor (tempo unchanged) so crossfades stay in key; see `tools/music-key.ts`.
 
-| Track | Used for |
-|---|---|
-| Channel 98 | Title screen and menus |
-| The Final Round | The wheel (gameplay) |
-| Department Store Dreams | The Prize Cabinet |
-| Final Question | Debt deadline payment; a last spin that is short of the Debt |
-| Game-over cue | The floor opens |
-| Spin tension | Charging the lever and the spin |
+| Track | Used for | Original key | Shift |
+|---|---|---|---|
+| Channel 98 | Title screen and menus | G minor | +2 st -2¢ |
+| The Final Round | The wheel (gameplay) | G minor | +2 st |
+| Department Store Dreams | The Prize Cabinet | C minor | -3 st -6¢ |
+| Final Question | Debt deadline payment; a last spin that is short of the Debt | C minor | -3 st -1¢ |
+| Game-over cue | The floor opens | C major | 0 +4¢ |
+| Spin tension | Charging the lever and the spin | C major | 0 -2¢ |
 
 ## Generated with ElevenLabs
 
