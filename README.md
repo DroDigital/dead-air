@@ -30,6 +30,7 @@ Open the printed URL. Other scripts:
 | `npm run desktop:dev` | Desktop launcher pointed at a running `npm run dev` (hot reload, DevTools) |
 | `npm run dist:mac` / `dist:win` / `dist:linux` | Package the desktop app into `release/` (see **Desktop builds**) |
 | `npx tsx tools/desktop-icon.ts` | Redraw the app icon (`desktop/icon.png`) |
+| `node tools/itch-kit/build.mjs` | Regenerate the itch.io page art in `itch/` (cover, banner, logos, GIFs, the edge-haunt background); see `itch/README.md` |
 | `npx tsx tools/vo.ts script \| pending \| split <batch> <file> \| cut <speaker> <old> <new> [spans] \| index` | Voice-over script, batch splitting, shortening a line to some of its sentences without re-recording, and the runtime clip index (see the file header) |
 | `npx tsx tools/music-key.ts [--write]` | Estimate each music track's key and tuning and choose the shared key; `--write` stores the shifts the asset pipeline applies |
 | `node tools/scenarios.mjs` | 11 scripted checks for paths random play rarely reaches (Prize Room, every setting, quitting mid-spin, continue, abandon, Endless). Same setup as the playtest. |
@@ -56,7 +57,7 @@ Build each platform on its own OS (`npm run dist:mac` on a Mac, etc.); CI does a
 2. a **GitHub Release** with every installer and a web `.zip` (tags only);
 3. a **butler** push to itch.io: channels `windows`, `mac`, `linux` (the unpacked apps, so the itch app installs and patches them) and `html5` (the browser version), each with the release version.
 
-To turn on the itch.io push, add a repository **secret** `BUTLER_API_KEY` (from itch.io → Settings → API keys) and a repository **variable** `ITCH_GAME` set to `<itch-user>/<game-slug>`. Without them the push is skipped with a warning. On the itch.io edit page, tick **This file will be played in the browser** on the `html5` upload once. Release:
+To turn on the itch.io push, add a repository **secret** `BUTLER_API_KEY` (from itch.io → Settings → API keys) and a repository **variable** `ITCH_GAME` set to `<itch-user>/<game-slug>`. Without them the push is skipped with a warning. On the itch.io edit page, tick **This file will be played in the browser** on the `html5` upload once. The page itself (cover, banner, background, logos, description, theme colours) is in `itch/`; see `itch/README.md`. Release:
 
 ```bash
 git tag v0.1.0
@@ -106,6 +107,7 @@ src/
 desktop/                   desktop launcher: Electron main process, preload bridge, app icon
 sim/                       bot policies + simulator
 tools/                     asset pipeline (assets.ts), browser harnesses (playtest.mjs, scenarios.mjs, shared Playwright loader browser.mjs), screenshot helper (shot.mjs)
+itch/                      itch.io page kit: cover, banner, logos, GIFs, edge-haunt background, description, setup guide
 electron-builder.yml       desktop packaging (macOS / Windows / Linux targets)
 .github/workflows/         release.yml: build all platforms, GitHub Release, itch.io push
 tests/                     Vitest suites (rng, wheel, payout, artifacts, run, shop/phone, saves, content, text, regressions, sim)
