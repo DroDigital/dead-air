@@ -297,7 +297,7 @@ async function main(): Promise<void> {
   // ElevenLabs-generated audio (voice-over, SFX, music) — see assets/elevenlabs.json.
   const el = JSON.parse(await readFile(join(ROOT, 'assets', 'elevenlabs.json'), 'utf8')) as {
     voices: { speaker: string; name: string; voiceId: string; design: string }[];
-    audio: { id: string; file: string; kind: string; model: string; prompt: string; replaces?: string }[];
+    audio: { id: string; file: string; kind: string; model: string; prompt: string; replaces?: string; shift?: number; cents?: number }[];
   };
   const elIndex: Record<string, string> = {};
   const elOut = join(ROOT, 'public', 'assets', 'audio', 'el');
@@ -307,12 +307,16 @@ async function main(): Promise<void> {
   // Music provided by the project owner (assets/music.json) goes through the same conversion.
   const music = JSON.parse(await readFile(join(ROOT, 'assets', 'music.json'), 'utf8')) as {
     author: string;
-    tracks: { id: string; file: string; kind: string; title: string; use: string }[];
+    target?: { signature: string };
+    tracks: { id: string; file: string; kind: string; title: string; use: string; key?: string; shift?: number; cents?: number }[];
   };
   const jobs = [
     ...el.audio.map((a) => ({ ...a, dir: 'elevenlabs' })),
-    ...music.tracks.map((t) => ({ id: t.id, file: t.file, kind: t.kind, dir: 'music' })),
+    ...music.tracks.map((t) => ({ id: t.id, file: t.file, kind: t.kind, dir: 'music', shift: t.shift, cents: t.cents })),
   ];
+  // Outputs are rebuilt whenever their processing changes (stamp = the filter chain used).
+  const stampPath = join(ROOT, 'public', 'assets', 'audio', 'stamps.json');
+  const stamps: Record<string, string> = existsSync(stampPath) ? JSON.parse(await readFile(stampPath, 'utf8')) : {};
   for (const a of jobs) {
     const src = join(ROOT, 'assets-src', a.dir, a.file);
     const name = a.id.replace(/^(el|track)\./, '') + '.mp3';
@@ -327,16 +331,23 @@ async function main(): Promise<void> {
           ? 'highpass=f=30,lowpass=f=9000,loudnorm=I=-22:TP=-2:LRA=11'
           : 'silenceremove=start_periods=1:start_threshold=-50dB,highpass=f=40,lowpass=f=9000,loudnorm=I=-16:TP=-1.5:LRA=11';
     const fmt = a.kind === 'music' ? ['-ac', '2', '-ar', '32000', '-b:a', '96k'] : ['-ac', '1', '-ar', '22050', '-b:a', '64k'];
-    const ok = existsSync(dst) || (await ff(['-y', '-hide_banner', '-loglevel', 'error', '-i', src, '-af', af, ...fmt, dst]));
+    // Key alignment (tools/music-key.ts): pitch-shift into the score's key, tempo unchanged.
+    const semis = (a.shift ?? 0) + (a.cents ?? 0) / 100;
+    const pitch = Math.abs(semis) > 0.005 ? `rubberband=pitch=${Math.pow(2, semis / 12).toFixed(6)}:pitchq=quality:transients=smooth,` : '';
+    const chain = pitch + af;
+    const key = `${a.file}|${chain}|${fmt.join(' ')}`;
+    const ok = (existsSync(dst) && stamps[name] === key) || (await ff(['-y', '-hide_banner', '-loglevel', 'error', '-i', src, '-af', chain, ...fmt, dst]));
+    if (ok) stamps[name] = key;
     if (ok) elIndex[a.id] = `assets/audio/${sub}/${name}`;
     else console.warn(`· ${a.id}: ffmpeg not available or failed; skipped`);
   }
   await writeFile(join(ROOT, 'src', 'assets', 'audio.json'), JSON.stringify(elIndex, null, 2) + '\n');
+  await writeFile(stampPath, JSON.stringify(stamps, null, 1) + '\n');
   // Procedural stand-ins that an ElevenLabs recording now replaces are no longer outstanding.
   const replaced = el.audio.filter((a) => a.replaces && elIndex[a.id]).map((a) => a.replaces!);
   for (let i = todo.length - 1; i >= 0; i--) if (replaced.some((r) => todo[i].includes(r))) todo.splice(i, 1);
-  lines.push('', '## Music', '', `Provided for this project by ${music.author}. Sources in \`assets-src/music\`.`, '', '| Track | Used for |', '|---|---|');
-  for (const t of music.tracks) if (elIndex[t.id]) lines.push(`| ${t.title} | ${t.use} |`);
+  lines.push('', '## Music', '', `Provided for this project by ${music.author}. Sources in \`assets-src/music\`. Every tonal track is pitched into ${music.target?.signature ?? 'one key'} (tempo unchanged) so crossfades stay in key; see \`tools/music-key.ts\`.`, '', '| Track | Used for | Original key | Shift |', '|---|---|---|---|');
+  for (const t of music.tracks) if (elIndex[t.id]) lines.push(`| ${t.title} | ${t.use} | ${t.key ?? '—'} | ${t.shift ? (t.shift > 0 ? '+' : '') + t.shift + ' st' : '0'}${t.cents ? ` ${t.cents > 0 ? '+' : ''}${t.cents}¢` : ''} |`);
   lines.push('', '## Generated with ElevenLabs', '', 'Voice-over (custom-designed voices, `eleven_v4`), sound effects (`eleven_text_to_sound_v2`) and music (`eleven_music_v2_5`) were generated for this project with ElevenLabs. Prompts are listed in `assets/elevenlabs.json`; the voice script is `assets-src/vo/script.json`.', '');
   lines.push('| Voice | Speaker | Design |', '|---|---|---|');
   for (const v of el.voices) lines.push(`| ${v.name} | ${v.speaker} | ${v.design} |`);

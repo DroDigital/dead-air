@@ -108,6 +108,11 @@ export class Music {
     if (this.playingFile) this.startFile(1.6);
   }
 
+  /** Current tape speed of the in-show tracks; tonal cues play at it to stay in key with the score. */
+  get rate(): number {
+    return this.fileRate;
+  }
+
   get currentTrack(): Track {
     return this.track;
   }

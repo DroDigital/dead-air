@@ -738,7 +738,7 @@ export class App {
     if (this.stage.rig.station !== 'center') this.stage.rig.go('center');
     this.charge = { t: 0, peek: false, lastTick: 0 };
     this.loops.drum?.stop(0.05);
-    this.loops.drum = this.sfx.loop('tension', 0.6, 'sfx', 0.25, false) ?? this.sfx.loop('drumroll', 0.32, 'sfx', 0.3);
+    this.loops.drum = this.sfx.loop('tension', 0.6, 'sfx', 0.25, false, this.music.rate) ?? this.sfx.loop('drumroll', 0.32, 'sfx', 0.3);
     this.fsm.force('Charging');
     this.hud.hint = g.canPeek() ? 'RELEASE IN THE GREEN · [E] PEEK' : 'RELEASE IN THE GREEN';
     this.updateArrows();
@@ -1248,7 +1248,7 @@ export class App {
       this.hostSay('gameOver', 'dead', 'slump');
       await wait(0.6);
       this.sfx.play('trapdoor', { gain: 1 });
-      this.sfx.play('gameoverCue', { gain: 0.8, delay: 0.5, jitter: 0 });
+      this.sfx.play('gameoverCue', { gain: 0.8, delay: 0.5, jitter: 0, pitch: this.music.rate });
       if (this.settings.screenShake) st.rig.shake(1.2);
       const t0 = performance.now();
       while (performance.now() - t0 < 900) {
