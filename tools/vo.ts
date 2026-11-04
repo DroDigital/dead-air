@@ -3,6 +3,7 @@
  *
  *   npx tsx tools/vo.ts script   → assets-src/vo/script.json (batches sent to ElevenLabs, one take each)
  *   npx tsx tools/vo.ts split <batchId> <audio file>  → cuts one batch into per-line clips
+ *   npx tsx tools/vo.ts cut <speaker> "<old line>" "<new line>" [spans]  → shortens a clip to some of its sentences
  *   npx tsx tools/vo.ts index    → src/assets/vo.json (runtime index of the clips that exist)
  *
  * A batch is several lines from one speaker read in one generation, separated by [long pause]
@@ -10,8 +11,9 @@
  * length against its text so a mis-split batch is rejected instead of shipped.
  */
 import { execFileSync } from 'node:child_process';
-import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readdirSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { BARGAINS, PRODUCER_INTROS } from '../src/content/bargains';
 import { DEADLINE_LINES, HOST_LINES, PRODUCER_ACCEPT, PRODUCER_HANGUP, SECRET_ACCEPT, type HostTrigger } from '../src/content/hostLines';
 import { LORE } from '../src/content/lore';
@@ -162,7 +164,7 @@ function batches(onlyMissing = false): Batch[] {
 const SRC = 'assets-src/vo';
 const OUT = 'public/assets/vo';
 
-function parse(err: string): { start: number; end: number }[] {
+export function parse(err: string): { start: number; end: number }[] {
   const out: { start: number; end: number }[] = [];
   let s = -1;
   for (const m of err.matchAll(/silence_(start|end): ([\d.]+)/g)) {
@@ -175,7 +177,7 @@ function parse(err: string): { start: number; end: number }[] {
   return out;
 }
 
-function duration(file: string): number {
+export function duration(file: string): number {
   return Number(execFileSync('ffprobe', ['-v', 'error', '-show_entries', 'format=duration', '-of', 'csv=p=0', file], { encoding: 'utf8' }).trim());
 }
 
@@ -183,7 +185,7 @@ function duration(file: string): number {
  * Choose N−1 cut points among the detected silences so every clip's length matches its text
  * (seconds ∝ characters), preferring longer silences. Dynamic programming over candidates.
  */
-function align(sil: { start: number; end: number }[], texts: string[], total: number): [number, number][] {
+export function align(sil: { start: number; end: number }[], texts: string[], total: number): [number, number][] {
   const n = texts.length;
   if (n === 1) return [[0, total]];
   const w = texts.map((t) => Math.max(8, t.length));
@@ -259,6 +261,87 @@ function split(batchId: string, file: string): void {
   console.log(`${batchId}: ${n} clips (${segs.map(([a, e]) => (e - a).toFixed(1)).join(' ')})`);
 }
 
+/** A leading stage direction such as "(a whisper) ", kept with the line but not spoken as a sentence. */
+const DIRECTION = /^\([^)]*\)\s*/;
+
+/**
+ * Sentences of a line. "..." followed by a lowercase word is a pause inside a sentence
+ * ("a modest... administrative slice"), not a boundary.
+ */
+export function sentences(text: string): string[] {
+  const body = text.replace(DIRECTION, '');
+  return body
+    .split(/(?<=[.!?…]["']?)\s+(?=[A-Z0-9"'(×$])/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+/**
+ * Shorten an existing clip to some of its sentences, without re-recording:
+ *   npx tsx tools/vo.ts cut <speaker> "<old line>" "<new line>" [spans]
+ * The new line must be sentences of the old one, in order (its stage direction may stay).
+ * Each kept run of adjacent sentences is cut out with its original pauses; runs are joined by
+ * the pause that followed the first one. The new clip is written under the new line's id and
+ * the old clip is removed. Run `index` afterwards.
+ *
+ * Sentence timing comes from `spans` when given ("0.00-2.20,2.60-3.13,…", one start-end per
+ * sentence of the old line, e.g. from a forced alignment), else from the silence aligner used
+ * by `split`, which can misplace boundaries around very short sentences ("Cash. Today.").
+ */
+function cut(speaker: Speaker, oldText: string, newText: string, spanArg?: string): void {
+  const olds = sentences(oldText);
+  const news = sentences(newText);
+  const pick: number[] = [];
+  let from = 0;
+  for (const s of news) {
+    const i = olds.indexOf(s, from);
+    if (i < 0) throw new Error(`"${s}" is not a later sentence of: ${oldText}`);
+    pick.push(i);
+    from = i + 1;
+  }
+  const src = join(OUT, `${voId(speaker, oldText)}.mp3`);
+  if (!existsSync(src)) throw new Error(`no clip for: ${oldText}`);
+  const total = duration(src);
+  let segs: [number, number][];
+  if (spanArg) {
+    segs = spanArg.split(',').map((p) => p.split('-').map(Number) as [number, number]);
+    if (segs.length !== olds.length || segs.some(([a, e]) => !(e > a))) throw new Error(`need ${olds.length} start-end spans: ${spanArg}`);
+    // A little air around each sentence so soft consonants survive, never past a neighbour.
+    // The first sentence also owns any lead-in (a breath or exhale from a stage direction).
+    segs = segs.map(([a, e], i) => [i ? Math.max((segs[i - 1][1] + a) / 2, a - 0.05) : 0, Math.min(i < segs.length - 1 ? (e + segs[i + 1][0]) / 2 : total, e + 0.08)]);
+  } else {
+    const res = execFileSync('sh', ['-c', `ffmpeg -hide_banner -i "${src}" -af silencedetect=noise=-38dB:d=0.07 -f null - 2>&1`], { encoding: 'utf8' });
+    const sil = parse(res).filter((x) => x.start > 0.05 && x.end < total - 0.05);
+    if (olds.length > 1 && sil.length < olds.length - 1) throw new Error(`found ${sil.length} pauses, need ${olds.length - 1}: ${oldText}`);
+    segs = align(sil, olds, total);
+  }
+  const rates = segs.map(([a, e], i) => (e - a) / Math.max(8, olds[i].length));
+  const med = [...rates].sort((a, c) => a - c)[Math.floor(rates.length / 2)];
+  const bad = rates.map((r, i) => (r > med * 2.5 || r < med / 2.5 ? i : -1)).filter((i) => i >= 0);
+  if (bad.length) throw new Error(`sentence lengths don't match the audio at ${bad.join(',')}: ${rates.map((r) => r.toFixed(3)).join(' ')} — ${oldText}`);
+  // Runs of adjacent kept sentences; each run is joined to the next by its original pause.
+  const runs: { a: number; e: number; gap: number }[] = [];
+  for (let k = 0; k < pick.length; k++) {
+    const i = pick[k];
+    const next = segs[i + 1];
+    const gap = next ? Math.min(0.6, Math.max(0.3, next[0] - segs[i][1])) : 0.35;
+    if (k > 0 && pick[k - 1] === i - 1) {
+      runs[runs.length - 1].e = segs[i][1];
+      runs[runs.length - 1].gap = gap;
+    } else runs.push({ a: segs[i][0], e: segs[i][1], gap });
+  }
+  const edge = 'silenceremove=start_periods=1:start_threshold=-45dB,areverse,silenceremove=start_periods=1:start_threshold=-45dB,areverse';
+  const parts = runs.map((r, k) => {
+    const pad = k < runs.length - 1 ? `,apad=pad_dur=${r.gap.toFixed(3)}` : '';
+    return `[0:a]atrim=${r.a.toFixed(3)}:${r.e.toFixed(3)},asetpts=PTS-STARTPTS,${edge},afade=t=in:d=0.012,areverse,afade=t=in:d=0.03,areverse${pad}[p${k}]`;
+  });
+  const graph = `${parts.join(';')};${runs.map((_, k) => `[p${k}]`).join('')}concat=n=${runs.length}:v=0:a=1[out]`;
+  const out = join(OUT, `${voId(speaker, newText)}.mp3`);
+  execFileSync('ffmpeg', ['-y', '-hide_banner', '-loglevel', 'error', '-i', src, '-filter_complex', graph, '-map', '[out]', '-ac', '1', '-ar', '22050', '-b:a', '48k', out]);
+  if (out !== src) unlinkSync(src);
+  console.log(`${total.toFixed(2)}s → ${duration(out).toFixed(2)}s  [${pick.join(',')}/${olds.length}]  ${newText}`);
+}
+
 function index(): void {
   const files = existsSync(OUT) ? readdirSync(OUT).filter((f) => f.endsWith('.mp3')) : [];
   const ids = new Set(files.map((f) => f.replace(/\.mp3$/, '')));
@@ -268,8 +351,11 @@ function index(): void {
   console.log(`${Object.keys(out).length}/${allLines().length} lines voiced`);
 }
 
-const [cmd, a1, a2] = process.argv.slice(2);
-if (cmd === 'script' || cmd === 'pending') {
+const [cmd, a1, a2, a3, a4] = process.argv.slice(2);
+const isCli = process.argv[1] !== undefined && import.meta.url === pathToFileURL(process.argv[1]).href;
+if (!isCli) {
+  /* imported for allLines()/sentences(): no command */
+} else if (cmd === 'script' || cmd === 'pending') {
   // `pending` batches only the lines that have no clip yet (after adding new lines).
   const bs = batches(cmd === 'pending');
   mkdirSync(SRC, { recursive: true });
@@ -278,5 +364,6 @@ if (cmd === 'script' || cmd === 'pending') {
   console.log(`${bs.length} batches, ${allLines().length} lines, ${chars} chars`);
   for (const b of bs) console.log(b.id, b.lines.length, b.prompt.length);
 } else if (cmd === 'split') split(a1, a2);
+else if (cmd === 'cut') cut(a1 as Speaker, a2, a3, a4);
 else if (cmd === 'index') index();
-else console.log('usage: vo.ts script | pending | split <batch> <file> | index');
+else console.log('usage: vo.ts script | pending | split <batch> <file> | cut <speaker> <old line> <new line> [spans] | index');

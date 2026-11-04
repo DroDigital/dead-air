@@ -9,6 +9,7 @@ import { ARTIFACTS, LOCKED_ARTIFACTS } from '../content/artifacts';
 import { LORE } from '../content/lore';
 import { STAKES, STARTING_WHEELS } from '../content/wheels';
 import type { Settings } from '../core/config';
+import { desktop } from '../core/desktop';
 import { randomSeedString } from '../core/rng';
 import { UNLOCKS, endlessUnlocked, isUnlocked, maxStake, unlockedWheels, type MetaState, type RatingsBreakdown, type Unlock } from '../game/meta';
 
@@ -47,12 +48,32 @@ export class Menus {
   page: Page = null;
   private back: Page = null;
   private summary: { won: boolean; deadline: number; ratings: RatingsBreakdown; unlocks: Unlock[]; canEndless: boolean } | null = null;
+  /** Desktop build only: whether the window is fullscreen (labels the settings toggle). */
+  private fullscreen = false;
 
   constructor(private cb: MenuCallbacks) {
     this.root = document.createElement('div');
     this.root.id = 'menus';
     document.body.appendChild(this.root);
     this.root.addEventListener('keydown', (e) => this.keys(e));
+    if (desktop) {
+      const label = () => {
+        const b = this.root.querySelector<HTMLButtonElement>('button[data-fs]');
+        if (b) b.textContent = this.fullscreenLabel();
+      };
+      void desktop.isFullscreen().then((on) => {
+        this.fullscreen = on;
+        label();
+      });
+      desktop.onFullscreenChange((on) => {
+        this.fullscreen = on;
+        label();
+      });
+    }
+  }
+
+  private fullscreenLabel(): string {
+    return this.fullscreen ? 'WINDOWED (F11)' : 'FULLSCREEN (F11)';
   }
 
   get open(): boolean {
@@ -160,6 +181,7 @@ export class Menus {
           ${this.btn('THE PROP ROOM', () => this.show('collection', 'title'))}
           ${this.btn('SETTINGS', () => this.show('settings', 'title'))}
           ${this.btn('CREDITS', () => this.show('credits', 'title'))}
+          ${desktop ? this.btn('QUIT TO DESKTOP', () => void desktop!.quit()) : ''}
         </div>
         <div class="foot">RATINGS ${meta.ratings} · BROADCASTS ${meta.runs} · PAID OFF ${meta.wins}</div>
       </div>`;
@@ -215,7 +237,9 @@ export class Menus {
           ${slider('voice', 'VOICE')}
           ${slider('ambience', 'AMBIENCE')}
         </div>
-        <div class="row">${this.btn('DONE', () => this.show(this.back ?? 'title', this.back === 'pause' ? null : 'title'))}</div>
+        <div class="row">${this.btn('DONE', () => this.show(this.back ?? 'title', this.back === 'pause' ? null : 'title'))}${
+          desktop ? this.btn(this.fullscreenLabel(), () => void desktop!.setFullscreen(!this.fullscreen), 'data-fs') : ''
+        }</div>
         <p class="small">KEYS: ARROWS/WASD look · SPACE hold lever · ENTER deposit/confirm · 1-6 cards/artifacts/choices · F fast · ESC pause</p>
         <p class="small">PAD: D-PAD/LEFT STICK look · A confirm · B back/sell · HOLD X spin · Y gamble · LB peek · RB fast · START pause · RIGHT STICK cursor · RT click</p>
       </div>`;

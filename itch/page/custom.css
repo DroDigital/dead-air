@@ -1,0 +1,39 @@
+/*
+ * DEAD AIR — optional custom CSS for the itch.io page.
+ * itch.io enables custom CSS per account on request. Without it, the theme settings in
+ * itch/README.md give the same colours; this just adds the pixel-art polish.
+ */
+
+/* Keep the pixel art crisp when itch scales an image down to fit the column. */
+.formatted_description img,
+.header img,
+#wrapper {
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+/* Gold game-show frame around the content column. */
+.inner_column {
+  border: 3px solid #c89830;
+  box-shadow: 0 0 0 3px #3a1a08, 0 0 40px #000;
+}
+
+/* Controls table: studio-panel styling. */
+.formatted_description table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.formatted_description td {
+  border-bottom: 1px solid #3a2410;
+  padding: 6px 8px;
+}
+.formatted_description td:first-child {
+  color: #ffd040;
+  white-space: nowrap;
+}
+
+/* Buttons glow like the ON AIR sign on hover. */
+.button:hover,
+.buy_btn:hover {
+  box-shadow: 0 0 12px #ff4a2a;
+}

@@ -76,3 +76,15 @@ The only library over ~100 kB gz is three.js. GSAP measures ~28 kB gz. Built app
 - **Saves.** `deadair.run`, `deadair.meta`, `deadair.settings` envelopes `{v, savedAt, data}` with step-wise migrations; autosave after every rules action (each is a safe state; mid-Nudge spins are serialised as `pendingSpin`).
 - **Draw calls.** Static geometry is merged per material (`Batcher`), props are vertex-coloured merges (`PropBuilder`), imported GLBs are flattened to one mesh per texture, panels share canvases. Measured: 26–36 calls per station including the two post passes; ~3–4.5k triangles.
 - **In-world text** uses the game's own 5×7 bitmap font (`ui/bitfont.ts`); DOM menus use Silkscreen (OFL).
+
+## Desktop launcher
+
+- **Electron, not Tauri.** Tauri renders with the OS web view, which is WebKitGTK on Linux and WebKit on macOS: uneven WebGL2, Gamepad API and WebAudio support across the three platforms. Electron ships one Chromium everywhere, the same engine the game is developed and playtested in. The cost is size (~100 MB installers).
+- **`app://` origin instead of `file://`.** `fetch()` of audio and voice files does not work from `file://`, and a custom privileged scheme gives localStorage a stable origin for saves.
+- **No `node_modules` in the package.** Vite already bundles three.js and GSAP into `dist/`, so the app ships only `dist/` and the launcher (an 18 MB asar).
+- **SwiftShader fallback** (`--enable-unsafe-swiftshader`). Without it, Chromium refuses WebGL on machines with no usable GPU (VMs, blocklisted drivers) and the game would hang at boot. The window only ever loads the game's own local build.
+- **itch.io gets the unpacked app**, not the installer, so the itch app can install, launch and patch it with butler's diffs.
+
+## Phone dialogue length
+
+- Every caller line on a phone card is at most two sentences (a test enforces it). The lines were shortened by keeping two of their original sentences, so the existing voice takes were cut rather than re-recorded (`tools/vo.ts cut`). Sentence timings for the cuts came from a forced alignment of each take against its script (pocketsphinx), because the silence-based aligner misplaces boundaries around very short sentences ("Cash. Today.").
