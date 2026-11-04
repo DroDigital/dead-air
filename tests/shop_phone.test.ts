@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { BARGAINS } from '../src/content/bargains';
 import { Game } from '../src/game/run';
+import { voId } from '../src/audio/voId';
+import voIndex from '../src/assets/vo.json';
+import { sentences } from '../tools/vo';
 import { RING, cash, makeGame, wheelWith } from './helpers';
 
 function toShop(seed = 'shop'): Game {
@@ -82,6 +85,13 @@ describe('the phone', () => {
     expect(BARGAINS.length).toBeGreaterThanOrEqual(30);
     expect(new Set(BARGAINS.map((b) => b.id)).size).toBe(BARGAINS.length);
     for (const b of BARGAINS) expect(b.line.length).toBeGreaterThan(20);
+  });
+
+  it("keeps every caller's card line to one or two sentences, each with its voiced clip", () => {
+    for (const b of BARGAINS) {
+      expect(sentences(b.line).length, b.line).toBeLessThanOrEqual(2);
+      expect((voIndex as Record<string, number>)[voId(b.tier === 'secret' ? 'secret' : 'producer', b.line)], b.line).toBeGreaterThan(1);
+    }
   });
 
   it('every bargain applies cleanly to a mid-run state', () => {
