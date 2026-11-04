@@ -171,6 +171,7 @@ export class Stage {
     this.vault.update(dt, time, speed);
     this.shelf.update(dt, time);
     this.cabinet.update(dt, time);
+    this.host.light = this.studio.lightLevel;
     this.host.update(dt, time);
     this.phone.update(dt, time);
     this.lever.update(dt);

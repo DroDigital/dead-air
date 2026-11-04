@@ -2,6 +2,7 @@
  * App controller: owns the FSM, the Game, the Stage, audio and UI. The rules core runs
  * instantly; this layer replays results as animations, captions and sound.
  */
+import { art } from './assets/art';
 import { Assets } from './assets/loader';
 import { Mixer } from './audio/mixer';
 import { Music } from './audio/music';
@@ -167,10 +168,13 @@ export class App {
       requestAnimationFrame(loop);
     };
     requestAnimationFrame(loop);
-    await this.assets.preload((p) => {
-      this.loading = p;
-      this.sfx.play('powerup', { gain: 0.15, pitch: 0.8 + p * 0.6 });
-    });
+    await Promise.all([
+      this.assets.preload((p) => {
+        this.loading = p;
+        this.sfx.play('powerup', { gain: 0.15, pitch: 0.8 + p * 0.6 });
+      }),
+      art.preload(),
+    ]);
     await this.sfx.loadFiles();
     void this.music.loadTracks();
     this.vo.preload(Object.values(HOST_LINES).flat().map((text) => ({ speaker: 'host' as const, text })));
@@ -630,7 +634,7 @@ export class App {
         this.hud.hint = this.stage.rig.station === 'center' ? (g.canGamble() ? 'HOLD SPACE TO SPIN · [D] DOUBLE OR NOTHING' : 'HOLD SPACE (OR THE LEVER) TO SPIN') : '';
         if (r.spinsLeft === 1 && this.lastSpinSaid !== r.deadline * 1000 + r.spinsLeft) {
           this.lastSpinSaid = r.deadline * 1000 + r.spinsLeft;
-          this.hostSay('lastSpin', 'shock', 'point');
+          this.hostSay('lastSpin', 'nervous', 'point');
           this.hud.showBanner('LAST SPIN', r.vault + r.tray >= r.debt ? 'THE DEBT IS COVERED' : `$${r.debt - r.vault - r.tray} SHORT`, r.vault + r.tray >= r.debt ? '#80ff80' : '#ff5040', 1.8 / this.speed);
           if (r.vault + r.tray < r.debt) this.loops.heart ??= this.sfx.loop('heartbeat', 0.5, 'sfx', 1.5);
         }
@@ -935,7 +939,7 @@ export class App {
     else if (p.landedKind === 'dud') {
       this.sfx.play('rimshot', { gain: 0.55 });
       if (Math.random() < 0.35) this.sfx.play('laugh', { gain: 0.35, pitch: 0.85, delay: 0.5 });
-      if (Math.random() < 0.5) this.hostSay('dud', 'wink', 'shrug');
+      if (Math.random() < 0.5) this.hostSay('dud', Math.random() < 0.5 ? 'wink' : 'nervous', 'shrug');
     }
     else if (p.landedKind === 'tax') this.hostSay('tax', 'grin', 'point');
     else if (p.landedKind === 'mystery' && Math.random() < 0.4) this.hostSay('mystery', 'talk', 'present');
@@ -985,7 +989,7 @@ export class App {
     if (Math.random() < 0.3) this.sfx.play('laugh', { gain: 0.3, pitch: 0.7, delay: 1.2 });
     if (lost > 0) st.vfx.float(st.tray.group.position.clone().add(new THREE.Vector3(0, 0.4, 0)), `-$${lost}`, '#ff4040', 1, 1.8);
     st.marquee.set(deadAir ? 'DEAD AIR' : 'BANKRUPT', '#ff3020', true);
-    this.hostSay('bankrupt', 'grin', 'shrug');
+    this.hostSay('bankrupt', 'laugh', 'shrug');
     if (deadAir) {
       this.sfx.play('static', { gain: 0.6 });
       this.stage.post.roll = 1;
@@ -1189,7 +1193,7 @@ export class App {
             this.vo.stop();
             this.sfx.play('hangup');
             this.sfx.play('static', { gain: 0.15, pitch: 1.6 });
-            if (!secret) setTimeout(() => this.game && this.hostSay('dealRefused', 'shock', 'point'), 500);
+            if (!secret) setTimeout(() => this.game && this.hostSay('dealRefused', 'angry', 'point'), 500);
           }, Math.max(0, d - 0.2) * 1000);
           this.hud.toast('CLICK.', '#c0c0c0');
         }
@@ -1232,7 +1236,7 @@ export class App {
         this.hostSay('debtPaid', 'grin', 'cheer');
         await wait(1.6 / this.speed);
       } else {
-        this.hostSay('debtMissed', 'sad', 'slump');
+        this.hostSay('debtMissed', this.game && this.game.run.deadline >= 5 ? 'melt' : 'sad', 'slump');
         await wait(1.2);
       }
       this.sync(false);
@@ -1704,7 +1708,7 @@ export class App {
         st.lights.setMode('alarm');
         st.tray.setAmount(0, false);
         st.vfx.float(st.tray.group.position.clone().add(new THREE.Vector3(0, 0.4, 0)), `-$${res.stake}`, '#ff4040', 2, 1.8);
-        this.hostSay('gambleLose', 'grin', 'shrug');
+        this.hostSay('gambleLose', 'laugh', 'shrug');
       }
       this.sync(true);
       await wait(1.2 / this.speed);

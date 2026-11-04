@@ -14,67 +14,67 @@
       "sourceUrl": "https://polyhaven.com/a/dark_paneled_wood",
       "author": "Dimitrios Savva (Poly Haven)",
       "license": "CC0-1.0",
-      "modifications": "Diffuse map only; downscaled to 128×128; quantised to 15-bit colour; sampled with nearest filtering and lit by the PSX material."
+      "modifications": "Diffuse map only; downscaled to 128\u00d7128; quantised to 15-bit colour; sampled with nearest filtering and lit by the PSX material."
     },
     {
       "id": "tex.carpet",
       "type": "texture",
-      "src": "textures/dirty_carpet.jpg",
+      "src": "art/texture-floor.png",
       "out": "textures/carpet.png",
-      "size": 64,
-      "fetch": {
-        "polyhaven": "dirty_carpet",
-        "kind": "texture"
-      },
-      "sourceUrl": "https://polyhaven.com/a/dirty_carpet",
-      "author": "Rohit Seervi (Poly Haven)",
-      "license": "CC0-1.0",
-      "modifications": "Diffuse map only; downscaled to 64×64; quantised to 15-bit colour."
+      "size": 256,
+      "fetch": null,
+      "sourceUrl": "Provided by the project owner (DEAD AIR art pack)",
+      "author": "Project owner",
+      "license": "OWNER",
+      "modifications": "Checkered studio floor: downscaled to 256\u00d7256; quantised to 15-bit colour; sampled nearest and lit by the PSX material."
     },
     {
       "id": "tex.curtain",
       "type": "texture",
-      "src": "textures/velour_velvet.jpg",
+      "src": "art/texture-curtain.png",
       "out": "textures/curtain.png",
-      "size": 64,
-      "fetch": {
-        "polyhaven": "velour_velvet",
-        "kind": "texture"
-      },
-      "sourceUrl": "https://polyhaven.com/a/velour_velvet",
-      "author": "colormass, Rico Cilliers (Poly Haven)",
-      "license": "CC0-1.0",
-      "modifications": "Diffuse map only; downscaled to 64×64; quantised to 15-bit colour; tinted burgundy at runtime."
+      "size": 256,
+      "fetch": null,
+      "sourceUrl": "Provided by the project owner (DEAD AIR art pack)",
+      "author": "Project owner",
+      "license": "OWNER",
+      "modifications": "Stage curtain: downscaled to 256\u00d7256; quantised to 15-bit colour; sampled nearest and lit by the PSX material."
     },
     {
       "id": "tex.wallpaper",
       "type": "texture",
-      "src": "textures/decrepit_wallpaper.jpg",
+      "src": "art/texture-wallpaper.png",
       "out": "textures/wallpaper.png",
-      "size": 128,
-      "fetch": {
-        "polyhaven": "decrepit_wallpaper",
-        "kind": "texture"
-      },
-      "sourceUrl": "https://polyhaven.com/a/decrepit_wallpaper",
-      "author": "Rob Tuytel (Poly Haven)",
-      "license": "CC0-1.0",
-      "modifications": "Diffuse map only; downscaled to 128×128; quantised to 15-bit colour."
+      "size": 256,
+      "fetch": null,
+      "sourceUrl": "Provided by the project owner (DEAD AIR art pack)",
+      "author": "Project owner",
+      "license": "OWNER",
+      "modifications": "TV-and-stars wallpaper: downscaled to 256\u00d7256; quantised to 15-bit colour; sampled nearest and lit by the PSX material."
+    },
+    {
+      "id": "tex.seats",
+      "type": "texture",
+      "src": "art/texture-audience-seats.png",
+      "out": "textures/seats.png",
+      "size": 256,
+      "fetch": null,
+      "sourceUrl": "Provided by the project owner (DEAD AIR art pack)",
+      "author": "Project owner",
+      "license": "OWNER",
+      "modifications": "Empty theatre seats: downscaled to 256\u00d7256; quantised to 15-bit colour; sampled nearest and lit by the PSX material."
     },
     {
       "id": "tex.metal",
       "type": "texture",
-      "src": "textures/rusty_metal_02.jpg",
+      "src": "art/texture-brass.png",
       "out": "textures/metal.png",
-      "size": 64,
-      "fetch": {
-        "polyhaven": "rusty_metal_02",
-        "kind": "texture"
-      },
-      "sourceUrl": "https://polyhaven.com/a/rusty_metal_02",
-      "author": "Rob Tuytel (Poly Haven)",
-      "license": "CC0-1.0",
-      "modifications": "Diffuse map only; downscaled to 64×64; quantised to 15-bit colour."
+      "size": 256,
+      "fetch": null,
+      "sourceUrl": "Provided by the project owner (DEAD AIR art pack)",
+      "author": "Project owner",
+      "license": "OWNER",
+      "modifications": "Brass trim: downscaled to 256\u00d7256; quantised to 15-bit colour; sampled nearest and lit by the PSX material."
     },
     {
       "id": "tex.leather",
@@ -89,37 +89,31 @@
       "sourceUrl": "https://polyhaven.com/a/fabric_leather_01",
       "author": "Rob Tuytel (Poly Haven)",
       "license": "CC0-1.0",
-      "modifications": "Diffuse map only; downscaled to 64×64; quantised to 15-bit colour."
+      "modifications": "Diffuse map only; downscaled to 64\u00d764; quantised to 15-bit colour."
     },
     {
       "id": "tex.stage_wood",
       "type": "texture",
-      "src": "textures/old_wood_floor.jpg",
+      "src": "art/texture-wood.png",
       "out": "textures/stage_wood.png",
-      "size": 64,
-      "fetch": {
-        "polyhaven": "old_wood_floor",
-        "kind": "texture"
-      },
-      "sourceUrl": "https://polyhaven.com/a/old_wood_floor",
-      "author": "Guillaume Monsergent (Poly Haven)",
-      "license": "CC0-1.0",
-      "modifications": "Diffuse map only; downscaled to 64×64; quantised to 15-bit colour."
+      "size": 256,
+      "fetch": null,
+      "sourceUrl": "Provided by the project owner (DEAD AIR art pack)",
+      "author": "Project owner",
+      "license": "OWNER",
+      "modifications": "Stage boards: downscaled to 256\u00d7256; quantised to 15-bit colour; sampled nearest and lit by the PSX material."
     },
     {
       "id": "tex.cabinet_wood",
       "type": "texture",
-      "src": "textures/wood_cabinet_worn_long.jpg",
+      "src": "art/texture-wood.png",
       "out": "textures/cabinet_wood.png",
-      "size": 64,
-      "fetch": {
-        "polyhaven": "wood_cabinet_worn_long",
-        "kind": "texture"
-      },
-      "sourceUrl": "https://polyhaven.com/a/wood_cabinet_worn_long",
-      "author": "Dimitrios Savva, Rico Cilliers (Poly Haven)",
-      "license": "CC0-1.0",
-      "modifications": "Diffuse map only; downscaled to 64×64; quantised to 15-bit colour."
+      "size": 256,
+      "fetch": null,
+      "sourceUrl": "Provided by the project owner (DEAD AIR art pack)",
+      "author": "Project owner",
+      "license": "OWNER",
+      "modifications": "Cabinet wood: downscaled to 256\u00d7256; quantised to 15-bit colour; sampled nearest and lit by the PSX material."
     },
     {
       "id": "tex.plaster",
@@ -134,7 +128,7 @@
       "sourceUrl": "https://polyhaven.com/a/peeling_painted_wall",
       "author": "Dimitrios Savva (Poly Haven)",
       "license": "CC0-1.0",
-      "modifications": "Diffuse map only; downscaled to 64×64; quantised to 15-bit colour."
+      "modifications": "Diffuse map only; downscaled to 64\u00d764; quantised to 15-bit colour."
     },
     {
       "id": "mdl.tv_head",
@@ -150,7 +144,7 @@
       "sourceUrl": "https://polyhaven.com/a/television_02",
       "author": "Benny Weimer (Poly Haven)",
       "license": "CC0-1.0",
-      "modifications": "Normal/ARM maps dropped; mesh welded and decimated with meshoptimizer; base colour downscaled to 64×64; material replaced by the PSX material at runtime; screen face rendered by the game."
+      "modifications": "Normal/ARM maps dropped; mesh welded and decimated with meshoptimizer; base colour downscaled to 64\u00d764; material replaced by the PSX material at runtime; screen face rendered by the game."
     },
     {
       "id": "mdl.bulb",
@@ -246,7 +240,7 @@
       "sourceUrl": "https://polyhaven.com/a/vintage_cabinet_01",
       "author": "Rico Cilliers (Poly Haven)",
       "license": "CC0-1.0",
-      "modifications": "Normal/ARM maps dropped; decimated from ~61k to ~1.4k triangles; base colour downscaled to 128×128; PSX material at runtime. Glass front and crank added procedurally."
+      "modifications": "Normal/ARM maps dropped; decimated from ~61k to ~1.4k triangles; base colour downscaled to 128\u00d7128; PSX material at runtime. Glass front and crank added procedurally."
     },
     {
       "id": "font.pixel",
@@ -259,7 +253,7 @@
       "sourceUrl": "https://github.com/google/fonts/tree/main/ofl/silkscreen",
       "author": "Jason Kottke",
       "license": "OFL-1.1",
-      "modifications": "None. Used for menus. In-world text uses the game's own 5×7 bitmap font."
+      "modifications": "None. Used for menus. In-world text uses the game's own 5\u00d77 bitmap font."
     },
     {
       "id": "font.terminal",

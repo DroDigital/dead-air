@@ -38,7 +38,8 @@ interface Entry {
   modifications: string;
 }
 
-const ALLOWED_LICENSES = ['CC0-1.0', 'CC-BY-4.0', 'CC-BY-3.0', 'OFL-1.1'];
+/** OWNER: art made for and provided by the project owner. */
+const ALLOWED_LICENSES = ['CC0-1.0', 'CC-BY-4.0', 'CC-BY-3.0', 'OFL-1.1', 'OWNER'];
 
 async function exists(p: string): Promise<boolean> {
   try {
