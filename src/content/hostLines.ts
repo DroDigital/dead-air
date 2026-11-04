@@ -22,7 +22,17 @@ export type HostTrigger =
   | 'victory'
   | 'package'
   | 'sweep'
-  | 'mystery';
+  | 'mystery'
+  | 'lastSpin'
+  | 'scratch'
+  | 'sell'
+  | 'dealTaken'
+  | 'dealRefused'
+  | 'endless'
+  | 'gameOver'
+  | 'neighbors'
+  | 'hatTrick'
+  | 'title';
 
 export const HOST_LINES: Record<HostTrigger, readonly string[]> = {
   intro: [
@@ -158,7 +168,82 @@ export const HOST_LINES: Record<HostTrigger, readonly string[]> = {
     "The question mark spins! The question mark always spins!",
     'Ooh, mystery! My favourite flavour of dread!',
   ],
+  lastSpin: [
+    'Last spin of the night! Make it count! Make it COUNT!',
+    "One spin left! The Network is leaning in! I can hear it breathing!",
+    'Final spin! Whatever happens, I will remember you fondly! Briefly!',
+    'This is it! The last one! No pressure! Some pressure! All the pressure!',
+  ],
+  scratch: [
+    'Scratch it! Scratch it! Underneath is a surprise! Underneath is always a surprise!',
+    "Ooh, a scratcher! Don't scratch too deep! Things live in there!",
+    'Scratch, scratch, scratch! Like the noises in the walls!',
+  ],
+  sell: [
+    'Sold! It will be missed! It will find its way back! They always do!',
+    "Goodbye, little trinket! Don't look at it! Don't let it see you go!",
+    'A sale! The prop room thanks you! The prop room is hungry again!',
+  ],
+  dealTaken: [
+    'A deal with the Producer! How exciting! How binding!',
+    "You shook on it! Well — you would have! If you could move your arms!",
+    'Ooh, the fine print is moving! That means it likes you!',
+  ],
+  dealRefused: [
+    'You hung up on the Producer! Brave! Brave and brief!',
+    "Click! Oh, he's going to remember that! He remembers everything!",
+    'No deal! The Network respects your choice! The Network writes it down!',
+  ],
+  endless: [
+    "ENDLESS! The show goes on! The show ALWAYS goes on!",
+    'Overtime! Nobody has ever gone into overtime! Nobody has ever come back from it!',
+    "You want MORE? Oh, the Network is blushing! Static, mostly!",
+  ],
+  gameOver: [
+    "And that's our show! Same time tomorrow! Different contestant!",
+    'Goodnight, everybody! Goodnight, contestant! Goodnight, floor!',
+    "We'll be right back after these messages! You won't!",
+  ],
+  neighbors: [
+    'Right on the line! The wheel couldn\'t decide! Neither could I!',
+    'Neighbors! Half of this, half of that! Like my face!',
+    "Splitting the difference! The flapper is sweating! Flappers can't sweat!",
+  ],
+  hatTrick: [
+    'HAT TRICK! Three in a row! Somebody give this contestant a hat!',
+    "Three cash in a row! The tokens! The tokens are raining! Indoors!",
+  ],
+  title: [
+    'Dead Air! Starring you! Live, from the only studio left!',
+    "Stay tuned! You're next! You were always next!",
+  ],
 };
+
+/** The host announces each Deadline by number. */
+export const DEADLINE_LINES: readonly string[] = [
+  'Deadline one! A little debt, a big wheel, and you! What a night!',
+  'Deadline two! The Network is pleased! The Network wants more!',
+  "Deadline three! The debt is growing! Grow with it!",
+  "Deadline four! It's sweeps week! Smile! Your face is in every living room left!",
+  "Deadline five! Halfway there! Halfway where! Don't ask!",
+  "Deadline six! The audience has stopped breathing! They've stopped needing to!",
+  'Deadline seven! So close! The floor can taste it!',
+  "Deadline eight! The final deadline! Sweeps again! Win this and you're FREE! Ha-ha! Probably!",
+];
+
+/** Producer lines after a deal and on hang-up. */
+export const PRODUCER_ACCEPT: readonly string[] = [
+  'Pleasure doing business. The Network thanks you.',
+  "Smart. Very smart. I'll have legal send over the rest of you.",
+  "Done. Don't read the contract. Nobody reads the contract.",
+];
+export const PRODUCER_HANGUP: readonly string[] = [
+  "Fine. Fine! I'll remember this.",
+  "You're hanging up on me? On ME? Enjoy the floor.",
+  "Okay. Okay. We'll talk again. We always talk again.",
+];
+/** The other line (secret bargain). */
+export const SECRET_ACCEPT = "Don't thank me. Just keep spinning. Something underneath you just came loose.";
 
 export function allHostLines(): string[] {
   return Object.values(HOST_LINES).flat();

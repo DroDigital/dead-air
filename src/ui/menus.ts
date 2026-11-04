@@ -27,6 +27,10 @@ export interface MenuCallbacks {
   onEndlessContinue(): void;
   onRetire(): void;
   onUiSound(kind: 'move' | 'select' | 'back'): void;
+  /** A lore note was opened (the archivist reads it aloud) or closed. */
+  onLoreNote?(text: string | null): void;
+  /** Whether a note has a recorded reading. */
+  loreVoiced?(text: string): boolean;
   getMeta(): MetaState;
   getSettings(): Settings;
   hasSave(): boolean;
@@ -205,7 +209,8 @@ export class Menus {
       }).join('');
       const lore = LORE.map((n) => {
         const un = n.unlocked(meta);
-        return `<details class="note ${un ? '' : 'locked'}" ${un ? '' : 'disabled'}><summary>${un ? esc(n.title) : '— TORN NOTE —'}</summary><p>${un ? esc(n.text) : esc(n.hint)}</p></details>`;
+        const voiced = un && this.cb.loreVoiced?.(n.text);
+        return `<details class="note ${un ? '' : 'locked'}" ${un ? `data-lore="${LORE.indexOf(n)}"` : 'disabled'}><summary>${un ? esc(n.title) : '— TORN NOTE —'}${voiced ? ' <span class="reel">◉ REEL</span>' : ''}</summary><p>${un ? esc(n.text) : esc(n.hint)}</p></details>`;
       }).join('');
       const unl = UNLOCKS.map((u) => `<li class="${isUnlocked(meta, u.id) ? 'on' : ''}">${u.at} — ${esc(u.kind.toUpperCase())}: ${esc(u.name)}</li>`).join('');
       html = `<div class="panel wide proproom">
@@ -255,7 +260,14 @@ export class Menus {
         </div>
       </div>`;
     }
+    this.cb.onLoreNote?.(null);
     this.root.innerHTML = html;
+    this.root.querySelectorAll<HTMLDetailsElement>('details[data-lore]').forEach((d) =>
+      d.addEventListener('toggle', () => {
+        if (d.open) this.root.querySelectorAll<HTMLDetailsElement>('details[data-lore]').forEach((o) => o !== d && (o.open = false));
+        this.cb.onLoreNote?.(d.open ? LORE[Number(d.dataset.lore)].text : null);
+      }),
+    );
     setTimeout(() => this.root.querySelector<HTMLElement>('button, input, select')?.focus(), 0);
   }
 }

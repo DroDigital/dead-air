@@ -234,6 +234,19 @@
         font-family: 'DeadAirTerminal', 'Courier New', monospace;
         font-size: 16px;
       }
+      .notes .note .reel {
+        color: #ff6040;
+        font-size: 0.8em;
+        margin-left: 6px;
+      }
+      .notes .note[open] .reel {
+        animation: reel 1s steps(2) infinite;
+      }
+      @keyframes reel {
+        50% {
+          opacity: 0.3;
+        }
+      }
       .notes .note.locked {
         background: #3a2a1a;
         color: #806040;

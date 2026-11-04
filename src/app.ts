@@ -7,10 +7,11 @@ import { Mixer } from './audio/mixer';
 import { Music } from './audio/music';
 import { Sfx } from './audio/sfx';
 import { HOST_VOICE, PRODUCER_VOICE, SECRET_VOICE, Voice } from './audio/voice';
+import { VoPlayer, type VoMood } from './audio/vo';
 import { artifactDef } from './content/artifacts';
 import { bargainDef, fillDeal } from './content/bargains';
 import { COMBO_NAMES } from './game/combos';
-import { HOST_LINES, HOST_SILENT_LINES, type HostTrigger } from './content/hostLines';
+import { DEADLINE_LINES, HOST_LINES, HOST_SILENT_LINES, PRODUCER_ACCEPT, PRODUCER_HANGUP, SECRET_ACCEPT, type HostTrigger } from './content/hostLines';
 import { mutatorDef } from './content/mutators';
 import { scratchDef } from './content/scratchCards';
 import { WEDGES } from './content/wedges';
@@ -44,6 +45,10 @@ export class App {
   readonly sfx = new Sfx(this.mixer);
   readonly music = new Music(this.mixer);
   readonly voice = new Voice(this.mixer);
+  readonly vo = new VoPlayer(this.mixer);
+  private loops: { drum?: { stop: (f?: number) => void } | null; heart?: { stop: (f?: number) => void } | null } = {};
+  private lastSpinSaid = -1;
+  private phoneTalk: number[] = [];
   readonly hud = new Hud();
   input!: Input;
   menus!: Menus;
@@ -98,6 +103,12 @@ export class App {
       onEndlessContinue: () => this.endlessContinue(),
       onRetire: () => this.retire(),
       onUiSound: (k) => this.sfx.play(k === 'select' ? 'button' : 'blip', { gain: 0.5 }),
+      onLoreNote: (text) => {
+        if (!text) return this.vo.stop();
+        this.sfx.play('static', { gain: 0.25, pitch: 0.7 });
+        this.vo.play('archive', text, { wear: 0.4, glitch: 0.05 });
+      },
+      loreVoiced: (text) => this.vo.has('archive', text),
       getMeta: () => this.meta,
       getSettings: () => this.settings,
       hasSave: () => this.runSlot.exists() && !!this.runSlot.load(),
@@ -108,6 +119,11 @@ export class App {
         this.music.kick();
         this.music.startAmbience();
         this.mixer.setVolumes(this.settings);
+        // The broadcast greets whoever touched it first.
+        if (!this.game) {
+          const t = HOST_LINES.title[Math.floor(Math.random() * HOST_LINES.title.length)];
+          setTimeout(() => !this.game && this.vo.play('host', t, { wear: 0.25, glitch: 0.1 }), 600);
+        }
       });
       window.removeEventListener('pointerdown', firstGesture);
       window.removeEventListener('keydown', firstGesture);
@@ -134,6 +150,8 @@ export class App {
       this.sfx.play('powerup', { gain: 0.15, pitch: 0.8 + p * 0.6 });
     });
     await this.sfx.loadFiles();
+    void this.music.loadTracks();
+    this.vo.preload(Object.values(HOST_LINES).flat().map((text) => ({ speaker: 'host' as const, text })));
     this.loading = 1;
     await wait(0.3);
     loadingDone = true;
@@ -286,7 +304,16 @@ export class App {
   }
 
   /** Normal lighting, closed trapdoor, host at rest and an empty cabinet: the state every run starts from. */
+  private stopHeartbeat(): void {
+    this.loops.heart?.stop(0.8);
+    this.loops.heart = null;
+  }
+
   private resetStageVisuals(): void {
+    this.stopHeartbeat();
+    this.loops.drum?.stop(0.05);
+    this.loops.drum = null;
+    this.vo.stop();
     const st = this.stage;
     st.post.fade = 1;
     st.rig.offset.set(0, 0, 0);
@@ -354,6 +381,10 @@ export class App {
     this.choiceHandler = null;
     this.stage.phone.ringing = false;
     this.sfx.stopRinging();
+    this.vo.stop();
+    this.stopHeartbeat();
+    this.phoneTalk.forEach((t) => clearTimeout(t));
+    this.phoneTalk = [];
     this.stage.post.roll = 0;
     this.fsm.force('Menu');
     this.menus.show('title');
@@ -376,6 +407,7 @@ export class App {
     if (!this.game) return;
     this.menus.hide();
     this.game.continueEndless();
+    this.music.start();
     void this.enterPhase();
   }
 
@@ -394,18 +426,33 @@ export class App {
   // ===================================================================================
   // Presentation helpers
   // ===================================================================================
-  private hostSay(trigger: HostTrigger, face: Parameters<Stage['host']['say']>[0] = 'talk', pose?: Parameters<Stage['host']['setPose']>[0]): void {
+  private hostSay(trigger: HostTrigger, face: Parameters<Stage['host']['say']>[0] = 'talk', pose?: Parameters<Stage['host']['setPose']>[0], text?: string): void {
     const silent = !!this.game?.run.marks.hostSilent;
     const pool = silent ? HOST_SILENT_LINES : HOST_LINES[trigger];
-    const line = pool[Math.floor(Math.random() * pool.length)];
-    const dur = silent ? 1.5 : this.voice.speak(line, HOST_VOICE, this.speed > 1 ? 1.4 : 1);
+    const line = silent ? pool[Math.floor(Math.random() * pool.length)] : (text ?? pool[Math.floor(Math.random() * pool.length)]);
+    const voiced = silent ? 0 : this.vo.play('host', line, this.hostMood(trigger));
+    if (voiced) this.voice.stop();
+    const dur = silent ? 1.5 : voiced || this.voice.speak(line, HOST_VOICE, this.speed > 1 ? 1.4 : 1);
     this.stage.host.say(face, dur);
     if (pose) this.stage.host.setPose(pose);
-    if (this.settings.captions) this.hud.caption('HOST', line, '#7dffa8', dur / (this.speed > 1 ? 1.5 : 1));
+    if (this.settings.captions) this.hud.caption('HOST', line, '#7dffa8', voiced ? dur : dur / (this.speed > 1 ? 1.5 : 1));
+  }
+
+  /** The host's voice wears out with the show: more tape wear each Deadline, glitches when it goes wrong. */
+  private hostMood(trigger: HostTrigger): VoMood {
+    const r = this.game?.run;
+    const d = r?.deadline ?? 1;
+    const wear = Math.min(1, (d - 1) / 8);
+    const bad = trigger === 'debtMissed' || trigger === 'gameOver';
+    const glitch = bad ? 0.75 : trigger === 'bankrupt' ? 0.3 : d >= 7 ? 0.22 : d >= 5 ? 0.1 : r?.mutator ? 0.12 : 0;
+    return { wear, glitch, powerDown: trigger === 'gameOver' };
   }
 
   private producerSay(text: string, secret: boolean): number {
-    const dur = this.voice.speak(text, secret ? SECRET_VOICE : PRODUCER_VOICE, 1.2);
+    const deadAir = this.game?.run.phone?.reason === 'deadAir';
+    const voiced = this.vo.play(secret ? 'secret' : 'producer', text, { wear: 0, glitch: deadAir ? 0.3 : 0 });
+    if (voiced) this.voice.stop();
+    const dur = voiced || this.voice.speak(text, secret ? SECRET_VOICE : PRODUCER_VOICE, 1.2);
     if (this.settings.captions) this.hud.caption(secret ? '???' : 'THE PRODUCER', text, secret ? '#c080ff' : '#ff9060', dur);
     return dur;
   }
@@ -490,6 +537,8 @@ export class App {
     this.target = null;
     this.hud.hint = '';
     this.stage.phone.ringing = r.phase === 'PhoneCall' && !this.phoneAnswered;
+    this.music.setTrack(r.phase === 'Shop' || r.phase === 'PhoneCall' || r.phase === 'Conversion' || r.phase === 'WedgeReplace' ? 'lounge' : 'main');
+    if (r.phase !== 'AwaitAction') this.stopHeartbeat();
     switch (r.phase) {
       case 'PackageSelect':
         if (this.introShownFor !== r.deadline) await this.deadlineIntro();
@@ -500,6 +549,12 @@ export class App {
         this.fsm.force('AwaitAction');
         this.setChoice(null, null);
         this.hud.hint = this.stage.rig.station === 'center' ? 'HOLD SPACE (OR THE LEVER) TO SPIN' : '';
+        if (r.spinsLeft === 1 && this.lastSpinSaid !== r.deadline * 1000 + r.spinsLeft) {
+          this.lastSpinSaid = r.deadline * 1000 + r.spinsLeft;
+          this.hostSay('lastSpin', 'shock', 'point');
+          this.hud.showBanner('LAST SPIN', r.vault + r.tray >= r.debt ? 'THE DEBT IS COVERED' : `$${r.debt - r.vault - r.tray} SHORT`, r.vault + r.tray >= r.debt ? '#80ff80' : '#ff5040', 1.8 / this.speed);
+          if (r.vault + r.tray < r.debt) this.loops.heart ??= this.sfx.loop('heartbeat', 0.5, 'sfx', 1.5);
+        }
         break;
       case 'Nudge':
         this.fsm.force('Resolving');
@@ -549,12 +604,15 @@ export class App {
       this.hud.showBanner(title, `THE NETWORK WANTS $${r.debt}`, mut ? '#ff5040' : '#ffd040', 2.6 / this.speed);
       this.stage.marquee.set(`DEADLINE ${r.deadline} — $${r.debt} DUE`, '#ffd040', true);
       this.sfx.play('sting', { gain: 0.6 });
-      this.hostSay(r.deadline === 1 ? 'intro' : mut ? 'sweep' : 'package', 'grin', 'present');
+      if (r.deadline > BALANCE.deadlinesPerRun) this.hostSay('endless', 'grin', 'present');
+      else if (r.deadline === 1 && Math.random() < 0.5) this.hostSay('intro', 'grin', 'present');
+      else this.hostSay(mut ? 'sweep' : 'package', 'grin', 'present', DEADLINE_LINES[r.deadline - 1]);
       await wait(1.6 / this.speed);
       if (mut) {
         this.hud.showBanner(`SWEEPS: ${mut.name}`, mut.text, '#ff5040', 3 / this.speed);
         this.stage.post.roll = 0.6;
         this.sfx.play('buzz', { gain: 0.4 });
+        this.sfx.play('static', { gain: 0.5 });
         await wait(1.8 / this.speed);
         this.stage.post.roll = 0;
       }
@@ -604,6 +662,8 @@ export class App {
     if (!g || g.run.phase !== 'AwaitAction' || this.busy || this.charge || this.menus.open) return;
     if (this.stage.rig.station !== 'center') this.stage.rig.go('center');
     this.charge = { t: 0, peek: false, lastTick: 0 };
+    this.loops.drum?.stop(0.05);
+    this.loops.drum = this.sfx.loop('drumroll', 0.32, 'sfx', 0.3);
     this.fsm.force('Charging');
     this.hud.hint = g.canPeek() ? 'RELEASE IN THE GREEN · [E] PEEK' : 'RELEASE IN THE GREEN';
     this.updateArrows();
@@ -614,6 +674,8 @@ export class App {
     const c = this.charge;
     if (!g || !c) return;
     this.charge = null;
+    this.loops.drum?.stop(0.08);
+    this.loops.drum = null;
     const power = meterValue(c.t);
     this.stage.lever.pull = 0;
     this.stage.wheel.showHighlight(null);
@@ -726,7 +788,9 @@ export class App {
       if (c === 'deadAir') continue;
       st.vfx.float(st.wheel.group.position.clone().add(new THREE.Vector3(0, 1.2, 0)), COMBO_NAMES[c], '#ff70ff', 2, 1.6);
     }
-    if (res.combos.some((c) => c !== 'deadAir') && Math.random() < 0.5) this.hostSay('combo', 'grin', 'cheer');
+    if (res.combos.includes('hatTrick')) this.hostSay('hatTrick', 'shock', 'cheer');
+    else if (res.combos.includes('neighbors') && Math.random() < 0.5) this.hostSay('neighbors', 'shock', 'point');
+    else if (res.combos.some((c) => c !== 'deadAir') && Math.random() < 0.5) this.hostSay('combo', 'grin', 'cheer');
 
     // Notes (prize effects).
     const tally = new Map<string, number>();
@@ -755,7 +819,11 @@ export class App {
       setTimeout(() => st.studio.accent.color.setRGB(0, 0, 0), 1500);
       this.hostSay('jackpot', 'shock', 'cheer');
     } else if (big) this.hostSay('bigWin', 'grin', 'cheer');
-    else if (p.landedKind === 'dud' && Math.random() < 0.5) this.hostSay('dud', 'wink', 'shrug');
+    else if (p.landedKind === 'dud') {
+      this.sfx.play('rimshot', { gain: 0.55 });
+      if (Math.random() < 0.35) this.sfx.play('laugh', { gain: 0.35, pitch: 0.85, delay: 0.5 });
+      if (Math.random() < 0.5) this.hostSay('dud', 'wink', 'shrug');
+    }
     else if (p.landedKind === 'tax') this.hostSay('tax', 'grin', 'point');
     else if (p.landedKind === 'mystery' && Math.random() < 0.4) this.hostSay('mystery', 'talk', 'present');
     else if (p.landedKind === 'artifact') this.hostSay('artifact', 'grin', 'present');
@@ -795,10 +863,13 @@ export class App {
     this.mixer.setMuffle(0);
     this.music.setLevel(1, 2);
     this.sfx.play('groan', { gain: 0.6 });
+    if (lost >= 300) this.sfx.play('gasp', { gain: 0.5 });
+    if (Math.random() < 0.3) this.sfx.play('laugh', { gain: 0.3, pitch: 0.7, delay: 1.2 });
     if (lost > 0) st.vfx.float(st.tray.group.position.clone().add(new THREE.Vector3(0, 0.4, 0)), `-$${lost}`, '#ff4040', 1, 1.8);
     st.marquee.set(deadAir ? 'DEAD AIR' : 'BANKRUPT', '#ff3020', true);
     this.hostSay('bankrupt', 'grin', 'shrug');
     if (deadAir) {
+      this.sfx.play('static', { gain: 0.6 });
       this.stage.post.roll = 1;
       await wait(0.8);
     }
@@ -942,7 +1013,17 @@ export class App {
     this.music.setLevel(0.25);
     this.hud.hint = '';
     const ph = g.run.phone!;
-    this.producerSay(ph.intro, ph.reason === 'secret');
+    this.sfx.play('static', { gain: 0.2, pitch: 1.3 });
+    const secret = ph.reason === 'secret';
+    // The caller pitches each deal in turn; choosing anything cuts them off.
+    let at = this.producerSay(ph.intro, secret) + 0.5;
+    for (const o of ph.offers) {
+      const line = bargainDef(o.bargainId).line;
+      if (!this.vo.has(secret ? 'secret' : 'producer', line)) continue;
+      const delay = at;
+      this.phoneTalk.push(window.setTimeout(() => this.producerSay(line, secret), delay * 1000));
+      at += this.vo.duration(secret ? 'secret' : 'producer', line) + 0.6;
+    }
     this.showPhoneOffers();
   }
 
@@ -968,20 +1049,29 @@ export class App {
         footer: '1-3 OR CLICK',
       },
       (i) => {
+        this.phoneTalk.forEach((t) => clearTimeout(t));
+        this.phoneTalk = [];
         this.setChoice(null, null);
         this.stage.phone.offHook = 0;
         this.stage.post.roll = 0;
         this.music.setLevel(1, 1.5);
         if (i < ph.offers.length) {
           const b = bargainDef(ph.offers[i].bargainId);
-          this.producerSay(secret ? '(the line goes quiet. somewhere below you, something unlocks.)' : 'Pleasure doing business. The Network thanks you.', secret);
+          const d = this.producerSay(secret ? SECRET_ACCEPT : PRODUCER_ACCEPT[Math.floor(Math.random() * PRODUCER_ACCEPT.length)], secret);
+          if (!secret) setTimeout(() => !this.vo.speaking && this.game && this.hostSay('dealTaken', 'grin', 'point'), (d + 0.5) * 1000);
           g.phoneAccept(i);
           this.hud.toast('DEAL.', '#ff9060');
           void b;
           this.layoutSig = '';
         } else {
           g.phoneHangUp();
-          this.sfx.play('hangup');
+          const d = secret ? 0 : this.producerSay(PRODUCER_HANGUP[Math.floor(Math.random() * PRODUCER_HANGUP.length)], false);
+          setTimeout(() => {
+            this.vo.stop();
+            this.sfx.play('hangup');
+            this.sfx.play('static', { gain: 0.15, pitch: 1.6 });
+            if (!secret) setTimeout(() => this.game && this.hostSay('dealRefused', 'shock', 'point'), 500);
+          }, Math.max(0, d - 0.2) * 1000);
           this.hud.toast('CLICK.', '#c0c0c0');
         }
         this.phoneAnswered = false;
@@ -1012,6 +1102,7 @@ export class App {
       st.marquee.set(`PAYMENT DUE: $${e.debt}`, '#ffd040', true);
       this.hud.showBanner(e.paid ? 'PAID' : 'SHORT', e.paid ? `$${e.debt} TO THE NETWORK` : `VAULT $${e.vaultBefore} OF $${e.debt}`, e.paid ? '#80ff80' : '#ff3020', 2.2);
       if (e.paid) {
+        this.sfx.play('register', { gain: 0.6 });
         st.vault.setVault(e.vaultAfter);
         st.vault.shake = 0.4;
         this.sfx.play('thunk', { pitch: 0.8 });
@@ -1033,7 +1124,8 @@ export class App {
     await this.withBusy(async () => {
       this.fsm.force('GameOver');
       this.runSlot.clear();
-      this.music.stop();
+      this.stopHeartbeat();
+      this.music.tapeStop(1.8);
       st.rig.go('center', 0.4);
       await wait(0.4);
       // Lights die one by one.
@@ -1044,6 +1136,7 @@ export class App {
       await wait(0.4);
       st.studio.lightLevel = 0.15;
       st.host.expression = 'dead';
+      this.hostSay('gameOver', 'dead', 'slump');
       await wait(0.6);
       this.sfx.play('trapdoor', { gain: 1 });
       if (this.settings.screenShake) st.rig.shake(1.2);
@@ -1056,6 +1149,7 @@ export class App {
         await wait(1 / 60);
       }
       st.post.fade = 0;
+      this.sfx.play('signoff', { gain: 0.5 });
     });
     const r = g.run;
     if (!r.marks.metaApplied) {
@@ -1074,8 +1168,8 @@ export class App {
     await this.withBusy(async () => {
       this.fsm.force('Victory');
       st.rig.go('center', 0.5);
-      this.sfx.play('jackpot');
-      this.sfx.play('applause', { gain: 0.8 });
+      this.sfx.play('fanfare', { gain: 0.8 });
+      this.sfx.play('applause', { gain: 0.8, delay: 0.6 });
       if (!this.settings.reducedFlashing) st.vfx.confetti(st.post.width, 160);
       st.marquee.set('PAID IN FULL — PAID IN FULL —', '#80ff80', true);
       this.hostSay('victory', 'grin', 'cheer');
@@ -1218,6 +1312,8 @@ export class App {
       if (this.target) return this.endTarget();
       if (g) {
         this.charge = null;
+        this.loops.drum?.stop(0.1);
+        this.loops.drum = null;
         this.menus.show('pause', null);
       }
       return;
@@ -1395,6 +1491,7 @@ export class App {
     if (before > 0) {
       this.sfx.play('cascade', { gain: 0.5, pitch: 0.8 });
       setTimeout(() => this.sfx.play('thunk'), 300);
+      if (before >= 200) this.sfx.play('register', { gain: 0.4, delay: 0.15 });
       if (res.lost) this.hud.toast(`LOST $${res.lost} ON THE WAY`, '#ff8060');
       if (res.keptStreak) this.hud.toast('STREAK KEPT', '#80ffff');
       if (Math.random() < 0.6) this.hostSay('deposit', 'talk', 'present');
@@ -1413,6 +1510,7 @@ export class App {
     const id = g.run.scratch[i];
     g.useScratch(i);
     this.sfx.play('scratch');
+    if (Math.random() < 0.4) this.hostSay('scratch', 'grin', 'point');
     this.hud.toast(`${scratchDef(id).name.toUpperCase()}!`, '#ffe080');
     this.layoutSig = '';
     this.sync(false);
@@ -1467,6 +1565,7 @@ export class App {
     this.stage.shelf.selected = -1;
     this.sfx.play('cascade', { gain: 0.4, pitch: 1.6 });
     this.hud.toast(`SOLD +${v} TOK`);
+    if (Math.random() < 0.5) this.hostSay('sell', 'wink', 'present');
     this.sync(false);
   }
 
@@ -1508,6 +1607,8 @@ export class App {
       }
     } else this.idleTimer = 0;
     this.music.setBuzz(st.studio.lightLevel);
+    st.host.mouthAmp = this.vo.speaking ? this.vo.amplitude() : -1;
+    if (this.vo.speaking) st.host.talking = Math.max(st.host.talking, 0.15);
     st.post.roll = Math.max(g?.run.phase === 'PhoneCall' && !this.phoneAnswered ? 0.7 : 0, st.post.roll - dt * 0.4);
     if (this.settings.reducedFlashing) st.post.roll = Math.min(st.post.roll, 0.25);
     st.update(dt, this.time, this.speed);

@@ -522,5 +522,5 @@ export const PRODUCER_INTROS: Record<BargainTier, readonly string[]> = {
     'Wow. Wow wow wow. Okay. Okay. I have an idea. Two ideas.',
     "That's going in the blooper reel. Unless... you and I come to an arrangement.",
   ],
-  secret: ['(the line clicks twice — this is not the Producer)'],
+  secret: ["Don't talk. Just listen. I'm not the Producer, and this line isn't here."],
 };

@@ -24,6 +24,8 @@ export class HostView {
   expression: HostFace = 'smile';
   pose: HostPose = 'idle';
   talking = 0;
+  /** Live voice amplitude 0..1 from the VO player (−1 = no recording; flap procedurally). */
+  mouthAmp = -1;
   private mouthOpen = 0;
   private faceTimer = 0;
   private lastStep = -1;
@@ -185,7 +187,8 @@ export class HostView {
     if (step === this.lastStep) return;
     this.lastStep = step;
     const t = step * STEP;
-    this.mouthOpen = this.talking > 0 && !this.silent ? (Math.sin(t * 22) > 0 ? 1 : Math.sin(t * 13) > 0.3 ? 0.6 : 0) : 0;
+    if (this.mouthAmp >= 0) this.mouthOpen = this.silent ? 0 : this.mouthAmp > 0.34 ? 1 : this.mouthAmp > 0.12 ? 0.6 : 0;
+    else this.mouthOpen = this.talking > 0 && !this.silent ? (Math.sin(t * 22) > 0 ? 1 : Math.sin(t * 13) > 0.3 ? 0.6 : 0) : 0;
     this.drawFace(t);
     const sway = Math.sin(t * 1.3) * 0.04;
     this.torso.rotation.z = sway;
