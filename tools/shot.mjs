@@ -1,8 +1,7 @@
 // Dev helper: drive the built game in headless Chromium and take screenshots.
 // usage: node tools/shot.mjs <url> <outdir> [basic|title|long]
-import { createRequire } from 'node:module';
 import { mkdirSync } from 'node:fs';
-const { chromium } = createRequire(import.meta.url)('playwright');
+import { chromium } from './browser.mjs';
 
 const url = process.argv[2] ?? 'http://localhost:4173/';
 const out = process.argv[3] ?? 'shots';

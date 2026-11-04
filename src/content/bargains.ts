@@ -7,6 +7,7 @@
  *  - secret:  "The Other Line". Unlocked by hanging up on The Producer three times in one
  *             run; the next call comes from the Previous Contestant instead.
  */
+import { BALANCE } from '../game/balance';
 import type { GameOps } from '../game/hooks';
 import type { Rarity, RunState } from '../game/types';
 
@@ -219,7 +220,7 @@ export const BARGAINS: readonly BargainDef[] = [
     available: (r) => r.tokens >= 4 && r.wheel.some((w) => w.kind === 'bankrupt'),
     apply: (ops) => {
       ops.run.tokens -= 4;
-      for (const w of ops.run.wheel) if (w.kind === 'bankrupt') w.width = Math.max(3, w.width - 5);
+      for (const w of ops.run.wheel) if (w.kind === 'bankrupt') w.width = Math.max(BALANCE.bankruptMinWidth, w.width - 5);
     },
   },
   {

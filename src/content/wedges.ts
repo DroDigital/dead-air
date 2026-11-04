@@ -128,7 +128,7 @@ export const WEDGES: Record<WedgeKind, WedgeDef> = {
   bankrupt: {
     kind: 'bankrupt',
     name: 'Bankrupt',
-    glyph: 'BANKRUPT',
+    glyph: 'BANK',
     text: 'Empties the Tray and resets your Streak.',
     rarity: 'starter',
     cost: 0,

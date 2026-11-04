@@ -851,10 +851,12 @@ const A: ArtifactDef[] = [
     color: 0xe8d0b8,
     hooks: {
       onDeposit(c, e) {
-        if (e.auto) return;
-        e.keepStreak = true;
-        if (e.amount > 0) e.lossFrac += 0.15;
-        c.trigger('KEEP STREAK −15%');
+        // "Depositing never resets your Streak" applies to manual deposits only; the loss applies to all.
+        if (!e.auto) e.keepStreak = true;
+        if (e.amount > 0) {
+          e.lossFrac += 0.15;
+          c.trigger(e.auto ? '−15%' : 'KEEP STREAK −15%');
+        }
       },
     },
   },
@@ -901,14 +903,7 @@ const A: ArtifactDef[] = [
     hooks: {
       onDeadlineStart(c) {
         c.ops.addVault(300, 'severance');
-        if (c.run.tokens > 6) c.run.tokens = 6;
         c.trigger('+$300 V');
-      },
-      onSpinResolved(c) {
-        if (c.run.tokens > 6) {
-          c.run.tokens = 6;
-          c.trigger('TOK CAP 6');
-        }
       },
     },
   },

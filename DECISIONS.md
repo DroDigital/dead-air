@@ -6,7 +6,7 @@ Choices made where the brief was silent or ambiguous, plus every deviation from 
 
 | Library | Used? | Why |
 |---|---|---|
-| three 0.187 | yes | Rendering, GLTFLoader. ~170 kB gz of the ~275 kB bundle — it *is* the renderer. |
+| three 0.187 | yes | Rendering, GLTFLoader. Measured at ~190 kB gz (full namespace, minified, esbuild); the app's tree-shaken share is less. It *is* the renderer. |
 | gsap 3.15 | yes | Camera station moves (eased ~0.25 s). Small. |
 | postprocessing (pmndrs) | **no** | The PSX chain is two full-screen passes (dither/quantise at internal res, then CRT upscale). A 60-line custom `PostFx` is smaller, and the composer's HDR/half-float defaults fight the 15-bit look. |
 | howler | **no** | Needed real per-bus routing (music/sfx/voice/ambience), a master lowpass for muffles, and procedural buffers. Plain WebAudio gives all of that; howler's global-only volume would have meant wrapping it anyway. Real files (if present) are decoded by id into the same buffers. |
@@ -17,7 +17,7 @@ Choices made where the brief was silent or ambiguous, plus every deviation from 
 | gltf-transform, sharp, meshoptimizer | build-time | `npm run assets`. |
 | vitest, tsx, typescript | dev | Tests, sim, typecheck. |
 
-No library over ~100 kB gz other than three.
+The only library over ~100 kB gz is three.js. GSAP measures ~28 kB gz. Built app: ~275 kB gz total (`npm run build`).
 
 ## Rules interpretations
 
@@ -27,7 +27,7 @@ No library over ~100 kB gz other than three.
 - **Boost** "+×1 on the next spin" is added to the inner-ring multiplier (step 2), so a Boost on a ×0 ring still pays ×1. It is consumed by the next spin whatever it lands on.
 - **Respin** = +1 spin (the spin it cost is given back).
 - **Jackpot counts as Cash** (gets ring, streak, artifact cash modifiers).
-- **NEIGHBORS** is evaluated in step 1 (both wedges contribute 50% of their base) and announced in step 5. Half-prizes: Tokens halve (rounded up), Tax halves, a neighbouring **Bankrupt loses half the Tray**, binary prizes (Respin, Artifact…) are awarded whole. With 24 × 15° wedges the geometric chance of stopping within 2° of a boundary is ~26%; the physics adds a little (~31% observed). Kept at the brief's 2°.
+- **NEIGHBORS** is evaluated in step 1 (both wedges contribute 50% of their base) and announced in step 5. Half-prizes: Tokens halve (rounded up), Tax halves, a neighbouring **Bankrupt loses half the Tray**, binary prizes (Respin, Artifact…) are awarded whole. Measured: with uniform releases the wheel stops within 2° of a boundary 26.4% of the time, matching the geometry (24 boundaries × 4° of 360° = 26.7%). The balance bot's sweet-spot releases push that to ~32%, because the sweet-spot bias favours high-value wedges and those sit next to their neighbours. The brief's 2° is kept; `neighborsThreshold` in `balance.ts` is the knob.
 - **ECHO** compares the *landed* wedge type (Mystery twice = ECHO). Bankrupt/Dud/Splitter never ECHO. Cash ECHO multiplies cash; a repeatable prize ECHO awards the prize again. History resets each Deadline.
 - **HAT TRICK** fires on every 3rd consecutive cash landing (3, 6, 9…); a Deposit resets the count along with the Streak.
 - **DEAD AIR** requires an unblocked full Bankrupt with Tray > Debt; the Producer call happens right after the spin, then play resumes.
@@ -44,11 +44,14 @@ No library over ~100 kB gz other than three.
 - **Glass Eye / Peek** show a live landing preview while charging (press **E**); the preview is the exact deterministic result for the current meter value.
 - **Sweet spot** bias is physical: in the green band, extra Coulomb drag is applied while the wheel is slow over high-value wedges (cash ≥ $150, Jackpot, Artifact, Wild).
 - **Loaded Flapper** makes Bankrupt pegs *easier to slip past* and lets the wheel glide through Bankrupt wedges — the artifact's intent ("drag past them") is to avoid landing there.
-- **Surplus conversion.** After paying, the player picks how many $50 → Token conversions to make; whatever stays earns 10% interest, capped at $30 + $20 × Deadline (tuned).
+- **Surplus conversion.** After paying, the player picks how many $50 → Token conversions to make; whatever stays earns 10% interest, capped at $30 + $20 × Deadline (tuned). Interest is paid once, when you settle, on the surplus you keep. It does not compound every Deadline; that keeps the Vault from growing without limit.
 - **Phone timing.** Guaranteed after Deadlines 3 and 6, otherwise a per-Deadline chance; DEAD AIR always calls.
 - **Secret dark line (designed).** Hang up on the Producer three times in one run → the next call is *The Other Line*: the previous contestant, whispering from under the floor, with four dark bargains (erase your next Debt for every artifact; the Trapdoor Lever + $666; cut the feed — every Bankrupt becomes a Dud and the Host goes silent; the truth — unlocks the final lore note).
 - **Endless.** After Deadline 8 the summary offers "Keep broadcasting" (if unlocked); Debt keeps following the formula; a Sweep every 2nd Deadline.
-- **Stakes.** Late Night (+15% Debt), Graveyard Shift (+30% Debt, +1 Bankrupt), Dead Air (as Graveyard + every Cabinet price +1).
+- **Stakes.** Prime Time is the base; Late Night (+15% Debt), Graveyard Shift (+30% Debt, +1 Bankrupt) and Dead Air (as Graveyard, plus every Cabinet price +1) unlock with Ratings. The brief asks for three stakes; we ship three unlockable ones on top of the base game.
+- **Token purse.** Severance Check caps Tokens at 6 wherever Tokens change (gains, purchases, bargains), not only on spin resolution.
+- **Understudy.** The copy shares its source artifact's instance, so "once per Deadline" effects are shared. A copied Trapdoor Lever is consumed like the real one.
+- **Bankrupt wedge width.** Both the Cabinet and the bargain "narrower" stop at the same 10° floor.
 
 ## Deviations (with reasons)
 
@@ -58,7 +61,7 @@ No library over ~100 kB gz other than three.
 4. **Prize Cabinet artifact prices +3 Tokens** over listed rarity costs (tuned, see BALANCE.md).
 5. **Choice moments are on-air graphics.** Package select, Nudge, artifact 1-of-3, surplus conversion and the Producer's offers are drawn as broadcast chyrons in the pixel font (the show is a TV broadcast, so its own graphics are diegetic). Everything else is in-world: tray, vault nixie, flip clock, placard, cabinet price tags, shelf, marquee, host captions.
 6. **Dust motes** use `THREE.Points` with a tiny PointsMaterial rather than the PSX ShaderMaterial (1-px points have no texture/lighting to speak of). Everything else uses the single PSX material.
-7. **Audio is procedural.** Kenney and Freesound are not reachable from the build environment, so every SFX id resolves to a synthesised, bitcrushed buffer. Dropping a WAV at `assets-src/audio/<name>.wav` and running `npm run assets` swaps it in by id (see ASSETS_TODO.md).
+7. **Some audio is still procedural.** Eight cues now use CC0 recordings from OpenGameArt's "RPG Sound Pack" by artisticdude (coins, flapper tick, vault door, lever, phone bell, button, scratch card, cabinet crank). Kenney.nl and Freesound are not reachable from the build environment. The bankrupt crash, crowd groan, jackpot bells and the music loop have no matching CC0 recording yet. They stay synthesised, and ASSETS_TODO.md links a search for each one. Dropping a CC0 WAV at `assets-src/audio/<name>.wav` and running `npm run assets` swaps it in by id.
 8. **Host animation** is procedural (stepped at 12 fps), not Mixamo — Mixamo requires an Adobe login and its licence forbids redistributing raw files.
 
 ## Technical choices

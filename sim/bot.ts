@@ -314,7 +314,7 @@ export class Bot {
       if (!shop) return;
       // 1. Remove a Bankrupt if affordable.
       const bkIdx = r.wheel.findIndex((w) => w.kind === 'bankrupt');
-      if (BALANCE.bankruptRemovable && bkIdx >= 0 && r.tokens >= g.serviceCost('remove', r.wheel[bkIdx]) + 1 && g.shopRemove(bkIdx).ok) continue;
+      if (BALANCE.bankruptRemovable && bkIdx >= 0 && r.tokens >= g.serviceCost('remove') + 1 && g.shopRemove(bkIdx).ok) continue;
       // 2. Best affordable artifact.
       const arts = shop.items.filter((i) => i.type === 'artifact' && !i.sold && i.cost <= r.tokens).sort((a, b) => artifactScore(b.id) - artifactScore(a.id));
       if (arts.length && r.artifacts.length < BALANCE.maxArtifacts && artifactScore(arts[0].id) >= 5) {

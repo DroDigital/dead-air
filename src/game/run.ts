@@ -268,11 +268,17 @@ export class Game implements PayoutHost {
   // =====================================================================================
   // GameOps (exposed to content)
   // =====================================================================================
+  /** Token ceiling: Severance Check caps the purse at 6; otherwise unlimited. */
+  tokenCap(): number {
+    return this.has('severance_check') ? 6 : Number.POSITIVE_INFINITY;
+  }
   addTokens(n: number, why: string): void {
     if (n === 0) return;
-    this.run.tokens = Math.max(0, this.run.tokens + n);
-    if (n > 0) this.run.stats.tokensEarned += n;
-    this.bus.emit('tokens', { delta: n, why });
+    const before = this.run.tokens;
+    this.run.tokens = Math.max(0, Math.min(this.tokenCap(), before + n));
+    const delta = this.run.tokens - before;
+    if (delta > 0) this.run.stats.tokensEarned += delta;
+    if (delta !== 0) this.bus.emit('tokens', { delta, why });
   }
   addSpins(n: number, why: string): void {
     this.run.spinsLeft = Math.max(0, this.run.spinsLeft + n);
@@ -320,6 +326,7 @@ export class Game implements PayoutHost {
     const inst: ArtifactInstance = { uid: this.run.nextUid++, id, state: {} };
     this.run.artifacts.push(inst);
     const slot = this.run.artifacts.length - 1;
+    if (id === 'severance_check') this.run.tokens = Math.min(this.run.tokens, this.tokenCap());
     const a = this.active().find((x) => x.slot === slot);
     if (a?.def.hooks.onAcquire) a.def.hooks.onAcquire(this.hookCtx(a));
     this.bus.emit('artifactGained', { id, slot });
@@ -390,7 +397,9 @@ export class Game implements PayoutHost {
         def = j < arts.length ? artifactDef(arts[j].id) : null;
       }
       if (!def || def.id === 'understudy') continue;
-      out.push({ slot, inst: arts[slot], def, physicalId: arts[slot].id });
+      // Hooks see the copied artifact's own instance (state such as "used this Deadline" is shared),
+      // while triggers still light up the Understudy's slot.
+      out.push({ slot, inst: arts[j], def, physicalId: arts[slot].id });
     }
     return out;
   }
@@ -1075,7 +1084,7 @@ export class Game implements PayoutHost {
           saved = true;
           // The lever breaks.
           const slot = run.artifacts.indexOf(a.inst);
-          if (a.physicalId === 'trapdoor_lever' && slot >= 0) this.removeArtifact(slot);
+          if (a.def.id === 'trapdoor_lever' && slot >= 0) this.removeArtifact(slot);
           run.flags.trapdoorUsed = true;
           break;
         }
@@ -1231,8 +1240,7 @@ export class Game implements PayoutHost {
     return { ok: true };
   }
 
-  serviceCost(kind: 'remove' | 'gild' | 'resize', target?: Wedge): number {
-    if (kind === 'remove' && target?.kind === 'bankrupt') return Math.round(this.serviceCost('remove') * BALANCE.removeBankruptMult);
+  serviceCost(kind: 'remove' | 'gild' | 'resize'): number {
     const escalate = kind === 'remove' ? BALANCE.removeEscalation * (this.run.marks.removals ?? 0) : kind === 'gild' ? BALANCE.gildEscalation * (this.run.marks.gilds ?? 0) : 0;
     return SERVICE_COSTS[kind]() + escalate + (BALANCE.stakeShopMarkup[this.run.stake] ?? 0);
   }
@@ -1242,7 +1250,7 @@ export class Game implements PayoutHost {
     const w = this.run.wheel[idx];
     if (!w || w.kind === 'dud') return { ok: false, reason: 'nothing to remove' };
     if (w.kind === 'bankrupt' && !BALANCE.bankruptRemovable) return { ok: false, reason: 'the network owns that one' };
-    const cost = this.serviceCost('remove', w);
+    const cost = this.serviceCost('remove');
     if (this.run.tokens < cost) return { ok: false, reason: 'not enough tokens' };
     this.addTokens(-cost, 'remove');
     this.run.marks.removals = (this.run.marks.removals ?? 0) + 1;

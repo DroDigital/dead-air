@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "description": "DEAD AIR — a prize-wheel gambling roguelite in a rotting TV studio.",
+  "description": "DEAD AIR \u2014 a prize-wheel gambling roguelite in a rotting TV studio.",
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit -p tsconfig.json && vite build",
@@ -12,8 +12,8 @@
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "sim": "tsx sim/runSim.ts",
-    "assets": "tsx tools/assets.ts",
-    "credits": "tsx tools/credits.ts"
+    "playtest": "node tools/playtest.mjs",
+    "assets": "tsx tools/assets.ts"
   },
   "dependencies": {
     "gsap": "3.15.0",

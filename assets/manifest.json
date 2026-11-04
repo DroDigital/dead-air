@@ -280,10 +280,10 @@
       "src": "audio/flapper.wav",
       "out": "audio/flapper.wav",
       "fetch": null,
-      "sourceUrl": "https://kenney.nl/assets/impact-sounds",
-      "author": "Kenney (intended)",
+      "sourceUrl": "https://opengameart.org/content/rpg-sound-pack",
+      "author": "artisticdude (OpenGameArt, \"RPG Sound Pack\")",
       "license": "CC0-1.0",
-      "modifications": "Intended: bitcrush to 10 bits, one-pole lowpass at 7 kHz, resample to 22.05 kHz. Currently synthesised at runtime (see ASSETS_TODO.md)."
+      "modifications": "Source file \"RPG Sound Pack/inventory/metal-small2.wav\" from the zip. Converted to mono 22.05 kHz PCM16 with a one-pole lowpass at 7 kHz and 10-bit crush. Plays every wheel peg tick, pitch-shifted by wheel speed."
     },
     {
       "id": "sfx.coins",
@@ -291,10 +291,10 @@
       "src": "audio/coins.wav",
       "out": "audio/coins.wav",
       "fetch": null,
-      "sourceUrl": "https://kenney.nl/assets/rpg-audio",
-      "author": "Kenney (intended)",
+      "sourceUrl": "https://opengameart.org/content/rpg-sound-pack",
+      "author": "artisticdude (OpenGameArt, \"RPG Sound Pack\")",
       "license": "CC0-1.0",
-      "modifications": "Intended: bitcrush + lowpass. Currently synthesised at runtime."
+      "modifications": "Source file \"RPG Sound Pack/inventory/coin2.wav\" from the zip. Converted to mono 22.05 kHz PCM16 with a one-pole lowpass at 7 kHz and 10-bit crush. Plays as coins pour into the Tray."
     },
     {
       "id": "sfx.vault_thunk",
@@ -302,10 +302,10 @@
       "src": "audio/vault_thunk.wav",
       "out": "audio/vault_thunk.wav",
       "fetch": null,
-      "sourceUrl": "https://kenney.nl/assets/impact-sounds",
-      "author": "Kenney (intended)",
+      "sourceUrl": "https://opengameart.org/content/rpg-sound-pack",
+      "author": "artisticdude (OpenGameArt, \"RPG Sound Pack\")",
       "license": "CC0-1.0",
-      "modifications": "Intended: bitcrush + lowpass. Currently synthesised at runtime."
+      "modifications": "Source file \"RPG Sound Pack/world/door.wav\" from the zip. Converted to mono 22.05 kHz PCM16 with a one-pole lowpass at 7 kHz and 10-bit crush. Plays when the Vault closes on a deposit."
     },
     {
       "id": "sfx.bankrupt",
@@ -313,10 +313,10 @@
       "src": "audio/bankrupt.wav",
       "out": "audio/bankrupt.wav",
       "fetch": null,
-      "sourceUrl": "https://freesound.org/ (CC0 filter)",
-      "author": "TBD (intended)",
-      "license": "CC0-1.0",
-      "modifications": "Intended: bitcrush + lowpass. Currently synthesised at runtime."
+      "sourceUrl": "https://opengameart.org/art-search-advanced?keys=glass+crash&field_art_type_tid%5B%5D=13",
+      "author": "TBD",
+      "license": "UNRESOLVED (target CC0)",
+      "modifications": "Wanted: a crash or breaking-glass hit (CC0). Still procedural. Once a CC0 file is chosen, put it at assets-src/audio/ under the src name, update author and sourceUrl, and run npm run assets."
     },
     {
       "id": "sfx.crowd",
@@ -324,10 +324,10 @@
       "src": "audio/crowd.wav",
       "out": "audio/crowd.wav",
       "fetch": null,
-      "sourceUrl": "https://freesound.org/ (CC0 filter)",
-      "author": "TBD (intended)",
-      "license": "CC0-1.0",
-      "modifications": "Intended: bitcrush + lowpass. Currently synthesised at runtime (filtered noise swells)."
+      "sourceUrl": "https://opengameart.org/art-search-advanced?keys=crowd+groan&field_art_type_tid%5B%5D=13",
+      "author": "TBD",
+      "license": "UNRESOLVED (target CC0)",
+      "modifications": "Wanted: a small crowd groan or boo (CC0). Still procedural. Once a CC0 file is chosen, put it at assets-src/audio/ under the src name, update author and sourceUrl, and run npm run assets."
     },
     {
       "id": "sfx.phone_bell",
@@ -335,10 +335,10 @@
       "src": "audio/phone_bell.wav",
       "out": "audio/phone_bell.wav",
       "fetch": null,
-      "sourceUrl": "https://freesound.org/ (CC0 filter)",
-      "author": "TBD (intended)",
+      "sourceUrl": "https://opengameart.org/content/rpg-sound-pack",
+      "author": "artisticdude (OpenGameArt, \"RPG Sound Pack\")",
       "license": "CC0-1.0",
-      "modifications": "Intended: bitcrush + lowpass. Currently synthesised at runtime (twin-bell FM)."
+      "modifications": "Source file \"RPG Sound Pack/inventory/metal-ringing.wav\" from the zip. Converted to mono 22.05 kHz PCM16 with a one-pole lowpass at 7 kHz and 10-bit crush. Repeats while the phone rings."
     },
     {
       "id": "sfx.lever",
@@ -346,10 +346,10 @@
       "src": "audio/lever.wav",
       "out": "audio/lever.wav",
       "fetch": null,
-      "sourceUrl": "https://kenney.nl/assets/interface-sounds",
-      "author": "Kenney (intended)",
+      "sourceUrl": "https://opengameart.org/content/rpg-sound-pack",
+      "author": "artisticdude (OpenGameArt, \"RPG Sound Pack\")",
       "license": "CC0-1.0",
-      "modifications": "Intended: bitcrush + lowpass. Currently synthesised at runtime."
+      "modifications": "Source file \"RPG Sound Pack/inventory/metal-small1.wav\" from the zip. Converted to mono 22.05 kHz PCM16 with a one-pole lowpass at 7 kHz and 10-bit crush. Plays when the lever is pulled."
     },
     {
       "id": "sfx.jackpot_bells",
@@ -357,10 +357,10 @@
       "src": "audio/jackpot_bells.wav",
       "out": "audio/jackpot_bells.wav",
       "fetch": null,
-      "sourceUrl": "https://freesound.org/ (CC0 filter)",
-      "author": "TBD (intended)",
-      "license": "CC0-1.0",
-      "modifications": "Intended: bitcrush + lowpass. Currently synthesised at runtime."
+      "sourceUrl": "https://opengameart.org/art-search-advanced?keys=bells+jackpot&field_art_type_tid%5B%5D=13",
+      "author": "TBD",
+      "license": "UNRESOLVED (target CC0)",
+      "modifications": "Wanted: a bell or jackpot chime (CC0). Still procedural. Once a CC0 file is chosen, put it at assets-src/audio/ under the src name, update author and sourceUrl, and run npm run assets."
     },
     {
       "id": "music.show_loop",
@@ -368,10 +368,43 @@
       "src": "audio/show_loop.wav",
       "out": "audio/show_loop.wav",
       "fetch": null,
-      "sourceUrl": "(original composition, procedural)",
+      "sourceUrl": "(original composition, generated at runtime)",
       "author": "DEAD AIR",
       "license": "CC0-1.0",
-      "modifications": "Generated at runtime by the music sequencer; detune/tempo/warble increase each Deadline."
+      "modifications": "Generated at runtime by the music sequencer; detune/tempo/warble increase each Deadline. Still procedural: no matching CC0 recording found (see ASSETS_TODO.md)."
+    },
+    {
+      "id": "sfx.button",
+      "type": "audio",
+      "src": "audio/button.wav",
+      "out": "audio/button.wav",
+      "fetch": null,
+      "sourceUrl": "https://opengameart.org/content/rpg-sound-pack",
+      "author": "artisticdude (OpenGameArt, \"RPG Sound Pack\")",
+      "license": "CC0-1.0",
+      "modifications": "Source file \"RPG Sound Pack/interface/interface2.wav\" from the zip. Converted to mono 22.05 kHz PCM16 with a one-pole lowpass at 7 kHz and 10-bit crush. Plays on menu and panel selections."
+    },
+    {
+      "id": "sfx.scratch",
+      "type": "audio",
+      "src": "audio/scratch.wav",
+      "out": "audio/scratch.wav",
+      "fetch": null,
+      "sourceUrl": "https://opengameart.org/content/rpg-sound-pack",
+      "author": "artisticdude (OpenGameArt, \"RPG Sound Pack\")",
+      "license": "CC0-1.0",
+      "modifications": "Source file \"RPG Sound Pack/inventory/cloth.wav\" from the zip. Converted to mono 22.05 kHz PCM16 with a one-pole lowpass at 7 kHz and 10-bit crush. Plays when a Scratch Card is used."
+    },
+    {
+      "id": "sfx.crank",
+      "type": "audio",
+      "src": "audio/crank.wav",
+      "out": "audio/crank.wav",
+      "fetch": null,
+      "sourceUrl": "https://opengameart.org/content/rpg-sound-pack",
+      "author": "artisticdude (OpenGameArt, \"RPG Sound Pack\")",
+      "license": "CC0-1.0",
+      "modifications": "Source file \"RPG Sound Pack/inventory/chainmail1.wav\" from the zip. Converted to mono 22.05 kHz PCM16 with a one-pole lowpass at 7 kHz and 10-bit crush. Plays when the Prize Cabinet crank turns."
     }
   ]
 }

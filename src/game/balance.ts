@@ -64,8 +64,6 @@ export const BALANCE = {
   removeEscalation: 2,
   /** Bankrupt wedges are Network property: they cannot be Removed or overwritten in the Cabinet. */
   bankruptRemovable: false,
-  /** (If removable) removing a Bankrupt costs this many times more. */
-  removeBankruptMult: 3,
   /** A wedge can be gilded at most this many times. */
   maxGild: 2,
   /** Narrowing cannot take a Bankrupt below this nominal width. */

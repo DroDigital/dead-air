@@ -72,6 +72,38 @@
     "font.terminal": {
       "type": "font",
       "url": "assets/fonts/VT323-Regular.ttf"
+    },
+    "sfx.flapper": {
+      "type": "audio",
+      "url": "assets/audio/flapper.wav"
+    },
+    "sfx.coins": {
+      "type": "audio",
+      "url": "assets/audio/coins.wav"
+    },
+    "sfx.vault_thunk": {
+      "type": "audio",
+      "url": "assets/audio/vault_thunk.wav"
+    },
+    "sfx.phone_bell": {
+      "type": "audio",
+      "url": "assets/audio/phone_bell.wav"
+    },
+    "sfx.lever": {
+      "type": "audio",
+      "url": "assets/audio/lever.wav"
+    },
+    "sfx.button": {
+      "type": "audio",
+      "url": "assets/audio/button.wav"
+    },
+    "sfx.scratch": {
+      "type": "audio",
+      "url": "assets/audio/scratch.wav"
+    },
+    "sfx.crank": {
+      "type": "audio",
+      "url": "assets/audio/crank.wav"
     }
   }
 }
