@@ -96,7 +96,7 @@ The post-fix simulation still meets every target (see BALANCE.md). Two artifacts
 
 ## Not fixed, and why
 
-- **Frame rate on real hardware** hasn't been measured. Here, software rendering runs at 28–30 fps, which says nothing about a laptop GPU.
+- **Frame rate on real hardware** hasn't been measured. Here, software rendering averaged 26–30 fps across passes 1, 2, 4 and 5, which says nothing about a laptop GPU.
 - **Host animation** is procedural, not Mixamo. Mixamo needs an Adobe login.
 - **Four cues are still synthesised:** the bankrupt crash, the crowd groan, the jackpot bells and the music loop. No matching CC0 recording was found yet. ASSETS_TODO.md links an OpenGameArt search for each.
 - **Choice prompts are on-air graphics**, not in-world objects. This is a deliberate design deviation, recorded in DECISIONS.md.
