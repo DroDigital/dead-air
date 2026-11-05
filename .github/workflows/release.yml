@@ -134,13 +134,19 @@ jobs:
       - run: npm run build
       - name: Package (electron-builder)
         shell: bash
-        run: npx electron-builder ${{ matrix.builder }} --publish never -c.extraMetadata.version="${{ needs.version.outputs.version }}"
         env:
-          # Optional macOS Developer ID signing; see the note in electron-builder.yml.
-          CSC_LINK: ${{ secrets.MAC_CSC_LINK }}
-          CSC_KEY_PASSWORD: ${{ secrets.MAC_CSC_KEY_PASSWORD }}
+          # Optional macOS Developer ID signing; see the note in electron-builder.yml. The secrets
+          # are handed over only on macOS and only when set: an empty CSC_LINK makes
+          # electron-builder read the project folder as the certificate and fail.
+          MAC_CSC_LINK: ${{ secrets.MAC_CSC_LINK }}
+          MAC_CSC_KEY_PASSWORD: ${{ secrets.MAC_CSC_KEY_PASSWORD }}
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if [[ "$RUNNER_OS" == "macOS" && -n "$MAC_CSC_LINK" ]]; then
+            export CSC_LINK="$MAC_CSC_LINK" CSC_KEY_PASSWORD="$MAC_CSC_KEY_PASSWORD"
+          fi
+          npx electron-builder ${{ matrix.builder }} --publish never -c.extraMetadata.version="${{ needs.version.outputs.version }}"
       - name: Collect installers
         shell: bash
         run: |
