@@ -438,8 +438,13 @@ export class Hud {
     if (this.challenge && !this.choice) {
       const c = this.challenge;
       const y0 = (this.payout ? 26 : 3) * k;
-      drawText(ctx, `SPONSOR: ${c.name}`, 3 * k, y0, { scale: TS, color: c.done ? '#80ff80' : '#ffc040', shadow: '#000' });
-      drawText(ctx, c.done ? 'DONE' : `${c.text} ${c.prog}`, 3 * k, y0 + LINE_H * TS, { scale: TS, color: c.done ? '#60c060' : 'rgba(255,230,180,0.8)', shadow: '#000' });
+      const title = `SPONSOR: ${c.name}`;
+      const detail = c.done ? 'DONE' : `${c.text} ${c.prog}`;
+      // The studio marquee scrolls behind this HUD: make both lines legible as it passes.
+      ctx.fillStyle = '#0c0804';
+      ctx.fillRect(2 * k, y0 - k, Math.max(textWidth(title, TS), textWidth(detail, TS)) + 2 * k, LINE_H * TS + 7 * TS + 2 * k);
+      drawText(ctx, title, 3 * k, y0, { scale: TS, color: c.done ? '#80ff80' : '#ffc040', shadow: '#000' });
+      drawText(ctx, detail, 3 * k, y0 + LINE_H * TS, { scale: TS, color: c.done ? '#60c060' : 'rgba(255,230,180,0.8)', shadow: '#000' });
     }
     if (this.corner && !this.choice) drawText(ctx, this.corner, w - 3 * k, (this.payout ? 26 : 3) * k, { align: 'right', scale: TS, color: '#ffc040', shadow: '#000' });
     if (this.fastMode && !this.choice) drawText(ctx, 'FAST >>', 3 * k, (this.payout ? 26 : 3) * k, { scale: TS, color: '#80ff80', shadow: '#000' });

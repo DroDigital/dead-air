@@ -14,6 +14,18 @@ function canvas() {
 describe('HUD readability', () => {
   beforeEach(() => vi.mocked(drawText).mockClear());
 
+  it.each([1, 2])('draws an opaque background behind the sponsor challenge at scale %i', (k) => {
+    const hud = new Hud();
+    hud.challenge = { name: 'SURE GRIP', text: 'RELEASE IN THE GREEN 3 TIMES', prog: '0/3', done: false };
+    const rectangles: { style: string; x: number; y: number; w: number; h: number }[] = [];
+    const ctx = canvas();
+    vi.mocked(ctx.fillRect).mockImplementation((x, y, w, h) => rectangles.push({ style: String(ctx.fillStyle), x, y, w, h }));
+    hud.draw(ctx, 320 * k, 180 * k, k, { x: 0, y: 0, inside: false }, 0);
+    for (const [, text, x, y] of vi.mocked(drawText).mock.calls.filter(([, s]) => s.startsWith('SPONSOR:') || s.startsWith('RELEASE IN'))) {
+      expect(rectangles.some((r) => r.style === '#0c0804' && r.x <= x && r.y <= y && r.x + r.w >= x + textWidth(text) && r.y + r.h >= y + 7)).toBe(true);
+    }
+  });
+
   it('keeps the vault and explicitly labelled debt fully on screen', () => {
     const hud = new Hud();
     hud.chyron = { deadline: '8', spins: 12, spinsMax: 12, tray: 45975, streak: 2.75, vault: 45975, debt: 37500 };
