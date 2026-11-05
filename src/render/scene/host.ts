@@ -11,6 +11,7 @@ import type { Assets } from '../../assets/loader';
 import { art } from '../../assets/art';
 import { psxMaterial, type PsxMaterial } from '../psxMaterial';
 import { pickable } from './util';
+import { cleanHostCutout } from './hostCutout';
 
 export type HostFace = 'smile' | 'talk' | 'shock' | 'wink' | 'grin' | 'sad' | 'static' | 'dead' | 'eyes' | 'laugh' | 'nervous' | 'angry' | 'melt' | 'stitched';
 export type HostPose = 'idle' | 'present' | 'cheer' | 'point' | 'shrug' | 'slump';
@@ -295,7 +296,8 @@ export class HostView {
     c.setTransform(1, 0, 0, 1, 0, 0);
     c.clearRect(0, 0, CW, CH);
     c.imageSmoothingEnabled = true;
-    const head = art.img('host.head');
+    const headImg = art.img('host.head');
+    const head = headImg && cleanHostCutout(headImg);
     if (!head) {
       this.drawFallback(c);
       this.texture.needsUpdate = true;
@@ -328,7 +330,8 @@ export class HostView {
       this.hose(c, hip.x, hip.y, cx, cy, ank.x, ank.y, 24);
     }
     // Shoes (toes outward).
-    const shoe = art.img('host.shoe');
+    const shoeImg = art.img('host.shoe');
+    const shoe = shoeImg && cleanHostCutout(shoeImg);
     if (shoe) {
       const sw = 128,
         sh = (shoe.height / shoe.width) * sw;
@@ -345,7 +348,8 @@ export class HostView {
     c.translate(px, py);
     c.rotate(lean);
     c.translate(0, -PELVIS_Y);
-    const torso = art.img('host.torso');
+    const torsoImg = art.img('host.torso');
+    const torso = torsoImg && cleanHostCutout(torsoImg);
     if (torso) {
       // Clip off the sheet's arm stubs at the shoulders: the hose arms replace them.
       c.save();
@@ -377,7 +381,8 @@ export class HostView {
     this.drawScreen(c, t);
     c.restore();
     // Bow tie over the collar, bobbing with the voice.
-    const bow = art.img('host.bowtie');
+    const bowImg = art.img('host.bowtie');
+    const bow = bowImg && cleanHostCutout(bowImg);
     if (bow) {
       c.save();
       c.translate(NECK.x, NECK.y + 2 - shrug * 0.3);
@@ -425,8 +430,9 @@ export class HostView {
       ey = (sy + wy) / 2 + s.ey.x;
     this.hose(c, sx, sy, ex, ey, wx, wy, 19);
     const def = HANDS[this.hand[side]];
-    const img = art.img(def.id) ?? art.img('host.glove');
-    if (!img) return;
+    const handImg = art.img(def.id) ?? art.img('host.glove');
+    if (!handImg) return;
+    const img = cleanHostCutout(handImg);
     c.save();
     c.translate(wx, wy);
     c.scale(m, 1);
