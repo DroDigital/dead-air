@@ -30,7 +30,7 @@ import { CabinetView, type ServiceButton } from './render/scene/cabinet';
 import { buildProp } from './render/scene/props';
 import { Stage } from './render/stage';
 import { BootScreens } from './ui/bootScreens';
-import { advanceCharge, type ChargeMeter } from './ui/charge';
+import { advanceCharge, GRAB_MIN, grabPower, type ChargeMeter } from './ui/charge';
 import { Hud, type ChoicePanel } from './ui/hud';
 import { Input, type Action } from './ui/input';
 import { Menus } from './ui/menus';
@@ -42,9 +42,6 @@ type TargetMode = 'replace' | 'remove' | 'gild' | 'widen' | 'narrow';
 
 const wait = (s: number) => new Promise<void>((r) => setTimeout(r, s * 1000));
 
-/** Hand spins: a flick slower than this (deg/s) springs back; this fast is full power. */
-const GRAB_MIN = 140;
-const GRAB_FULL = 1000;
 const DEG = Math.PI / 180;
 
 export class App {
@@ -952,10 +949,6 @@ export class App {
     return dt > 0.015 ? (b.th - a.th) / dt : 0;
   }
 
-  private grabPower(omega: number): number {
-    return Math.max(0, Math.min(1, (omega - GRAB_MIN) / (GRAB_FULL - GRAB_MIN)));
-  }
-
   private updateGrab(): void {
     const gr = this.grab!;
     const g = this.game!;
@@ -970,7 +963,7 @@ export class App {
     st.wheel.theta = gr.theta;
     gr.samples.push({ t: this.time, th: gr.theta });
     while (gr.samples.length > 2 && this.time - gr.samples[0].t > 0.12) gr.samples.shift();
-    st.lever.drawGauge(this.grabPower(this.grabOmega()), true, false);
+    st.lever.drawGauge(grabPower(this.grabOmega()), true, false);
     // Pegs click past the pointer as the wheel is dragged.
     const L = g.layout();
     const seg = segmentAt(L, st.wheel.pointerLocal());
@@ -989,7 +982,7 @@ export class App {
     this.grab = null;
     this.hud.hint = '';
     if (omega >= GRAB_MIN && g.run.phase === 'AwaitAction') {
-      const power = this.grabPower(omega);
+      const power = grabPower(omega);
       this.sfx.play('whoosh', { gain: 0.8, pitch: 0.8 + power * 0.5 });
       void this.doSpin(power, false, { startAngle: theta, source: 'hand' });
     } else {
