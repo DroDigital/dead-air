@@ -176,9 +176,6 @@ export const PHYS = {
   ringCoulomb: 30,
   ringCouple: 0.6,
   ringDetent: 55,
-  // Sweet-spot bias
-  biasSpeed: 140,
-  biasDecel: 34,
   // Loaded flapper
   stickySlipMult: 0.55,
   // Settle
@@ -187,9 +184,6 @@ export const PHYS = {
 };
 
 export interface PhysicsMods {
-  /** Strength of slow-down bias over `favoured` segments (0 = none). */
-  bias: number;
-  favoured: boolean[];
   /** Pegs (by index) that let the wheel slip past more easily (Loaded Flapper). */
   slippery: boolean[];
   /** Segments the wheel glides through (Loaded Flapper: Bankrupt). */
@@ -199,8 +193,6 @@ export interface PhysicsMods {
 export function noPhysicsMods(layout: Layout): PhysicsMods {
   const n = layout.segments.length;
   return {
-    bias: 0,
-    favoured: new Array(n).fill(false),
     slippery: new Array(n).fill(false),
     glide: new Array(n).fill(false),
   };
@@ -404,9 +396,6 @@ export function simulateSpin(p: SpinParams, rng: Rng): SpinSim {
         let coul = P.coulomb * (P.staticFrac + (1 - P.staticFrac) * Math.min(1, Math.abs(omega) / P.frictionKnee));
         if (mods.glide[segHere.idx]) coul *= 0.45;
         const drive = Fw / P.inertia - P.linDrag * omega;
-        if (mods.bias > 0 && mods.favoured[segHere.idx] && Math.abs(omega) < P.biasSpeed) {
-          coul += P.biasDecel * mods.bias;
-        }
         // Coulomb friction with sticking.
         const vNext = omega + drive * dt;
         if (Math.abs(omega) < 1e-6 && Math.abs(drive) <= coul) {
@@ -528,15 +517,4 @@ export function simulateRingOnly(ringLen: number, startAngle: number, rng: Rng):
   }
   samples.push(alpha);
   return { innerIndex: ringSegmentAt(ringLen, alpha), finalRingAngle: alpha, trace: new Float32Array(samples), duration: t };
-}
-
-/** Sweet-spot test for a lever power value. */
-export function inSweetSpot(power: number, halfWidth: number): boolean {
-  return Math.abs(power - BALANCE.sweetCenter) <= halfWidth;
-}
-
-/** The lever meter value at time t (triangle wave 0..1). */
-export function meterValue(t: number, period = BALANCE.meterPeriod): number {
-  const ph = (t / period) % 1;
-  return ph < 0.5 ? ph * 2 : 2 - ph * 2;
 }

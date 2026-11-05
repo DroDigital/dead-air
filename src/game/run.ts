@@ -45,17 +45,15 @@ import {
   angleForSegment,
   computeLayout,
   emptyWidthMods,
-  inSweetSpot,
   mod360,
   noPhysicsMods,
   simulateRingOnly,
   simulateSpin,
-  type PhysicsMods,
   type SpinSim,
   type WidthMods,
 } from './wheel';
 
-export const RUN_VERSION = 1;
+export const RUN_VERSION = 2;
 
 // ---------------------------------------------------------------------------------------
 // Events for presentation
@@ -92,10 +90,7 @@ export interface RingJumpResult {
 export interface SpinOutcome {
   spinNo: number;
   power: number;
-  sweet: boolean;
   free: boolean;
-  locked: boolean;
-  peeked: boolean;
   sim: SpinSim;
   layout: Layout;
   ring: number[];
@@ -215,10 +210,8 @@ export class Game implements PayoutHost {
         vaultKey: 0,
         insurance: 0,
         doubler: 0,
-        lock: false,
         freeze: false,
         nudge: false,
-        peek: 0,
         staticBurst: false,
         safeDeposit: false,
         trapdoorUsed: false,
@@ -520,83 +513,11 @@ export class Game implements PayoutHost {
     return this.staticProd('sellMult');
   }
 
-  /** Lever context: sweet-spot width, physics bias and preview availability. */
+  /** The physics a spin runs with. Artifacts (Loaded Flapper) reshape it through `onSpinCharge`. */
   chargeContext(layout = this.layout()): ChargeCtx {
-    const ctx: ChargeCtx = {
-      sweetHalfWidth: BALANCE.sweetHalfWidth,
-      bias: BALANCE.sweetBias,
-      physics: noPhysicsMods(layout),
-      segments: layout.segments,
-      preview: this.run.flags.peek > 0,
-    };
+    const ctx: ChargeCtx = { physics: noPhysicsMods(layout), segments: layout.segments };
     this.runHook('onSpinCharge', ctx);
     return ctx;
-  }
-
-  favouredSegments(layout: Layout): boolean[] {
-    return layout.segments.map((s) => {
-      if (s.kind === 'jackpot' || s.kind === 'artifact' || s.kind === 'wild') return true;
-      if (s.kind === 'cash' || s.kind === 'cursedCash') return this.cashValueOf(s) >= 150;
-      return false;
-    });
-  }
-
-  physicsFor(power: number, ctx: ChargeCtx, layout: Layout): { mods: PhysicsMods; sweet: boolean } {
-    const sweet = inSweetSpot(power, ctx.sweetHalfWidth);
-    const mods = ctx.physics;
-    if (sweet) {
-      mods.bias = ctx.bias;
-      mods.favoured = this.favouredSegments(layout);
-    }
-    return { mods, sweet };
-  }
-
-  canPeek(): boolean {
-    return this.run.phase === 'AwaitAction' && this.chargeContext().preview;
-  }
-
-  /** Exact landing for a power value, without consuming randomness. */
-  previewLanding(power: number): { segIdx: number; innerIndex: number } {
-    const layout = this.layout();
-    const lockTarget = this.lockTargetIndex(layout);
-    const ring = this.effectiveRing();
-    const ctx = this.chargeContext(layout);
-    const { mods } = this.physicsFor(power, ctx, layout);
-    const rng = this.rng.wheel.clone();
-    if (lockTarget !== null) {
-      const res = this.searchLock(layout, ring.length, power, mods, lockTarget, rng);
-      if (res) return { segIdx: res.outerIndex, innerIndex: res.innerIndex };
-    }
-    const sim = simulateSpin(
-      { layout, ringLen: ring.length, power, startAngle: this.run.wheelAngle, ringStartAngle: this.run.ringAngle, mods, noTrace: true },
-      rng,
-    );
-    return { segIdx: sim.outerIndex, innerIndex: sim.innerIndex };
-  }
-
-  private lockTargetIndex(layout: Layout): number | null {
-    if (!this.run.flags.lock) return null;
-    const last = this.run.history[this.run.history.length - 1];
-    if (!last) return null;
-    const i = layout.segments.findIndex((s) => s.uid === last.uid && s.idx === last.segIdx);
-    if (i >= 0) return i;
-    const j = layout.segments.findIndex((s) => s.uid === last.uid);
-    return j >= 0 ? j : null;
-  }
-
-  private searchLock(layout: Layout, ringLen: number, power: number, mods: PhysicsMods, target: number, rng: RngStreams['wheel']): SpinSim | null {
-    for (let trial = 0; trial < 400; trial++) {
-      const before = rng.getState();
-      const sim = simulateSpin(
-        { layout, ringLen, power, startAngle: this.run.wheelAngle, ringStartAngle: this.run.ringAngle, mods, noTrace: true },
-        rng,
-      );
-      if (sim.outerIndex === target) {
-        rng.setState(before);
-        return simulateSpin({ layout, ringLen, power, startAngle: this.run.wheelAngle, ringStartAngle: this.run.ringAngle, mods }, rng);
-      }
-    }
-    return null;
   }
 
   // =====================================================================================
@@ -715,10 +636,11 @@ export class Game implements PayoutHost {
   // Spinning
   // =====================================================================================
   /**
-   * Spin with a lever power 0..1. `startAngle` is where a player who grabbed the wheel by hand
-   * let go of it: the spin starts from there instead of where it last stopped.
+   * One spin. Its power is drawn from the wheel's random stream, so where the wheel lands is down to chance.
+   * `startAngle` is where a player who grabbed the wheel by hand let go of it: the spin starts from there
+   * instead of where it last stopped.
    */
-  spin(power: number, opts: { peek?: boolean; startAngle?: number } = {}): SpinOutcome {
+  spin(opts: { startAngle?: number } = {}): SpinOutcome {
     this.assertPhase('AwaitAction');
     const run = this.run;
     if (run.spinsLeft <= 0) throw new Error('No spins left');
@@ -727,18 +649,8 @@ export class Game implements PayoutHost {
     this.notes = [];
     const layout = this.layout();
     const ring = this.effectiveRing();
-    const ctx = this.chargeContext(layout);
-    const { mods, sweet } = this.physicsFor(power, ctx, layout);
-
-    let peeked = false;
-    if (opts.peek && ctx.preview) {
-      peeked = true;
-      if (run.flags.peek > 0) run.flags.peek -= 1;
-      else {
-        const eye = this.active().find((a) => a.def.id === 'glass_eye' && !a.inst.state.used);
-        if (eye) eye.inst.state.used = 1;
-      }
-    }
+    const mods = this.chargeContext(layout).physics;
+    const power = this.rng.wheel.float();
 
     const free = run.flags.freeze;
     if (free) run.flags.freeze = false;
@@ -747,20 +659,10 @@ export class Game implements PayoutHost {
     run.stats.spins += 1;
     const spinNo = run.stats.spins;
 
-    let sim: SpinSim | null = null;
-    let locked = false;
-    const lockTarget = this.lockTargetIndex(layout);
-    if (lockTarget !== null) {
-      sim = this.searchLock(layout, ring.length, power, mods, lockTarget, this.rng.wheel);
-      locked = !!sim;
-      run.flags.lock = false;
-    }
-    if (!sim) {
-      sim = simulateSpin(
-        { layout, ringLen: ring.length, power, startAngle: run.wheelAngle, ringStartAngle: run.ringAngle, mods },
-        this.rng.wheel,
-      );
-    }
+    const sim = simulateSpin(
+      { layout, ringLen: ring.length, power, startAngle: run.wheelAngle, ringStartAngle: run.ringAngle, mods },
+      this.rng.wheel,
+    );
     run.wheelAngle = mod360(sim.finalAngle);
     run.ringAngle = mod360(sim.finalRingAngle);
     run.flags.staticBurst = false;
@@ -770,12 +672,11 @@ export class Game implements PayoutHost {
       innerIndex: sim.innerIndex,
       boundaryDist: sim.boundaryDist,
       neighborIndex: sim.neighborIndex,
-      sweet,
       power,
       spinNo,
       free,
     };
-    const outcome: SpinOutcome = { spinNo, power, sweet, free, locked, peeked, sim, layout, ring, resolution: null };
+    const outcome: SpinOutcome = { spinNo, power, free, sim, layout, ring, resolution: null };
     if (run.flags.nudge) {
       run.flags.nudge = false;
       run.pendingSpin = ps;
@@ -813,7 +714,6 @@ export class Game implements PayoutHost {
         innerIndex,
         boundaryDist: opts.boundaryDist ?? 99,
         neighborIndex: opts.neighborIndex ?? (segIdx + 1) % n,
-        sweet: false,
         power: 0.5,
         spinNo: run.stats.spins,
         free,
@@ -881,7 +781,7 @@ export class Game implements PayoutHost {
       spinNo: ps.spinNo,
     });
 
-    this.challengeEvent({ type: 'spin', kind: seg.kind, cash: payout.cash, combos: payout.combos, streak: run.streak, tray: run.tray, sweet: !!ps.sweet });
+    this.challengeEvent({ type: 'spin', kind: seg.kind, cash: payout.cash, combos: payout.combos, streak: run.streak, tray: run.tray });
     if (payout.deadAir) this.openPhone('deadAir', 'AwaitAction');
     this.prepareNextSpin();
 

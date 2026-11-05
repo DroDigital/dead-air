@@ -60,13 +60,10 @@ export interface HookCtx {
   trigger(text: string): void;
 }
 
+/** The physics a spin runs with. Artifacts (Loaded Flapper) reshape it through `onSpinCharge`. */
 export interface ChargeCtx {
-  sweetHalfWidth: number;
-  bias: number;
   physics: PhysicsMods;
   segments: Segment[];
-  /** Glass Eye: allow live landing preview for this spin. */
-  preview: boolean;
 }
 
 export interface PayoutApi {

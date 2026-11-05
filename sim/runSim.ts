@@ -28,7 +28,7 @@ export interface RunResult {
 
 export function playRun(policy: string, seed: string, stake = 0): RunResult {
   const g = Game.newRun({ seed, stake, startWheel: 'standard' });
-  const bot = new Bot(POLICIES[policy], seed);
+  const bot = new Bot(POLICIES[policy]);
   const picked = new Set<string>();
   g.bus.on('artifactGained', (e) => picked.add(e.id));
   for (let i = 0; i < 20000; i++) if (!bot.step(g)) break;

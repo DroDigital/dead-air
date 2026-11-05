@@ -75,16 +75,16 @@ git push origin v0.1.0
 
 You stay seated and look between four stations (**arrow keys / WASD**, mouse wheel, or the on-screen arrows):
 
-- **CENTER — the wheel.** Hold **SPACE** (or hold the red lever) to charge, release to spin. Or **grab the wheel with the mouse**: drag it round (the pegs click past the glove), flick it clockwise and let go. The flick's speed is the power, read live on the lever's gauge, so the sweet spot can be hit by hand; a feeble or backwards flick springs back without spending the spin. The gauge needle sweeps; releasing in the **green band** biases the wheel toward high-value wedges. With the Glass Eye or a Peek card, press **E** while charging to see where it will land.
+- **CENTER — the wheel.** Press **SPACE** (or click the red lever) to spin. Or **grab the wheel with the mouse**: drag it round (the pegs click past the glove) and flick it clockwise to let go. A feeble or backwards flick springs back without spending the spin. Every spin's power is random, so where the wheel lands is down to chance.
 - **DOWN — Tray & Vault.** Winnings land in the glass **Tray** (at risk). Every spin you don't deposit grows your **Streak** (+0.25, cash only). **ENTER** / the red **DEPOSIT** button sweeps the Tray into the **Vault** (safe) and resets the Streak. **1–3** scratch a card.
-- **Sponsor's Challenge.** Each Deadline opens with one goal (score a combo, ride the Streak to ×2, hold a big Tray, ride four spins without depositing, three sweet-spot releases, land a prize). It shows top left and pays 1–2 Tokens.
+- **Sponsor's Challenge.** Each Deadline opens with one goal (score a combo, ride the Streak to ×2, hold a big Tray, ride four spins without depositing, land a prize). It shows top left and pays 1–2 Tokens.
 - **D — Double or Nothing.** Once per Deadline, with $300+ in the Tray: stake all of it on an even-odds flip. Win and it doubles (the Streak stands); lose and it's gone (the Streak resets).
 - **LEFT — shelf & phone.** Up to 6 artifacts; they trigger left → right, so order matters. **1–6** select, click another slot (or **, .**) to move, **X** twice to sell. When the phone rings, **ENTER** answers.
 - **RIGHT — Prize Cabinet & debt board.** Spend Tokens: **1–6** buy, **R**/crank reroll, **X** remove, **G** gild, **+/-** widen/narrow (then pick a wedge on the wheel with ←/→ + ENTER), **N** done.
 
 **F** toggles fast mode, **ESC** pauses. Everything is also clickable.
 
-A standard gamepad is supported: use the **D-pad / left stick** to look and navigate choices, **A / Cross** to confirm or deposit, **B / Circle** to go back or sell a selected artifact, and hold **X / Square** to charge the lever (release to spin). **Y / Triangle** offers Double or Nothing, **LB / L1** peeks while charging, **RB / R1** toggles fast mode, and **Start / Options** pauses. Move the scene cursor with the **right stick** and press **RT / R2** to click cards, artifacts, shop items, and services; click an artifact and then another slot to swap them. In menus, use the D-pad / left stick and A / Cross, and use left/right to adjust settings. Connect a controller and press a button if the browser has not detected it yet.
+A standard gamepad is supported: use the **D-pad / left stick** to look and navigate choices, **A / Cross** to confirm or deposit, **B / Circle** to go back or sell a selected artifact, and press **X / Square** to spin. **Y / Triangle** offers Double or Nothing, **RB / R1** toggles fast mode, and **Start / Options** pauses. Move the scene cursor with the **right stick** and press **RT / R2** to click cards, artifacts, shop items, and services; click an artifact and then another slot to swap them. In menus, use the D-pad / left stick and A / Cross, and use left/right to adjust settings. Connect a controller and press a button if the browser has not detected it yet.
 
 All four Stakes are available when starting a run. Choose a higher Stake for more Debt, extra Bankrupt wedges, and higher shop prices; the setup screen lists the exact changes.
 
@@ -109,7 +109,7 @@ The project owner's 2D art pack (`assets-src/art`, layouts in `docs/art-prompts.
 - **Wind-ups:** a lever spin rocks the wheel back against its brake while the camera draws breath, then releases with a whoosh; a hand spin goes straight from the flick.
 - **On screen:** cartoon speed lines round the wheel while it's really going, and a glove cursor that opens over the wheel and closes when you grab it.
 - **The twisted wheel:** ink bleeds down the dividers and stain rings creep in as the Deadlines pass, Bankrupt wedges grin faintly with an eye in the rim, and the hub sun's eyes follow your hand, roll while it spins, gloat after a Bankrupt and, late in the show, weep ink.
-- **New CC0 sounds** (OpenGameArt): the flick and whip-pan swish, the slow-motion riser, the landing impact, the grab clunk, the spring-back boing and the sweet-spot ding (see CREDITS.md).
+- **New CC0 sounds** (OpenGameArt): the flick and whip-pan swish, the slow-motion riser, the landing impact, the grab clunk, the spring-back boing (see CREDITS.md).
 
 ## Sound
 

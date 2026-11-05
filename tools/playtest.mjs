@@ -44,7 +44,7 @@ const counts = { steps: 0, spins: 0, deposits: 0, choices: 0, shopActions: 0, bu
 const CHOICE_PHASES = ['PackageSelect', 'ArtifactPick', 'Nudge', 'Conversion', 'PhoneCall'];
 const FSM_FOR_PHASE = {
   PackageSelect: ['PackageSelect', 'DeadlineIntro'],
-  AwaitAction: ['AwaitAction', 'Charging', 'Spinning', 'Resolving'],
+  AwaitAction: ['AwaitAction', 'Spinning', 'Resolving'],
   Nudge: ['Resolving'],
   ArtifactPick: ['Resolving'],
   WedgeReplace: ['Shop'],
@@ -83,7 +83,6 @@ const SNAP = () => {
   const out = {
     fsm: a.fsm.state,
     busy: a.busy + (a.stage.wheel.busy ? 1 : 0),
-    charging: !!a.charge,
     station: a.stage.rig.station,
     menu: a.menus.page,
     choice: a.hud.choice ? { title: a.hud.choice.title, labels: a.hud.choice.options.map((o) => o.label) } : null,
@@ -136,12 +135,10 @@ function checkSnap(s, prev) {
   if (!s.layoutOk) v.push('wheel layout does not sum to 360° contiguously');
   if (s.ring.some((m) => !Number.isFinite(m) || m < 0)) v.push(`inner ring has bad values ${JSON.stringify(s.ring)}`);
   if (s.choice && !CHOICE_PHASES.includes(s.phase)) v.push(`choice panel open during ${s.phase}`);
-  if (!s.busy && !s.menu && !s.charging && s.phase) {
+  if (!s.busy && !s.menu && s.phase) {
     const ok = FSM_FOR_PHASE[s.phase] ?? [];
     if (!ok.includes(s.fsm)) v.push(`FSM ${s.fsm} disagrees with phase ${s.phase}`);
   }
-  if (s.charging && s.fsm !== 'Charging' && !s.menu) v.push(`charging flag set but FSM is ${s.fsm}`);
-  if (!s.charging && s.fsm === 'Charging' && !s.menu) v.push('FSM stuck in Charging with no charge in progress');
   if (prev && prev.phase === 'AwaitAction' && s.phase === 'AwaitAction' && s.debt !== prev.debt && s.deadline === prev.deadline && !s.phone) v.push(`debt changed mid-deadline without a call (${prev.debt} -> ${s.debt})`);
   for (const b of s.bad ?? []) note('text', b);
   return v;
@@ -159,7 +156,7 @@ async function click(page, label) {
 async function waitIdle(page, ms = 15000) {
   const t0 = Date.now();
   while (Date.now() - t0 < ms) {
-    const busy = await page.evaluate(() => window.deadAir.busy + (window.deadAir.stage.wheel.busy ? 1 : 0) + (window.deadAir.charge ? 1 : 0));
+    const busy = await page.evaluate(() => window.deadAir.busy + (window.deadAir.stage.wheel.busy ? 1 : 0));
     if (!busy) return true;
     await page.waitForTimeout(120);
   }
@@ -303,7 +300,7 @@ while (Date.now() < deadline) {
     prev = null;
     await page.evaluate(() => { const g = window.deadAir.game; g.run.debt = 1000000; g.run.spinsLeft = 1; window.deadAir.sync(false); });
   }
-  if (opt.reload && s.phase === 'AwaitAction' && !s.charging && Math.random() < 0.02) {
+  if (opt.reload && s.phase === 'AwaitAction' && Math.random() < 0.02) {
     const before = { phase: s.phase, deadline: s.deadline, tray: s.tray, vault: s.vault, spins: s.spins, streak: s.streak, debt: s.debt, arts: s.arts.join(',') };
     counts.reloads++;
     await page.reload();

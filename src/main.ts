@@ -17,9 +17,9 @@ app.boot().then(async () => {
     const { default: GUI } = await import('lil-gui');
     const gui = new GUI({ title: 'DEAD AIR tuning' });
     const f1 = gui.addFolder('Wheel physics');
-    for (const k of ['linDrag', 'coulomb', 'flapK', 'flapSlip', 'contactK', 'fastPegLoss', 'ringLinDrag', 'ringCouple', 'biasDecel'] as const) f1.add(PHYS, k);
+    for (const k of ['linDrag', 'coulomb', 'flapK', 'flapSlip', 'contactK', 'fastPegLoss', 'ringLinDrag', 'ringCouple'] as const) f1.add(PHYS, k);
     const f2 = gui.addFolder('Balance');
-    for (const k of ['streakStep', 'sweetHalfWidth', 'tokenRate', 'interestRate'] as const) f2.add(BALANCE, k);
+    for (const k of ['streakStep', 'tokenRate', 'interestRate'] as const) f2.add(BALANCE, k);
     const f3 = gui.addFolder('PSX');
     f3.add(PSX_SHARED.uWarp, 'value', 0, 1).name('warp');
     f3.add(PSX_SHARED.uSnap, 'value', 0, 1).name('snap');

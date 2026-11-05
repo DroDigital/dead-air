@@ -25,7 +25,7 @@ import { META_VERSION, applyRun, computeRatings, endlessUnlocked, newMeta, noteR
 import { Game, RUN_VERSION, type DeadlineEndResult, type SpinOutcome, type SpinResolution } from './game/run';
 import { sellValue } from './game/shop';
 import type { PackageId, RunState } from './game/types';
-import { angleForSegment, inSweetSpot, meterValue, mod360 } from './game/wheel';
+import { angleForSegment, mod360 } from './game/wheel';
 import { CabinetView, type ServiceButton } from './render/scene/cabinet';
 import { buildProp } from './render/scene/props';
 import { Stage } from './render/stage';
@@ -41,9 +41,8 @@ type TargetMode = 'replace' | 'remove' | 'gild' | 'widen' | 'narrow';
 
 const wait = (s: number) => new Promise<void>((r) => setTimeout(r, s * 1000));
 
-/** Hand spins: a flick slower than this (deg/s) springs back; this fast is full power. */
+/** Hand spins: a flick slower than this (deg/s) springs back without spending a spin. */
 const GRAB_MIN = 140;
-const GRAB_FULL = 1000;
 const DEG = Math.PI / 180;
 
 export class App {
@@ -77,7 +76,6 @@ export class App {
   private introPending = false;
   private time = 0;
   private hitstop = 0;
-  private charge: { t: number; peek: boolean; lastTick: number } | null = null;
   /** Slow motion: the stage's clock runs at `timeScale`, eased toward `timeScaleTarget`. */
   private timeScale = 1;
   private timeScaleTarget = 1;
@@ -451,11 +449,11 @@ export class App {
 
   /** Quitting or abandoning waits until the current spin or presentation has finished. Returns true if deferred. */
   private deferIfBusy(action: () => void): boolean {
-    if (!this.busy && !this.stage.wheel.busy && !this.charge) return false;
+    if (!this.busy && !this.stage.wheel.busy) return false;
     const token = ++this.deferToken;
     const tick = () => {
       if (token !== this.deferToken) return;
-      if (this.busy || this.stage.wheel.busy || this.charge) setTimeout(tick, 150);
+      if (this.busy || this.stage.wheel.busy) setTimeout(tick, 150);
       else action();
     };
     setTimeout(tick, 150);
@@ -598,16 +596,13 @@ export class App {
     st.cabinet.dripping = r.phase === 'AwaitAction' && r.spinsLeft <= 2 && r.vault + r.tray < r.debt ? 1 : 0;
     st.host.silent = !!r.marks.hostSilent;
     this.ticker();
-    if (!this.charge) {
-      const ch = r.phase === 'AwaitAction' ? g.chargeContext() : null;
-      st.lever.drawGauge(0, BALANCE.sweetCenter, ch?.sweetHalfWidth ?? BALANCE.sweetHalfWidth, false, !!ch?.preview, r.phase === 'AwaitAction' ? `${r.spinsLeft} LEFT` : '---');
-    }
+    st.lever.drawDisplay(r.phase === 'AwaitAction' ? `${r.spinsLeft} LEFT` : '---');
     this.updateArrows();
   }
 
   private updateArrows(): void {
     const nav = { center: ['down', 'left', 'right'], down: ['up', 'left', 'right'], left: ['right', 'down'], right: ['left', 'down'] } as const;
-    this.hud.arrows = this.game && !this.charge && !this.target ? [...nav[this.stage.rig.station]] : [];
+    this.hud.arrows = this.game && !this.target ? [...nav[this.stage.rig.station]] : [];
   }
 
   private setChoice(panel: ChoicePanel | null, handler: ((i: number) => void) | null, back: (() => void) | null = null): void {
@@ -772,31 +767,15 @@ export class App {
   // ===================================================================================
   // Spinning
   // ===================================================================================
-  private startCharge(): void {
+  /** The lever: a pull spins the wheel. Where it lands is random, so there is nothing to time. */
+  private pullLever(): void {
     const g = this.game;
-    if (!g || g.run.phase !== 'AwaitAction' || this.busy || this.charge || this.menus.open) return;
+    if (!g || g.run.phase !== 'AwaitAction' || this.busy || this.grab || this.menus.open) return;
     if (this.stage.rig.station !== 'center') this.stage.rig.go('center');
-    this.charge = { t: 0, peek: false, lastTick: 0 };
-    this.loops.drum?.stop(0.05);
-    this.loops.drum = this.sfx.loop('tension', 0.6, 'sfx', 0.25, false, this.music.rate) ?? this.sfx.loop('drumroll', 0.32, 'sfx', 0.3);
-    this.fsm.force('Charging');
-    this.hud.hint = g.canPeek() ? 'WAIT FOR GREEN · [E] PEEK' : 'WAIT FOR GREEN ON THE LEVER METER';
-    this.updateArrows();
+    void this.doSpin();
   }
 
-  private async releaseCharge(): Promise<void> {
-    const g = this.game;
-    const c = this.charge;
-    if (!g || !c) return;
-    this.charge = null;
-    const power = meterValue(c.t);
-    this.stage.lever.pull = 0;
-    this.stage.wheel.showHighlight(null);
-    this.hud.hint = '';
-    await this.doSpin(power, c.peek);
-  }
-
-  private async doSpin(power: number, peek: boolean, opts: { startAngle?: number; source?: 'lever' | 'hand' } = {}): Promise<void> {
+  private async doSpin(opts: { startAngle?: number; source?: 'lever' | 'hand' } = {}): Promise<void> {
     const g = this.game!;
     const hand = opts.source === 'hand';
     await this.withBusy(async () => {
@@ -807,7 +786,7 @@ export class App {
         this.spinsMax = g.run.spinsLeft;
         this.spinsMaxFor = g.run.deadline;
       }
-      const outcome = g.spin(power, { peek, startAngle: opts.startAngle });
+      const outcome = g.spin({ startAngle: opts.startAngle });
       if (!hand) {
         this.sfx.play('lever', { gain: 0.8 });
         this.stage.lever.pull = 1;
@@ -815,8 +794,7 @@ export class App {
       }
       // Dramatic finishes (decided now; the outcome is already known) get a slow-motion close-up.
       this.drama = this.settings.fastMode ? null : this.dramaFor(outcome);
-      this.stage.marquee.set(outcome.sweet ? 'SWEET SPOT!' : outcome.locked ? 'LOCKED!' : 'SPINNING…', outcome.sweet ? '#60ff80' : '#ffe060');
-      if (outcome.sweet) this.sfx.play('blip', { pitch: 2, gain: 0.5 });
+      this.stage.marquee.set('SPINNING…', '#ffe060');
       // Wheel layout at spin time (Static jackpots etc. are already visible).
       this.stage.wheel.setLayout(outcome.layout, outcome.ring, (s) => segmentLabel(g, s));
       this.layoutSig = '';
@@ -933,7 +911,7 @@ export class App {
   // ===================================================================================
   private canGrab(): boolean {
     const g = this.game;
-    return !!g && g.run.phase === 'AwaitAction' && !this.busy && !this.charge && !this.grab && !this.menus.open && !this.hud.choice && !this.target && !this.stage.wheel.busy;
+    return !!g && g.run.phase === 'AwaitAction' && !this.busy && !this.grab && !this.menus.open && !this.hud.choice && !this.target && !this.stage.wheel.busy;
   }
 
   private startGrab(): void {
@@ -957,10 +935,6 @@ export class App {
     return dt > 0.015 ? (b.th - a.th) / dt : 0;
   }
 
-  private grabPower(omega: number): number {
-    return Math.max(0, Math.min(1, (omega - GRAB_MIN) / (GRAB_FULL - GRAB_MIN)));
-  }
-
   private updateGrab(): void {
     const gr = this.grab!;
     const g = this.game!;
@@ -975,9 +949,6 @@ export class App {
     st.wheel.theta = gr.theta;
     gr.samples.push({ t: this.time, th: gr.theta });
     while (gr.samples.length > 2 && this.time - gr.samples[0].t > 0.12) gr.samples.shift();
-    // The lever's gauge reads the flick, so the sweet spot can be aimed by hand too.
-    const power = this.grabPower(this.grabOmega());
-    st.lever.drawGauge(power, BALANCE.sweetCenter, g.chargeContext().sweetHalfWidth, true, false);
     // Pegs click past the pointer as the wheel is dragged.
     const L = g.layout();
     const seg = segmentAt(L, st.wheel.pointerLocal());
@@ -996,10 +967,8 @@ export class App {
     this.grab = null;
     this.hud.hint = '';
     if (omega >= GRAB_MIN && g.run.phase === 'AwaitAction') {
-      const power = this.grabPower(omega);
-      this.sfx.play('whoosh', { gain: 0.8, pitch: 0.8 + power * 0.5 });
-      if (inSweetSpot(power, g.chargeContext().sweetHalfWidth)) this.sfx.play('ding', { gain: 0.6 });
-      void this.doSpin(power, false, { startAngle: theta, source: 'hand' });
+      this.sfx.play('whoosh', { gain: 0.8 });
+      void this.doSpin({ startAngle: theta, source: 'hand' });
     } else {
       // Too feeble (or backwards): the wheel springs back to where it was.
       this.sfx.play('boing', { gain: 0.55 });
@@ -1651,7 +1620,6 @@ export class App {
     if (a.type === 'pause') {
       if (this.target) return this.endTarget();
       if (g) {
-        this.charge = null;
         if (this.grab) {
           this.grab = null;
           void this.stage.wheel.rotateTo(g.run.wheelAngle, 0.3);
@@ -1669,20 +1637,12 @@ export class App {
       return;
     }
     if (!g) return;
-    if (a.type === 'leverDown') return this.startCharge();
+    if (a.type === 'leverDown') return this.pullLever();
     if (a.type === 'leverUp') {
-      if (this.grab) return this.releaseGrab();
-      if (this.charge) void this.releaseCharge();
+      if (this.grab) this.releaseGrab();
       return;
     }
     if (this.grab) return;
-    if (this.charge) {
-      if (a.type === 'key' && a.key === 'e' && g.canPeek()) {
-        this.charge.peek = true;
-        this.sfx.play('blip', { pitch: 2.4 });
-      }
-      return;
-    }
     // Choice panels take priority.
     if (this.hud.choice && this.choiceHandler) {
       const n = this.hud.choice.options.length;
@@ -1798,7 +1758,7 @@ export class App {
 
   private onPick(id: string, uv: THREE.Vector2 | null, button: number): void {
     const g = this.game!;
-    if (id === 'lever') return this.startCharge();
+    if (id === 'lever') return this.pullLever();
     if (id === 'deposit') return this.doDeposit();
     if (id === 'phone') return this.answerPhone();
     if (id.startsWith('scratch:')) return this.useCard(Number(id.split(':')[1]));
@@ -1850,7 +1810,7 @@ export class App {
   /** Double or Nothing: confirm, then a drumroll and a coin flip on the marquee. */
   private offerGamble(): void {
     const g = this.game;
-    if (!g || this.busy || this.charge || this.menus.open) return;
+    if (!g || this.busy || this.menus.open) return;
     if (!g.canGamble()) {
       this.sfx.play('error');
       this.hud.toast(g.run.marks.gambledAt === g.run.deadline ? 'ALREADY GAMBLED THIS DEADLINE' : `NEED $${BALANCE.gambleMin} IN THE TRAY`, '#ff8060');
@@ -2021,25 +1981,7 @@ export class App {
     // A dramatic finish: slow motion for the last stretch of the spin, then a hard cut back.
     if (this.drama && !this.drama.started && st.wheel.busy && st.wheel.timeLeft > 0 && st.wheel.timeLeft < this.drama.at) this.startSlowMo();
     if (this.drama?.started && st.wheel.timeLeft <= 0) this.endSlowMo();
-    // Lever charging: the meter oscillates; ratchet ticks; Glass Eye live preview.
-    if (this.charge && g) {
-      this.charge.t += dt;
-      const p = meterValue(this.charge.t);
-      st.lever.pull = p * 0.6;
-      const ch = g.chargeContext();
-      st.lever.drawGauge(p, BALANCE.sweetCenter, ch.sweetHalfWidth, true, this.charge.peek);
-      const sweet = inSweetSpot(p, ch.sweetHalfWidth);
-      this.hud.hint = sweet ? (ch.preview ? 'SWEET SPOT! RELEASE · [E] PEEK' : 'SWEET SPOT! RELEASE NOW') : (ch.preview ? 'WAIT FOR GREEN · [E] PEEK' : 'WAIT FOR GREEN ON THE LEVER METER');
-      if (Math.floor(this.charge.t * 14) !== this.charge.lastTick) {
-        this.charge.lastTick = Math.floor(this.charge.t * 14);
-        this.sfx.play('ratchet', { gain: 0.25, pitch: 0.8 + p });
-      }
-      if (this.charge.peek && Math.floor(this.time * 30) % 3 === 0) {
-        const pv = g.previewLanding(p);
-        st.wheel.showHighlight(pv.segIdx, 0x60a0ff, 0.5);
-      }
-    }
-    if (g && g.run.phase === 'AwaitAction' && !this.busy && !this.charge) {
+    if (g && g.run.phase === 'AwaitAction' && !this.busy) {
       this.idleTimer += dt;
       if (this.idleTimer > 25) {
         this.idleTimer = 0;

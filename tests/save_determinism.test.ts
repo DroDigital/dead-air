@@ -13,7 +13,7 @@ function step(g: Game, i: number): void {
       break;
     case 'AwaitAction':
       if (r.tray > 0 && r.streak >= 1.75) g.deposit();
-      else g.spin(((i * 37) % 100) / 100);
+      else g.spin();
       break;
     case 'ArtifactPick':
       if (r.pending?.type === 'artifactPick') g.pickArtifact(r.pending.options[i % 3] ?? null, 0);

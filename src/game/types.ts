@@ -170,7 +170,6 @@ export interface PendingSpin {
   innerIndex: number;
   boundaryDist: number;
   neighborIndex: number;
-  sweet: boolean;
   power: number;
   spinNo: number;
   free: boolean;
@@ -180,10 +179,8 @@ export interface RunFlags {
   vaultKey: number;
   insurance: number;
   doubler: number;
-  lock: boolean;
   freeze: boolean;
   nudge: boolean;
-  peek: number;
   staticBurst: boolean;
   safeDeposit: boolean;
   trapdoorUsed: boolean;
