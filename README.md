@@ -21,9 +21,9 @@ Open the printed URL. Other scripts:
 | Command | What it does |
 |---|---|
 | `npm run build` | Typecheck (strict) + production build to `dist/` |
-| `npm test` | 168 Vitest tests: rules, wheel physics, determinism, saves and migrations, content, text coverage, regressions, simulator smoke tests |
+| `npm test` | 172 Vitest tests: rules, wheel physics, determinism, saves and migrations, content, text coverage, regressions, simulator smoke tests |
 | `npm run sim -- --runs 5000 --seed 1` | Headless balance simulator (all bot policies, multi-threaded) |
-| `npm run assets` | Convert `/assets-src` → `/public/assets` (PS1 conformance), regenerate the runtime index, CREDITS.md, ASSETS_TODO.md |
+| `npm run assets` | Convert `/assets-src` → `/public/assets` (PS1 conformance), slice the 2D art pack into sprites (`tools/art.ts`), regenerate the runtime indexes, CREDITS.md, ASSETS_TODO.md |
 | `npm run assets -- --fetch` | Download any missing CC0/OFL sources first, then convert |
 | `npm run playtest -- --minutes 6` | Automated playtest through the real UI in headless Chromium (keyboard, mouse, menus). Checks game invariants and on-screen text after every step. Flags: `--boost --jump8 --doom --reload --unlock`. Needs `npm run preview` running (port 4173, or `--url`) and Playwright with a Chromium build: `npm i --no-save playwright && npx playwright install chromium`. |
 | `npm run desktop` | Build, then run the game in the desktop launcher (Electron) |
@@ -86,6 +86,15 @@ A standard gamepad is supported: use the **D-pad / left stick** to look and navi
 
 **Combos:** ECHO (same type twice, ×2), HAT TRICK (3 cash in a row, +3 Tokens), NEIGHBORS (within 2° of a boundary, both wedges at 50%), DEAD AIR (Bankrupt with Tray > Debt — the Producer calls).
 
+## Art
+
+The project owner's 2D art pack (`assets-src/art`, layouts in `docs/art-prompts.md`) is sliced by `tools/art.ts` into sprites under `public/assets/art`:
+
+- **The host** is a rigged cut-out of the model sheet: TV head, tailcoat, bow tie, gloves and shoes as sprites, rubber-hose arms and legs, springy antennae. Six poses on springs that overshoot and settle, hops, squash and stretch, and gestures timed to his voice. The TV shows the 16 faces from the face sheet, swapped by expression and lip-synced (M/E/O/A mouths, idle line boil, blinks, glances, glitch frames on late Deadlines). Redrawn at 12 fps onto a billboard in the studio.
+- **Menus** use the panel kit (paper panels, pill buttons, ribbons, plaques, checkboxes), with the title backdrop and lettered plate, and the win/lose cards behind the end-of-run summary. The loading screen is the "please stand by" card.
+- **Icons:** the Prop Room and prize picks show the drawn artifact icons, the landed wedge's icon pops up when the wheel stops, and the phone panel shows the Producer or the Other Line.
+- **Studio textures:** wallpaper, curtain, floor, wood, brass, and raked audience seating.
+
 ## Sound
 
 - **Music:** the project's own score: *Channel 98* (title), *The Final Round* (the wheel), *Department Store Dreams* (Prize Cabinet), *Final Question* (deadline payment, and a short last spin), a spin-tension cue and a game-over cue. Every tonal track is pitched into A minor (its relative C major for the two cues; tempo unchanged, tuning corrected to A440) so crossfades between contexts stay in key, and tonal cues follow the tape speed. The tape slows and dulls a little every Deadline.
@@ -106,7 +115,7 @@ src/
   ui/                      input, HUD/chyrons, tooltips, DOM menus, bitmap font
 desktop/                   desktop launcher: Electron main process, preload bridge, app icon
 sim/                       bot policies + simulator
-tools/                     asset pipeline (assets.ts), browser harnesses (playtest.mjs, scenarios.mjs, shared Playwright loader browser.mjs), screenshot helper (shot.mjs)
+tools/                     asset pipeline (assets.ts, art.ts), browser harnesses (playtest.mjs, scenarios.mjs, shared Playwright loader browser.mjs), screenshot helper (shot.mjs)
 itch/                      itch.io page kit: cover, banner, logos, GIFs, edge-haunt background, description, setup guide
 electron-builder.yml       desktop packaging (macOS / Windows / Linux targets)
 .github/workflows/         release.yml: build all platforms, GitHub Release, itch.io push

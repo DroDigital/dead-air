@@ -2,6 +2,7 @@
  * Internal-resolution overlay drawn in the pixel font: broadcast chyrons (the show's own
  * on-air graphics), captions, choice cards, hover tooltips, nav arrows, loading screen.
  */
+import { art } from '../assets/art';
 import { drawText, LINE_H, textWidth, wrapText } from './bitfont';
 
 export interface ChoiceOption {
@@ -9,6 +10,8 @@ export interface ChoiceOption {
   detail?: string;
   disabled?: boolean;
   color?: string;
+  /** Art-pack sprite id drawn at the top of the card (e.g. 'artifact.glass_eye'). */
+  icon?: string;
 }
 
 export interface ChoicePanel {
@@ -20,6 +23,8 @@ export interface ChoicePanel {
   accent?: string;
   /** Layout: 'cards' (side by side) or 'list'. */
   layout?: 'cards' | 'list';
+  /** Art-pack portrait shown at the left of the panel (the callers on the phone). */
+  portrait?: string;
 }
 
 interface Rect {
@@ -62,6 +67,12 @@ export class Hud {
   corner = '';
   /** The payout breakdown line (broadcast graphic), e.g. "$100 → ×2 → ×1.75 = $350". */
   payout: { text: string; color: string } | null = null;
+  /** A sprite that pops up mid-screen (the wedge the wheel landed on), with its age. */
+  private stampState: { id: string; t: number; life: number } | null = null;
+
+  stamp(id: string, life = 1.6): void {
+    if (art.has(id)) this.stampState = { id, t: 0, life };
+  }
   private lastPayout: { text: string; color: string } | null = null;
   private payoutAge = 0;
 
@@ -79,6 +90,7 @@ export class Hud {
   }
 
   update(dt: number): void {
+    if (this.stampState && (this.stampState.t += dt) > this.stampState.life) this.stampState = null;
     const c = this.chyron;
     if (c) {
       const r = this.roll;
@@ -309,6 +321,23 @@ export class Hud {
       });
     }
 
+    // ---- Landed-wedge stamp: pops in with overshoot, wobbles, fades. ----
+    if (this.stampState && !this.choice) {
+      const st = this.stampState;
+      const img = art.img(st.id);
+      if (img) {
+        const t = st.t;
+        const pop = t < 0.25 ? 1.25 * Math.sin((t / 0.25) * Math.PI * 0.5) : 1 + 0.25 * Math.exp(-(t - 0.25) * 9) * Math.cos((t - 0.25) * 30);
+        const size = 34 * k * pop;
+        ctx.save();
+        ctx.globalAlpha = Math.min(1, (st.life - t) / 0.3);
+        ctx.translate(w / 2, h * 0.3);
+        ctx.rotate(Math.sin(t * 7) * 0.08);
+        this.sprite(ctx, img, -size / 2, -size / 2, size, size);
+        ctx.restore();
+      }
+    }
+
     // ---- Choice panel ----
     this.optionRects = [];
     if (this.choice) this.drawChoice(ctx, w, h, k, mouse);
@@ -368,12 +397,21 @@ export class Hud {
     y += 3 * k;
     const n = c.options.length;
     const hoverIdx = mouse.inside ? this.hitChoiceAt(mouse.x, mouse.y) : -1;
+    // A caller's portrait takes the left of the panel; the cards share what's left.
+    const por = c.portrait ? art.img(c.portrait) : null;
+    let left = 8 * k;
+    if (por) {
+      const ph = Math.min(top + panelH - y - 4 * k, 96 * k);
+      const pw = (por.width / por.height) * ph;
+      this.sprite(ctx, por, 10 * k, top + panelH - ph - 2 * k, pw, ph);
+      left = 10 * k + pw - 2 * k;
+    }
     if (layout === 'cards') {
-      const cw = Math.floor((w - 16 * k - pad * (n + 1)) / n);
+      const cw = Math.floor((w - 8 * k - left - pad * (n + 1)) / n);
       const ch = top + panelH - y - (c.footer ? 12 : 4) * k;
       for (let i = 0; i < n; i++) {
         const o = c.options[i];
-        const x = 8 * k + pad + i * (cw + pad);
+        const x = left + pad + i * (cw + pad);
         const r = { x, y, w: cw, h: ch };
         this.optionRects.push(r);
         const sel = i === c.selected || i === hoverIdx;
@@ -383,19 +421,30 @@ export class Hud {
         ctx.fillRect(x, y, cw, k);
         ctx.fillRect(x, y + ch - k, cw, k);
         drawText(ctx, `${i + 1}`, x + 3 * k, y + 3 * k, { scale: k, color: '#806040' });
+        // Icon: bobs a little on the highlighted card.
+        const ic = o.icon ? art.img(o.icon) : null;
+        let ty = 7;
+        if (ic) {
+          const is = Math.min(26, Math.floor(ch / k / 3)) * k;
+          const bob = sel ? Math.round(Math.sin(performance.now() / 160) * k) : 0;
+          ctx.globalAlpha = o.disabled ? 0.4 : 1;
+          this.sprite(ctx, ic, x + cw / 2 - is / 2, y + 3 * k + bob, is, is);
+          ctx.globalAlpha = 1;
+          ty = 5 + is / k;
+        }
         const labLines = wrapText(o.label, Math.floor(cw / (6 * k)) - 1);
-        labLines.forEach((l, j) => drawText(ctx, l, x + cw / 2, y + (7 + j * LINE_H) * k, { align: 'center', scale: k, color: o.disabled ? '#605040' : (o.color ?? '#ffffff') }));
+        labLines.forEach((l, j) => drawText(ctx, l, x + cw / 2, y + (ty + j * LINE_H) * k, { align: 'center', scale: k, color: o.disabled ? '#605040' : (o.color ?? '#ffffff') }));
         const det = wrapText(o.detail ?? '', Math.floor(cw / (6 * k)) - 1);
-        const room = Math.max(0, Math.floor((ch / k - 7 - labLines.length * LINE_H - 2) / LINE_H));
+        const room = Math.max(0, Math.floor((ch / k - ty - labLines.length * LINE_H - 2) / LINE_H));
         const detShown = det.slice(0, room);
         if (det.length > room && room > 0) detShown[room - 1] = detShown[room - 1].replace(/.$/, '') + '…';
-        detShown.forEach((l, j) => drawText(ctx, l, x + 3 * k, y + (7 + (labLines.length + j) * LINE_H) * k, { scale: k, color: o.disabled ? '#504030' : '#c8bca0' }));
+        detShown.forEach((l, j) => drawText(ctx, l, x + 3 * k, y + (ty + (labLines.length + j) * LINE_H) * k, { scale: k, color: o.disabled ? '#504030' : '#c8bca0' }));
       }
     } else {
       const rowH = 11 * k;
       for (let i = 0; i < n; i++) {
         const o = c.options[i];
-        const r = { x: 14 * k, y, w: w - 28 * k, h: rowH - k };
+        const r = { x: left + 6 * k, y, w: w - left - 14 * k, h: rowH - k };
         this.optionRects.push(r);
         const sel = i === c.selected || i === hoverIdx;
         ctx.fillStyle = sel ? '#3a2410' : '#1a120a';
@@ -406,6 +455,15 @@ export class Hud {
       }
     }
     if (c.footer) drawText(ctx, c.footer, w / 2, top + panelH - 9 * k, { align: 'center', scale: k, color: '#a09070' });
+  }
+
+  /** Draw an art-pack sprite smoothly (it's a painted image, not pixel art). */
+  private sprite(ctx: CanvasRenderingContext2D, img: HTMLImageElement, x: number, y: number, w: number, h: number): void {
+    const prev = ctx.imageSmoothingEnabled;
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(img, Math.round(x), Math.round(y), Math.round(w), Math.round(h));
+    ctx.imageSmoothingEnabled = prev;
   }
 
   private hitChoiceAt(x: number, y: number): number {
@@ -420,6 +478,27 @@ export class Hud {
   drawLoading(ctx: CanvasRenderingContext2D, w: number, h: number, k: number, progress: number, time: number): void {
     ctx.fillStyle = '#060302';
     ctx.fillRect(0, 0, w, h);
+    // The owner's "please stand by" card, once it has arrived.
+    const card = art.img('screen.standby');
+    if (card) {
+      const sc = Math.max(w / card.width, h / card.height);
+      const cw = card.width * sc,
+        ch = card.height * sc;
+      const jitter = Math.random() < 0.05 ? (Math.random() - 0.5) * 3 * k : 0;
+      this.sprite(ctx, card, (w - cw) / 2 + jitter, (h - ch) / 2, cw, ch);
+      ctx.fillStyle = 'rgba(0,0,0,0.12)';
+      for (let y = 0; y < h; y += 2 * k) ctx.fillRect(0, y, w, k);
+      const bw = 120 * k,
+        bx = (w - bw) / 2,
+        by = h - 18 * k;
+      ctx.fillStyle = 'rgba(20,8,4,0.85)';
+      ctx.fillRect(bx - 2 * k, by - 11 * k, bw + 4 * k, 17 * k);
+      ctx.fillStyle = '#ffd040';
+      ctx.fillRect(bx, by + 2 * k, Math.round(bw * progress), 2 * k);
+      const blink = Math.floor(time * 2) % 2 === 0;
+      drawText(ctx, `PLEASE STAND BY  ${Math.round(progress * 100)}%`, w / 2, by - 9 * k, { align: 'center', scale: k, color: blink ? '#ffe8b0' : '#c0a070' });
+      return;
+    }
     const n = 8;
     for (let i = 0; i < n; i++) {
       const on = progress >= (i + 1) / n;

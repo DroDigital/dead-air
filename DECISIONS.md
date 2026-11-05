@@ -77,6 +77,14 @@ The only library over ~100 kB gz is three.js. GSAP measures ~28 kB gz. Built app
 - **Draw calls.** Static geometry is merged per material (`Batcher`), props are vertex-coloured merges (`PropBuilder`), imported GLBs are flattened to one mesh per texture, panels share canvases. Measured: 26–36 calls per station including the two post passes; ~3–4.5k triangles.
 - **In-world text** uses the game's own 5×7 bitmap font (`ui/bitfont.ts`); DOM menus use Silkscreen (OFL).
 
+## The host as a 2D cut-out
+
+- The art pack has a pose sheet (12 drawings, two per pose) and a model sheet with spare parts. The host is rigged from the model sheet's parts instead of flipping the pose drawings, so he can blend between any two poses, react to the voice every frame and keep one consistent face screen; the pose sheet served as the reference for the six poses.
+- The sheet's TV screens are blank in the pose drawings and full screens in the face sheet; the face cell is clipped into the TV's screen shape and given scanlines and a rolling bar.
+- The model sheet is opaque, so parts are cut out with a flood fill from the crop edges that stops at the ink outline, then feathered.
+- He is a billboard facing the contestant's chair. He used to be a low-poly mannequin; the 3D model the owner mentioned can replace the billboard later without changing the `HostView` API.
+- The wheel face stays a 128 px PS1 texture with text labels: at 320×180 a wedge icon would be a few pixels across, so the icons appear in the HUD (landing stamp, cards, Prop Room) instead.
+
 ## Desktop launcher
 
 - **Electron, not Tauri.** Tauri renders with the OS web view, which is WebKitGTK on Linux and WebKit on macOS: uneven WebGL2, Gamepad API and WebAudio support across the three platforms. Electron ships one Chromium everywhere, the same engine the game is developed and playtested in. The cost is size (~100 MB installers).

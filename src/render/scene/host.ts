@@ -363,7 +363,9 @@ export class HostView {
     this.drawAntennae(c);
     c.save();
     c.beginPath();
-    c.rect(-139, -230, 282, 192);
+    // Keep the whole cabinet (down to sprite row ~285); the sheet's sleeve stubs sit outside
+    // x 16..276, and the bow-tie stub under the TV is covered by the bow tie drawn next.
+    c.rect(-123, -230, 260, 208);
     c.clip();
     c.drawImage(head, -139, -307);
     c.restore();

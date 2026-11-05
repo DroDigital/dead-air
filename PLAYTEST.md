@@ -33,6 +33,7 @@ Plus screenshot review of each station and overlay, at 320×180 and 1280×720, a
 | 6 | 5 min | as pass 2, presentation pass | 271 | 3 | 52 | 96 | 2 | 2 | — | — | 0 |
 | 7 | 2 min | as pass 2, with the provided music | 61 | 3 | 23 | 0 | 2 | 0 | — | — | 0 |
 | 8 | 4 min | as pass 2, Sponsor's Challenge, coins, light shows | 143 | 4 | 39 | 34 | 3 | 2 | — | — | 0 |
+| 9 | 4 min | as pass 2, art pack (cut-out host, menus, icons) | 107 | 3 | 39 | 5 | 2 | 2 | — | — | 0 |
 
 Passes 6 and 7 ran after the presentation pass (voice-over, lighting, post effects, camera moves, new chyron, Double or Nothing, the provided music). The 11 scenario checks also pass on that build with zero page errors. Software-rendered frame pacing dropped from 26–30 fps to 22–23 fps with the new beams and bloom; that is headless SwiftShader, not a GPU, and still needs a measurement on real hardware.
 

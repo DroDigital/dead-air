@@ -10,7 +10,8 @@
  *   ui-hud.png / ui-panels  named sprites (boxes measured on the sheet, trimmed to the ink)
  *   screen-*.png, title-*   menus and end-of-run screens
  *
- * Run by `npm run assets` (or `npx tsx tools/art.ts` on its own).
+ * The host's parts are cut out of the opaque model sheet; src/render/scene/host.ts
+ * rigs them. Run by `npm run assets` (or `npx tsx tools/art.ts` on its own).
  */
 import { existsSync } from 'node:fs';
 import { mkdir, writeFile } from 'node:fs/promises';
@@ -90,8 +91,48 @@ async function grid(sharp: Sharp, file: string, cols: number, rows: number, ids:
   for (let i = 0; i < ids.length && i < cols * rows; i++) {
     const c = i % cols,
       r = Math.floor(i / cols);
-    const img = sharp(join(SRC, file)).extract({ left: Math.round(c * cw), top: Math.round(r * ch), width: Math.round(cw), height: Math.round(ch) });
-    await save(sharp, img, `${dir}.${ids[i]}`, `${dir}/${ids[i]}.png`, max);
+    const { data, info } = await sharp(join(SRC, file))
+      .extract({ left: Math.round(c * cw), top: Math.round(r * ch), width: Math.round(cw), height: Math.round(ch) })
+      .ensureAlpha()
+      .raw()
+      .toBuffer({ resolveWithObject: true });
+    dropStrays(data, info.width, info.height);
+    await save(sharp, sharp(data, { raw: { width: info.width, height: info.height, channels: 4 } }), `${dir}.${ids[i]}`, `${dir}/${ids[i]}.png`, max);
+  }
+}
+
+/**
+ * Icons on the sheets aren't perfectly centred in their grid cells, so a cell can catch a sliver
+ * of its neighbour. Clear every ink island that touches the cell's edge, except the main one.
+ */
+function dropStrays(data: Buffer, W: number, H: number): void {
+  const label = new Int32Array(W * H).fill(-1);
+  const islands: { size: number; edge: boolean }[] = [];
+  for (let start = 0; start < W * H; start++) {
+    if (label[start] >= 0 || data[start * 4 + 3] <= 8) continue;
+    const id = islands.length;
+    const isl = { size: 0, edge: false };
+    const stack = [start];
+    label[start] = id;
+    while (stack.length) {
+      const i = stack.pop()!;
+      isl.size++;
+      const x = i % W,
+        y = (i / W) | 0;
+      if (x === 0 || y === 0 || x === W - 1 || y === H - 1) isl.edge = true;
+      for (const j of [x > 0 ? i - 1 : -1, x < W - 1 ? i + 1 : -1, y > 0 ? i - W : -1, y < H - 1 ? i + W : -1]) {
+        if (j < 0 || label[j] >= 0 || data[j * 4 + 3] <= 8) continue;
+        label[j] = id;
+        stack.push(j);
+      }
+    }
+    islands.push(isl);
+  }
+  if (!islands.length) return;
+  const main = islands.reduce((m, s, i) => (s.size > islands[m].size ? i : m), 0);
+  for (let i = 0; i < W * H; i++) {
+    const l = label[i];
+    if (l >= 0 && l !== main && islands[l].edge) data[i * 4 + 3] = 0;
   }
 }
 

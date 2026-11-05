@@ -36,7 +36,8 @@ export interface MenuCallbacks {
   getMeta(): MetaState;
   getSettings(): Settings;
   hasSave(): boolean;
-  artifactIcon(id: string): string | null;
+  /** Icon URL; `drawnOnly` skips the rendered-prop fallback (used for silhouettes). */
+  artifactIcon(id: string, drawnOnly?: boolean): string | null;
 }
 
 type Page = 'title' | 'new' | 'settings' | 'collection' | 'credits' | 'pause' | 'abandon' | 'summary' | null;
@@ -173,7 +174,7 @@ export class Menus {
     const meta = this.cb.getMeta();
     if (p === 'title') {
       html = `<div class="panel title">
-        <div class="logo">DEAD<span>AIR</span></div>
+        <div class="logo"><img src="assets/art/title/lettered.png" alt="DEAD AIR" onerror="this.parentElement.innerHTML='DEAD<span>AIR</span>'"></div>
         <div class="tag">a prize-wheel gambling roguelite</div>
         <div class="col">
           ${this.cb.hasSave() ? this.btn('CONTINUE BROADCAST', () => this.cb.onContinue()) : ''}
@@ -259,9 +260,10 @@ export class Menus {
       const cards = ARTIFACTS.map((a) => {
         const locked = LOCKED_ARTIFACTS.includes(a.id) && !isUnlocked(meta, `artifact:${a.id}`);
         const known = seen.has(a.id);
-        const icon = known ? this.cb.artifactIcon(a.id) : null;
+        // Unseen props show as a silhouette when the drawn icon exists.
+        const icon = known || !locked ? this.cb.artifactIcon(a.id, !known) : null;
         return `<div class="prop ${known ? 'known' : ''} ${locked ? 'locked' : ''} r-${a.rarity}">
-          <div class="icon">${icon ? `<img src="${icon}" alt="">` : locked ? 'LOCK' : '?'}</div>
+          <div class="icon">${icon ? `<img src="${icon}" alt=""${known ? '' : ' class="unseen"'}>` : locked ? 'LOCK' : '?'}</div>
           <div class="pn">${known ? esc(a.name) : locked ? 'LOCKED' : '???'}</div>
           <div class="pt">${known ? esc(a.text) : locked ? `Unlocks at ${UNLOCKS.find((u) => u.id === `artifact:${a.id}`)?.at ?? '?'} Ratings` : 'Not yet found.'}</div>
         </div>`;
@@ -315,6 +317,7 @@ export class Menus {
       </div>`;
     } else if (p === 'summary' && this.summary) {
       const s = this.summary;
+      this.root.classList.add(s.won ? 'won' : 'lost');
       html = `<div class="panel">
         <h2 class="${s.won ? 'win' : 'lose'}">${s.won ? 'PAID IN FULL' : "THAT'S OUR SHOW"}</h2>
         <p>${s.won ? 'All eight Deadlines paid. The Network is… pleased.' : `The floor opened at Deadline ${s.deadline}.`}</p>

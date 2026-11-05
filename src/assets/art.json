@@ -6,8 +6,8 @@
  },
  "wedge.respin": {
   "url": "assets/art/wedge/respin.png",
-  "w": 128,
-  "h": 127
+  "w": 111,
+  "h": 128
  },
  "wedge.token": {
   "url": "assets/art/wedge/token.png",
@@ -16,8 +16,8 @@
  },
  "wedge.boost": {
   "url": "assets/art/wedge/boost.png",
-  "w": 128,
-  "h": 123
+  "w": 119,
+  "h": 128
  },
  "wedge.artifact": {
   "url": "assets/art/wedge/artifact.png",
@@ -27,12 +27,12 @@
  "wedge.bankrupt": {
   "url": "assets/art/wedge/bankrupt.png",
   "w": 128,
-  "h": 113
+  "h": 114
  },
  "wedge.jackpot": {
   "url": "assets/art/wedge/jackpot.png",
   "w": 128,
-  "h": 121
+  "h": 120
  },
  "wedge.mystery": {
   "url": "assets/art/wedge/mystery.png",
@@ -42,7 +42,7 @@
  "wedge.dud": {
   "url": "assets/art/wedge/dud.png",
   "w": 128,
-  "h": 112
+  "h": 119
  },
  "wedge.tax": {
   "url": "assets/art/wedge/tax.png",
@@ -56,13 +56,13 @@
  },
  "wedge.wild": {
   "url": "assets/art/wedge/wild.png",
-  "w": 124,
+  "w": 113,
   "h": 128
  },
  "wedge.haunted": {
   "url": "assets/art/wedge/haunted.png",
-  "w": 128,
-  "h": 117
+  "w": 121,
+  "h": 128
  },
  "wedge.cursedCash": {
   "url": "assets/art/wedge/cursedCash.png",
@@ -71,13 +71,13 @@
  },
  "wedge.interest": {
   "url": "assets/art/wedge/interest.png",
-  "w": 108,
+  "w": 115,
   "h": 128
  },
  "wedge.thief": {
   "url": "assets/art/wedge/thief.png",
-  "w": 117,
-  "h": 128
+  "w": 128,
+  "h": 127
  },
  "wedge.vaultKey": {
   "url": "assets/art/wedge/vaultKey.png",
@@ -86,33 +86,33 @@
  },
  "wedge.overtime": {
   "url": "assets/art/wedge/overtime.png",
-  "w": 127,
-  "h": 128
+  "w": 128,
+  "h": 116
  },
  "wedge.charge": {
   "url": "assets/art/wedge/charge.png",
-  "w": 122,
+  "w": 104,
   "h": 128
  },
  "wedge.ringJump": {
   "url": "assets/art/wedge/ringJump.png",
-  "w": 112,
+  "w": 122,
   "h": 128
  },
  "wedge.doubler": {
   "url": "assets/art/wedge/doubler.png",
   "w": 128,
-  "h": 126
+  "h": 119
  },
  "wedge.scratch": {
   "url": "assets/art/wedge/scratch.png",
   "w": 128,
-  "h": 115
+  "h": 116
  },
  "wedge.payday": {
   "url": "assets/art/wedge/payday.png",
   "w": 128,
-  "h": 120
+  "h": 125
  },
  "artifact.lucky_penny": {
   "url": "assets/art/artifact/lucky_penny.png",
@@ -126,8 +126,8 @@
  },
  "artifact.stopwatch": {
   "url": "assets/art/artifact/stopwatch.png",
-  "w": 128,
-  "h": 123
+  "w": 102,
+  "h": 128
  },
  "artifact.tooth_fairy": {
   "url": "assets/art/artifact/tooth_fairy.png",
@@ -141,48 +141,48 @@
  },
  "artifact.rubber_band": {
   "url": "assets/art/artifact/rubber_band.png",
-  "w": 115,
-  "h": 128
+  "w": 128,
+  "h": 121
  },
  "artifact.coffee_ring": {
   "url": "assets/art/artifact/coffee_ring.png",
-  "w": 126,
-  "h": 128
+  "w": 128,
+  "h": 112
  },
  "artifact.pocket_lint": {
   "url": "assets/art/artifact/pocket_lint.png",
-  "w": 126,
-  "h": 128
+  "w": 128,
+  "h": 109
  },
  "artifact.bent_nail": {
   "url": "assets/art/artifact/bent_nail.png",
-  "w": 120,
+  "w": 94,
   "h": 128
  },
  "artifact.cue_card": {
   "url": "assets/art/artifact/cue_card.png",
-  "w": 123,
-  "h": 128
+  "w": 128,
+  "h": 106
  },
  "artifact.tip_jar": {
   "url": "assets/art/artifact/tip_jar.png",
-  "w": 112,
+  "w": 125,
   "h": 128
  },
  "artifact.spare_bulb": {
   "url": "assets/art/artifact/spare_bulb.png",
-  "w": 113,
+  "w": 115,
   "h": 128
  },
  "artifact.lucky_sock": {
   "url": "assets/art/artifact/lucky_sock.png",
-  "w": 128,
+  "w": 108,
   "h": 128
  },
  "artifact.lint_roller": {
   "url": "assets/art/artifact/lint_roller.png",
-  "w": 122,
-  "h": 128
+  "w": 128,
+  "h": 123
  },
  "artifact.hollow_tooth": {
   "url": "assets/art/artifact/hollow_tooth.png",
@@ -192,27 +192,27 @@
  "artifact.snake_eyes": {
   "url": "assets/art/artifact/snake_eyes.png",
   "w": 128,
-  "h": 124
+  "h": 120
  },
  "artifact.neighbors_envy": {
   "url": "assets/art/artifact/neighbors_envy.png",
   "w": 128,
-  "h": 128
+  "h": 115
  },
  "artifact.iron_nerve": {
   "url": "assets/art/artifact/iron_nerve.png",
   "w": 128,
-  "h": 128
+  "h": 127
  },
  "artifact.hot_hand": {
   "url": "assets/art/artifact/hot_hand.png",
-  "w": 128,
-  "h": 121
+  "w": 121,
+  "h": 128
  },
  "artifact.glass_eye": {
   "url": "assets/art/artifact/glass_eye.png",
   "w": 128,
-  "h": 108
+  "h": 92
  },
  "artifact.gilded_clapper": {
   "url": "assets/art/artifact/gilded_clapper.png",
@@ -221,23 +221,23 @@
  },
  "artifact.loaded_flapper": {
   "url": "assets/art/artifact/loaded_flapper.png",
-  "w": 126,
+  "w": 111,
   "h": 128
  },
  "artifact.metronome": {
   "url": "assets/art/artifact/metronome.png",
-  "w": 128,
-  "h": 123
+  "w": 107,
+  "h": 128
  },
  "artifact.applause_sign": {
   "url": "assets/art/artifact/applause_sign.png",
   "w": 128,
-  "h": 109
+  "h": 120
  },
  "artifact.tv_dinner": {
   "url": "assets/art/artifact/tv_dinner.png",
   "w": 128,
-  "h": 128
+  "h": 100
  },
  "artifact.velvet_rope": {
   "url": "assets/art/artifact/velvet_rope.png",
@@ -246,7 +246,7 @@
  },
  "artifact.horseshoe_magnet": {
   "url": "assets/art/artifact/horseshoe_magnet.png",
-  "w": 126,
+  "w": 110,
   "h": 128
  },
  "artifact.receipt": {
@@ -256,8 +256,8 @@
  },
  "artifact.ventriloquist": {
   "url": "assets/art/artifact/ventriloquist.png",
-  "w": 128,
-  "h": 125
+  "w": 116,
+  "h": 128
  },
  "artifact.pawn_ticket": {
   "url": "assets/art/artifact/pawn_ticket.png",
@@ -271,18 +271,18 @@
  },
  "artifact.static": {
   "url": "assets/art/artifact/static.png",
-  "w": 112,
+  "w": 127,
   "h": 128
  },
  "artifact.cracked_mirror": {
   "url": "assets/art/artifact/cracked_mirror.png",
-  "w": 127,
+  "w": 115,
   "h": 128
  },
  "artifact.second_ring": {
   "url": "assets/art/artifact/second_ring.png",
   "w": 128,
-  "h": 126
+  "h": 104
  },
  "artifact.golden_mic": {
   "url": "assets/art/artifact/golden_mic.png",
@@ -291,17 +291,17 @@
  },
  "artifact.trapdoor_lever": {
   "url": "assets/art/artifact/trapdoor_lever.png",
-  "w": 128,
-  "h": 123
+  "w": 122,
+  "h": 128
  },
  "artifact.laugh_track": {
   "url": "assets/art/artifact/laugh_track.png",
   "w": 128,
-  "h": 128
+  "h": 112
  },
  "artifact.producers_pen": {
   "url": "assets/art/artifact/producers_pen.png",
-  "w": 122,
+  "w": 115,
   "h": 128
  },
  "artifact.crystal_tube": {
@@ -311,33 +311,33 @@
  },
  "artifact.rabbit_ears": {
   "url": "assets/art/artifact/rabbit_ears.png",
-  "w": 111,
+  "w": 122,
   "h": 128
  },
  "artifact.missing_letter": {
   "url": "assets/art/artifact/missing_letter.png",
-  "w": 117,
-  "h": 128
+  "w": 128,
+  "h": 120
  },
  "artifact.rabbits_foot": {
   "url": "assets/art/artifact/rabbits_foot.png",
-  "w": 108,
+  "w": 115,
   "h": 128
  },
  "artifact.collectors_card": {
   "url": "assets/art/artifact/collectors_card.png",
-  "w": 118,
+  "w": 108,
   "h": 128
  },
  "artifact.monkey_paw": {
   "url": "assets/art/artifact/monkey_paw.png",
   "w": 128,
-  "h": 124
+  "h": 128
  },
  "artifact.black_cat": {
   "url": "assets/art/artifact/black_cat.png",
-  "w": 122,
-  "h": 128
+  "w": 128,
+  "h": 126
  },
  "artifact.ouija_board": {
   "url": "assets/art/artifact/ouija_board.png",
@@ -346,23 +346,23 @@
  },
  "artifact.mannequin_hand": {
   "url": "assets/art/artifact/mannequin_hand.png",
-  "w": 121,
+  "w": 85,
   "h": 128
  },
  "artifact.cracked_vhs": {
   "url": "assets/art/artifact/cracked_vhs.png",
   "w": 128,
-  "h": 102
+  "h": 109
  },
  "artifact.dead_mans_watch": {
   "url": "assets/art/artifact/dead_mans_watch.png",
-  "w": 128,
-  "h": 121
+  "w": 120,
+  "h": 128
  },
  "artifact.severance_check": {
   "url": "assets/art/artifact/severance_check.png",
   "w": 128,
-  "h": 122
+  "h": 97
  },
  "scratch.nudge": {
   "url": "assets/art/scratch/nudge.png",

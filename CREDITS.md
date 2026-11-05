@@ -11,13 +11,14 @@ DEAD AIR — design, code, writing, procedural art, procedural audio and music: 
 | Asset | Source | Author | Licence | Modifications |
 |---|---|---|---|---|
 | `tex.wall_panel` | https://polyhaven.com/a/dark_paneled_wood | Dimitrios Savva (Poly Haven) | CC0-1.0 | Diffuse map only; downscaled to 128×128; quantised to 15-bit colour; sampled with nearest filtering and lit by the PSX material. |
-| `tex.carpet` | https://polyhaven.com/a/dirty_carpet | Rohit Seervi (Poly Haven) | CC0-1.0 | Diffuse map only; downscaled to 64×64; quantised to 15-bit colour. |
-| `tex.curtain` | https://polyhaven.com/a/velour_velvet | colormass, Rico Cilliers (Poly Haven) | CC0-1.0 | Diffuse map only; downscaled to 64×64; quantised to 15-bit colour; tinted burgundy at runtime. |
-| `tex.wallpaper` | https://polyhaven.com/a/decrepit_wallpaper | Rob Tuytel (Poly Haven) | CC0-1.0 | Diffuse map only; downscaled to 128×128; quantised to 15-bit colour. |
-| `tex.metal` | https://polyhaven.com/a/rusty_metal_02 | Rob Tuytel (Poly Haven) | CC0-1.0 | Diffuse map only; downscaled to 64×64; quantised to 15-bit colour. |
+| `tex.carpet` | Provided by the project owner (DEAD AIR art pack) | Project owner | OWNER | Checkered studio floor: downscaled to 256×256; quantised to 15-bit colour; sampled nearest and lit by the PSX material. |
+| `tex.curtain` | Provided by the project owner (DEAD AIR art pack) | Project owner | OWNER | Stage curtain: downscaled to 256×256; quantised to 15-bit colour; sampled nearest and lit by the PSX material. |
+| `tex.wallpaper` | Provided by the project owner (DEAD AIR art pack) | Project owner | OWNER | TV-and-stars wallpaper: downscaled to 256×256; quantised to 15-bit colour; sampled nearest and lit by the PSX material. |
+| `tex.seats` | Provided by the project owner (DEAD AIR art pack) | Project owner | OWNER | Empty theatre seats: downscaled to 256×256; quantised to 15-bit colour; sampled nearest and lit by the PSX material. |
+| `tex.metal` | Provided by the project owner (DEAD AIR art pack) | Project owner | OWNER | Brass trim: downscaled to 256×256; quantised to 15-bit colour; sampled nearest and lit by the PSX material. |
 | `tex.leather` | https://polyhaven.com/a/fabric_leather_01 | Rob Tuytel (Poly Haven) | CC0-1.0 | Diffuse map only; downscaled to 64×64; quantised to 15-bit colour. |
-| `tex.stage_wood` | https://polyhaven.com/a/old_wood_floor | Guillaume Monsergent (Poly Haven) | CC0-1.0 | Diffuse map only; downscaled to 64×64; quantised to 15-bit colour. |
-| `tex.cabinet_wood` | https://polyhaven.com/a/wood_cabinet_worn_long | Dimitrios Savva, Rico Cilliers (Poly Haven) | CC0-1.0 | Diffuse map only; downscaled to 64×64; quantised to 15-bit colour. |
+| `tex.stage_wood` | Provided by the project owner (DEAD AIR art pack) | Project owner | OWNER | Stage boards: downscaled to 256×256; quantised to 15-bit colour; sampled nearest and lit by the PSX material. |
+| `tex.cabinet_wood` | Provided by the project owner (DEAD AIR art pack) | Project owner | OWNER | Cabinet wood: downscaled to 256×256; quantised to 15-bit colour; sampled nearest and lit by the PSX material. |
 | `tex.plaster` | https://polyhaven.com/a/peeling_painted_wall | Dimitrios Savva (Poly Haven) | CC0-1.0 | Diffuse map only; downscaled to 64×64; quantised to 15-bit colour. |
 | `mdl.tv_head` | https://polyhaven.com/a/television_02 | Benny Weimer (Poly Haven) | CC0-1.0 | Normal/ARM maps dropped; mesh welded and decimated with meshoptimizer; base colour downscaled to 64×64; material replaced by the PSX material at runtime; screen face rendered by the game. |
 | `mdl.bulb` | https://polyhaven.com/a/lightbulb_01 | Josh Dean (Poly Haven) | CC0-1.0 | Normal/ARM maps dropped; decimated; base colour downscaled; PSX material at runtime. |
@@ -83,6 +84,11 @@ Voice-over (custom-designed voices, `eleven_v4`), sound effects (`eleven_text_to
 | `el.ambience` | loop | eleven_text_to_sound_v2 | Abandoned TV studio room tone (seamless loop) |
 | `el.music_main` | music | eleven_music_v2_5 | Detuned 1970s game-show theme, organ, walking bass, brushes (instrumental) |
 | `el.music_lounge` | music | eleven_music_v2_5 | Warped music-box and Hammond intermission bossa (instrumental) |
+
+## Art
+
+The 2D art pack (the Host, his faces, the callers, wedge, artifact and scratch-card icons, the menu and HUD kits, the title plate, the full-screen cards and the studio textures) was provided for this project by the project owner. Sources in `assets-src/art`; `tools/art.ts` slices them into the sprites in `public/assets/art`.
+
 
 ## Libraries
 

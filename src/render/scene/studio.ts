@@ -63,6 +63,17 @@ export class StudioView {
       b.add('paper', paper, hi, new THREE.Matrix4().compose(new THREE.Vector3(x, 2.75, 1), new THREE.Quaternion().setFromEuler(new THREE.Euler(0, ry, 0)), new THREE.Vector3(1, 1, 1)));
       b.box('vc', vc, [0.08, 0.1, 10], [x + (x < 0 ? 0.04 : -0.04), 1.32, 1], [0, 0, 0], 1, DARK);
     }
+    // Raked audience seating along both side walls, upstage: empty red velvet rows.
+    const seats = () => psxMaterial({ map: assets.texture('tex.seats'), color: 0x9a7468, wrap: 0.4 });
+    for (const s of [-1, 1]) {
+      const rake = new THREE.PlaneGeometry(2.5, 1.63);
+      scaleUv(rake, 1.2, 1);
+      const m = new THREE.Matrix4()
+        .makeTranslation(s * 2.675, 0.75, -0.85)
+        .multiply(new THREE.Matrix4().makeRotationZ(s * -0.41))
+        .multiply(new THREE.Matrix4().makeRotationY(s * -Math.PI / 2));
+      b.add('seats', seats, rake, m);
+    }
     const backHi = new THREE.PlaneGeometry(6, 4.2);
     scaleUv(backHi, 3, 2);
     b.add('plaster', plaster, backHi, new THREE.Matrix4().makeTranslation(0, 2.1, -2.3));

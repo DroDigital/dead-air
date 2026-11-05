@@ -44,37 +44,70 @@
       #menus[class^='page-'] {
         display: flex;
       }
+      /* The owner's art pack: title backdrop and end-of-run cards behind the menus. */
+      #menus.page-title {
+        background: radial-gradient(ellipse at center, transparent 40%, rgba(8, 3, 1, 0.55)), url(assets/art/screens/title.jpg) center / cover, #120806;
+      }
+      #menus.page-summary {
+        align-items: flex-start;
+        padding-top: 2vh;
+      }
+      #menus.page-summary.won {
+        background: linear-gradient(rgba(10, 4, 2, 0.15), rgba(10, 4, 2, 0.55)), url(assets/art/screens/win.jpg) center / cover, #120806;
+      }
+      #menus.page-summary.lost {
+        background: linear-gradient(rgba(10, 4, 2, 0.2), rgba(10, 4, 2, 0.6)), url(assets/art/screens/lose.jpg) center / cover, #120806;
+      }
+      /* Paper panels from the panel kit: decoration in the corners, a plain middle that stretches. */
       #menus .panel {
-        background: #140b06;
-        border: 3px solid #c89830;
-        box-shadow: 0 0 0 3px #3a1a08, 0 0 40px #000;
-        padding: 18px 26px;
+        color: #2a160a;
+        background: none;
+        border: 30px solid transparent;
+        border-image: url(assets/art/panel/panelBig.png) 60 fill / 30px / 0 stretch;
+        filter: drop-shadow(0 8px 18px rgba(0, 0, 0, 0.75));
+        padding: 4px 14px;
         min-width: 340px;
         max-width: 560px;
-        max-height: 90vh;
+        max-height: 84vh;
         overflow: auto;
-        image-rendering: pixelated;
+        scrollbar-color: #8a5a28 transparent;
       }
       #menus .panel.wide {
         max-width: 960px;
         width: 90vw;
       }
+      #menus .panel.title {
+        border: none;
+        border-image: none;
+        filter: none;
+        background: none;
+        max-width: 640px;
+        overflow: visible;
+        max-height: none;
+      }
       #menus h2 {
         margin: 0 0 12px;
-        color: #ffd040;
+        color: #f8ead0;
         letter-spacing: 2px;
-        font-size: 22px;
+        font-size: 20px;
+        text-align: center;
+        padding: 10px 40px 18px;
+        background: url(assets/art/panel/ribbonBig.png) center / 100% 100% no-repeat;
+        text-shadow: 2px 2px 0 #5a0c06;
       }
       #menus h2.win {
-        color: #80ff80;
+        color: #fff4b0;
       }
       #menus h2.lose {
-        color: #ff4030;
+        color: #ffd8c8;
       }
       #menus h3 {
-        color: #d8a860;
+        color: #a82418;
         font-size: 14px;
         margin: 16px 0 6px;
+      }
+      #menus p {
+        color: #3a2412;
       }
       #menus .logo {
         font-size: 56px;
@@ -83,42 +116,65 @@
         letter-spacing: 6px;
         text-align: center;
       }
+      #menus .logo img {
+        width: min(560px, 80vw);
+        filter: drop-shadow(0 10px 16px rgba(0, 0, 0, 0.7));
+        animation: bob 3s ease-in-out infinite;
+      }
+      @keyframes bob {
+        50% {
+          transform: translateY(-6px) rotate(-0.6deg);
+        }
+      }
       #menus .logo span {
         color: #ffd040;
         margin-left: 18px;
       }
       #menus .tag {
         text-align: center;
-        color: #a08060;
-        margin-bottom: 18px;
+        color: #5a1a0c;
+        text-shadow: 1px 1px 0 #fff4d8;
+        margin: -6px 0 14px;
         font-size: 12px;
+      }
+      #menus .title .col {
+        width: 320px;
+        margin: 0 auto;
       }
       #menus .col {
         display: flex;
         flex-direction: column;
-        gap: 8px;
+        gap: 4px;
       }
       #menus .row {
         display: flex;
         gap: 10px;
         margin-top: 14px;
+        justify-content: center;
       }
+      /* Pill buttons: cream at rest, mustard (with its sparkle) when highlighted. */
       #menus button {
         font: inherit;
         font-size: 15px;
-        background: #2a1a0c;
-        color: #f0e0c0;
-        border: 2px solid #6a4820;
-        padding: 8px 14px;
+        color: #2a160a;
+        background: none;
+        border: 14px solid transparent;
+        border-image: url(assets/art/panel/pillCream.png) 44 60 fill / 14px 22px / 0 stretch;
+        padding: 2px 10px;
         cursor: pointer;
-        text-align: left;
+        text-align: center;
+        transition: transform 0.08s steps(2);
       }
       #menus button:hover,
       #menus button:focus {
-        background: #5a3410;
-        border-color: #ffd040;
-        color: #fff;
+        border-image-source: url(assets/art/panel/pillGold.png);
+        color: #3a1404;
         outline: none;
+        transform: scale(1.04) rotate(-0.5deg);
+      }
+      #menus button:active {
+        border-image-source: url(assets/art/panel/pillGoldFlat.png);
+        transform: scale(0.98, 0.94);
       }
       #menus label {
         display: flex;
@@ -134,14 +190,31 @@
       #menus input,
       #menus select {
         font: inherit;
-        background: #0c0603;
-        color: #ffe8b0;
-        border: 2px solid #6a4820;
+        background: #fff6e0;
+        color: #2a160a;
+        border: 2px solid #3a2010;
+        border-radius: 6px;
         padding: 3px 6px;
+      }
+      #menus input[type='range'] {
+        accent-color: #c0392b;
+        background: none;
+        border: none;
+      }
+      #menus input[type='checkbox'] {
+        appearance: none;
+        width: 22px;
+        height: 22px;
+        border: none;
+        background: url(assets/art/panel/circle.png) center / contain no-repeat;
+        cursor: pointer;
+      }
+      #menus input[type='checkbox']:checked {
+        background-image: url(assets/art/panel/check.png);
       }
       #menus input:focus,
       #menus select:focus {
-        border-color: #ffd040;
+        border-color: #c0392b;
         outline: none;
       }
       #menus .grid2 {
@@ -151,13 +224,17 @@
       }
       #menus .small {
         font-size: 11px;
-        color: #a08868;
+        color: #6a4a2a;
       }
       #menus .foot {
-        margin-top: 16px;
+        margin: 16px auto 0;
         font-size: 11px;
-        color: #806040;
+        color: #3a2010;
         text-align: center;
+        width: max-content;
+        padding: 8px 28px;
+        border: 12px solid transparent;
+        border-image: url(assets/art/panel/plate.png) 40 fill / 12px / 0 stretch;
       }
       #menus table {
         width: 100%;
@@ -166,65 +243,68 @@
       }
       #menus td,
       #menus th {
-        border-bottom: 1px solid #3a2410;
+        border-bottom: 1px dashed #b89868;
         padding: 3px 4px;
         text-align: left;
         vertical-align: top;
       }
       #menus tr.tot td {
-        color: #ffd040;
+        color: #a82418;
         font-size: 15px;
       }
       .proproom {
-        background: repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.015) 0 1px, transparent 1px 7px), #120a06 !important;
+        background: none;
       }
       .props {
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
         gap: 8px;
       }
+      /* Prop Room cards: the deal-card from the panel kit, aged until you've seen the prop. */
       .prop {
-        background: linear-gradient(#2a1c10, #1a100a);
-        border-bottom: 6px solid #4a3018;
-        padding: 6px;
+        border: 16px solid transparent;
+        border-image: url(assets/art/panel/cardCream.png) 40 fill / 16px / 0 stretch;
+        padding: 0 2px;
         font-size: 11px;
         min-height: 110px;
-        filter: sepia(0.4);
+        color: #3a2412;
       }
       .prop .icon {
-        height: 48px;
+        height: 64px;
         display: flex;
         align-items: center;
         justify-content: center;
-        color: #604830;
+        color: #8a6a48;
         font-size: 20px;
       }
       .prop .icon img {
-        width: 48px;
-        height: 48px;
-        image-rendering: pixelated;
+        width: 64px;
+        height: 64px;
+        object-fit: contain;
+      }
+      .prop .icon img.unseen {
+        filter: brightness(0);
+        opacity: 0.28;
       }
       .prop .pn {
-        color: #ffd870;
+        color: #2a160a;
         margin: 4px 0;
       }
       .prop .pt {
-        color: #b0a080;
+        color: #5a4028;
       }
       .prop.locked {
-        opacity: 0.45;
-      }
-      .prop.known {
-        filter: none;
+        border-image-source: url(assets/art/panel/cardAged.png);
+        opacity: 0.6;
       }
       .prop.r-cursed .pn {
-        color: #c080ff;
+        color: #7a2aa0;
       }
       .prop.r-rare .pn {
-        color: #ffb030;
+        color: #b05a00;
       }
       .prop.r-uncommon .pn {
-        color: #80d0ff;
+        color: #1a6a9a;
       }
       .notes .note {
         background: #e0d4b0;
@@ -254,10 +334,10 @@
       .unlocks {
         columns: 2;
         font-size: 11px;
-        color: #806040;
+        color: #8a6a48;
       }
       .unlocks li.on {
-        color: #c0ff90;
+        color: #2a7a20;
       }
     </style>
   </head>

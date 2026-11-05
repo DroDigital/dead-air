@@ -17,6 +17,10 @@
       "type": "texture",
       "url": "assets/textures/wallpaper.png"
     },
+    "tex.seats": {
+      "type": "texture",
+      "url": "assets/textures/seats.png"
+    },
     "tex.metal": {
       "type": "texture",
       "url": "assets/textures/metal.png"

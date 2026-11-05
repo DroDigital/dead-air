@@ -120,7 +120,7 @@ export class App {
       getMeta: () => this.meta,
       getSettings: () => this.settings,
       hasSave: () => this.runSlot.exists() && !!this.runSlot.load(),
-      artifactIcon: (id) => this.artifactIcon(id),
+      artifactIcon: (id, drawnOnly) => (drawnOnly ? art.url(`artifact.${id}`) : this.artifactIcon(id)),
     });
     let audioStarted = false;
     const firstGesture = () => {
@@ -154,6 +154,7 @@ export class App {
       } else this.input.push(a);
     };
 
+    void art.preload(undefined, (id) => id === 'screen.standby');
     // Diegetic loading screen: a 2D pixel canvas (studio lights powering on one by one).
     const lc = document.createElement('canvas');
     lc.id = 'loading';
@@ -257,6 +258,8 @@ export class App {
   }
 
   private artifactIcon(id: string): string | null {
+    const drawn = art.url(`artifact.${id}`);
+    if (drawn) return drawn;
     if (this.iconCache.has(id)) return this.iconCache.get(id)!;
     try {
       const def = artifactDef(id);
@@ -859,6 +862,7 @@ export class App {
     const p = res.payout;
     const sp = this.speed;
     const steps = p.steps.filter((s) => !s.label.startsWith('='));
+    if (p.landedKind) this.hud.stamp(`wedge.${p.resolvedKind ?? p.landedKind}`);
     // Step-by-step marquee with rising pitch.
     let acc = '';
     for (let i = 0; i < steps.length; i++) {
@@ -1012,7 +1016,7 @@ export class App {
         options: [
           ...p.options.map((id) => {
             const d = artifactDef(id);
-            return { label: d.name.toUpperCase(), detail: `(${d.rarity.toUpperCase()}) ${d.text}`, color: d.rarity === 'cursed' ? '#c080ff' : d.rarity === 'rare' ? '#ffd040' : d.rarity === 'uncommon' ? '#80d0ff' : '#ffffff' };
+            return { icon: `artifact.${id}`, label: d.name.toUpperCase(), detail: `(${d.rarity.toUpperCase()}) ${d.text}`, color: d.rarity === 'cursed' ? '#c080ff' : d.rarity === 'rare' ? '#ffd040' : d.rarity === 'uncommon' ? '#80d0ff' : '#ffffff' };
           }),
           { label: 'SKIP', detail: 'Leave them on the shelf.' },
         ],
@@ -1158,6 +1162,7 @@ export class App {
     this.setChoice(
       {
         title: secret ? 'THE OTHER LINE' : ph.reason === 'deadAir' ? 'THE PRODUCER — DEAD AIR' : 'THE PRODUCER',
+        portrait: secret ? 'caller.secret' : 'caller.producer',
         lines: [ph.intro],
         options: [
           ...ph.offers.map((o) => {
@@ -1649,8 +1654,8 @@ export class App {
         title: 'DOUBLE OR NOTHING?',
         lines: [`STAKE THE WHOLE TRAY: $${stake}`, `EVEN ODDS. WIN: $${stake * 2}, STREAK STANDS. LOSE: $0, STREAK RESETS.`, 'ONCE PER DEADLINE.'],
         options: [
-          { label: `DOUBLE IT ($${stake * 2})`, detail: '50/50. The house always says it is fair.', color: '#ffd040' },
-          { label: 'WALK AWAY', detail: `Keep $${stake} riding.` },
+          { icon: 'ui.coin', label: `DOUBLE IT ($${stake * 2})`, detail: '50/50. The house always says it is fair.', color: '#ffd040' },
+          { icon: 'ui.tray', label: 'WALK AWAY', detail: `Keep $${stake} riding.` },
         ],
         selected: 1,
         layout: 'cards',
