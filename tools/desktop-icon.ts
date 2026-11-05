@@ -1,98 +1,92 @@
 /**
- * Draws the desktop app icon (desktop/icon.png, 1024×1024) as 64×64 pixel art and scales it
- * up nearest-neighbour, so it stays crisp in the game's PS1/pixel style at every size.
- * electron-builder converts it to .icns (macOS) and .ico (Windows); Linux uses the PNG.
+ * Draws the desktop app icon (desktop/icon.png, 1024×1024): the host's TV head from the art pack in a
+ * round window on the prize wheel's sunburst, all in a rounded tile inside the 824 px safe area macOS
+ * expects. electron-builder converts it to .icns (macOS) and .ico (Windows); Linux uses the PNG.
  *
  *   npx tsx tools/desktop-icon.ts
  */
 import sharp from 'sharp';
 import { fileURLToPath } from 'node:url';
 
-const N = 64;
-const px: string[] = [];
-const rect = (x: number, y: number, w: number, h: number, c: string) => px.push(`<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${c}"/>`);
-const dot = (x: number, y: number, c: string) => rect(x, y, 1, 1, c);
+const S = 1024; // canvas
+const T = 824; // the tile: macOS keeps icon artwork inside 824 px, so the tile sits in a 100 px margin
+const M = (S - T) / 2;
+const RX = 184; // tile corner radius (close to Apple's squircle at this size)
+const C = S / 2; // centre of the tile, the wheel and the round window
+const WEDGES = ['#2f7d3a', '#f2c230', '#c0472a', '#2a5d9c', '#b8862b', '#6b3a8c', '#e05aa0', '#1f6f6a']; // the wheel's colours
+const GOLD = '#c89830';
+const OXBLOOD = '#6a1a14';
+const INK = '#140b06';
 
-// Tile: dark studio brown, gold frame (the menu panel look), rounded by trimmed corners.
-const tile = (inset: number, c: string) => {
-  const s = N - inset * 2;
-  rect(inset + 2, inset, s - 4, s, c);
-  rect(inset, inset + 2, s, s - 4, c);
-  rect(inset + 1, inset + 1, s - 2, s - 2, c);
-};
-tile(2, '#3a1a08');
-tile(3, '#c89830');
-tile(5, '#140b06');
+// The head art is 290 px wide (tools/art.ts cuts it from the model sheet). It is drawn at HEAD_W, and
+// clipped to a round window on the TV's middle: that hides the bow tie and the strokes under the cabinet,
+// and the wheel's rim, drawn over the window's edge, hides the cut.
+const ART_W = 290;
+const HEAD_W = 600;
+const WINDOW = { x: 145, y: 118, r: 150 }; // in art pixels
+const RIM_R = 326; // the rim's centre line, on the canvas
 
-// Prize-wheel sunburst behind the host, in wedge colours.
-const wedges = ['#2f7d3a', '#f2c230', '#c0472a', '#2a5d9c', '#b8862b', '#6b3a8c', '#e05aa0', '#1f6f6a'];
-const cx = 32,
-  cy = 36;
-for (let y = 6; y < 58; y++)
-  for (let x = 6; x < 58; x++) {
-    const dx = x + 0.5 - cx,
-      dy = y + 0.5 - cy,
-      r = Math.hypot(dx, dy);
-    if (r > 25 || r < 4) continue;
-    const a = (Math.atan2(dy, dx) / (Math.PI * 2) + 1) % 1;
-    const w = Math.floor(a * 16) % wedges.length;
-    // Darker towards the rim, with a gold rim ring.
-    if (r > 23.5) dot(x, y, '#c89830');
-    else dot(x, y, r > 17 ? wedges[w] : shade(wedges[w], 0.55));
+const point = (a: number, r: number) => `${(C + r * Math.cos(a)).toFixed(2)} ${(C + r * Math.sin(a)).toFixed(2)}`;
+const wedges = Array.from({ length: 16 }, (_, i) => {
+  const a0 = (i / 16) * Math.PI * 2 - Math.PI / 2;
+  const a1 = ((i + 1) / 16) * Math.PI * 2 - Math.PI / 2;
+  return `<path d="M${C} ${C}L${point(a0, 1000)}L${point(a1, 1000)}Z" fill="${WEDGES[i % WEDGES.length]}"/>`;
+}).join('');
+
+// The tile: the wheel's sunburst, darkened towards the edges so the host stands out, a gold menu-panel
+// frame, and the wheel's oxblood rim with gold pinstripes round the window.
+const base = `<svg xmlns="http://www.w3.org/2000/svg" width="${S}" height="${S}" viewBox="0 0 ${S} ${S}">
+<defs>
+  <clipPath id="tile"><rect x="${M}" y="${M}" width="${T}" height="${T}" rx="${RX}"/></clipPath>
+  <radialGradient id="vignette" gradientUnits="userSpaceOnUse" cx="${C}" cy="${C}" r="${T * 0.62}">
+    <stop offset="0.3" stop-color="${INK}" stop-opacity="0.15"/>
+    <stop offset="1" stop-color="${INK}" stop-opacity="0.9"/>
+  </radialGradient>
+</defs>
+<rect x="${M}" y="${M}" width="${T}" height="${T}" rx="${RX}" fill="${INK}"/>
+<g clip-path="url(#tile)">${wedges}<rect width="${S}" height="${S}" fill="url(#vignette)"/></g>
+<circle cx="${C}" cy="${C}" r="${RIM_R}" fill="none" stroke="${OXBLOOD}" stroke-width="40"/>
+<circle cx="${C}" cy="${C}" r="${RIM_R - 23}" fill="none" stroke="${GOLD}" stroke-width="4"/>
+<circle cx="${C}" cy="${C}" r="${RIM_R + 23}" fill="none" stroke="${GOLD}" stroke-width="4"/>
+<rect x="${M + 16}" y="${M + 16}" width="${T - 32}" height="${T - 32}" rx="${RX - 16}" fill="none" stroke="${GOLD}" stroke-width="22"/>
+</svg>`;
+
+// The head, resized and clipped to the round window (anti-aliased edge). The window's centre lands on
+// the canvas centre.
+const headFile = fileURLToPath(new URL('../public/assets/art/host/head.png', import.meta.url));
+const head = await sharp(headFile).resize({ width: HEAD_W, kernel: 'lanczos3' }).sharpen({ sigma: 0.8 }).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+const { width: w, height: h } = head.info;
+const scale = w / ART_W;
+const wx = WINDOW.x * scale,
+  wy = WINDOW.y * scale,
+  wr = WINDOW.r * scale;
+for (let y = 0; y < h; y++)
+  for (let x = 0; x < w; x++) {
+    const d = Math.hypot(x + 0.5 - wx, y + 0.5 - wy);
+    const cover = Math.min(1, Math.max(0, wr - d + 0.5));
+    const i = (y * w + x) * 4 + 3;
+    head.data[i] = Math.round(head.data[i] * cover);
   }
+const headPng = await sharp(head.data, { raw: { width: w, height: h, channels: 4 } }).png().toBuffer();
 
-// Rabbit-ear antennas.
-for (let i = 0; i < 9; i++) {
-  dot(22 - i, 14 - i, '#d8d0c0');
-  dot(42 + i, 14 - i, '#d8d0c0');
+// A soft drop shadow: the head's own silhouette, blurred, dark and offset downwards.
+const shade = Buffer.alloc(w * h * 4);
+for (let i = 0; i < w * h; i++) {
+  shade[i * 4] = 12;
+  shade[i * 4 + 1] = 5;
+  shade[i * 4 + 2] = 3;
+  shade[i * 4 + 3] = Math.round(head.data[i * 4 + 3] * 0.6);
 }
-dot(13, 5, '#ff4a2a');
-dot(51, 5, '#ff4a2a');
+const shadow = await sharp(shade, { raw: { width: w, height: h, channels: 4 } }).blur(16).png().toBuffer();
 
-// CRT body.
-rect(14, 15, 36, 30, '#1a1210');
-rect(15, 14, 34, 32, '#1a1210');
-rect(15, 15, 34, 30, '#5a5048');
-rect(16, 16, 32, 28, '#3a332e');
-// Screen bezel + phosphor screen.
-rect(18, 18, 22, 22, '#0c0a08');
-rect(19, 19, 20, 20, '#0f3a22');
-for (let y = 19; y < 39; y += 2) rect(19, y, 20, 1, '#124a2a'); // scanlines
-// Face: eyes and grin (the host's CRT face).
-rect(23, 24, 3, 3, '#8affb0');
-rect(32, 24, 3, 3, '#8affb0');
-rect(22, 31, 1, 1, '#8affb0');
-rect(36, 31, 1, 1, '#8affb0');
-rect(23, 32, 1, 1, '#8affb0');
-rect(35, 32, 1, 1, '#8affb0');
-rect(24, 33, 11, 1, '#8affb0');
-dot(20, 20, '#c0ffd8'); // glare
-dot(21, 20, '#4a9a6a');
-dot(20, 21, '#4a9a6a');
-// Knobs + ON AIR lamp.
-rect(42, 20, 4, 4, '#c89830');
-rect(43, 21, 2, 2, '#6a4820');
-rect(42, 27, 4, 4, '#c89830');
-rect(43, 28, 2, 2, '#6a4820');
-rect(42, 35, 4, 3, '#ff4a2a');
-rect(43, 35, 1, 1, '#ffb0a0');
-// Feet + bow tie.
-rect(18, 46, 4, 2, '#1a1210');
-rect(42, 46, 4, 2, '#1a1210');
-rect(26, 48, 4, 4, '#ff4a2a');
-rect(34, 48, 4, 4, '#ff4a2a');
-rect(30, 49, 4, 2, '#ffd040');
-rect(27, 49, 2, 2, '#c02818');
-rect(35, 49, 2, 2, '#c02818');
-
-function shade(hex: string, k: number): string {
-  const n = parseInt(hex.slice(1), 16);
-  const c = [(n >> 16) & 255, (n >> 8) & 255, n & 255].map((v) => Math.round(v * k));
-  return `#${c.map((v) => v.toString(16).padStart(2, '0')).join('')}`;
-}
-
-const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${N}" height="${N}" viewBox="0 0 ${N} ${N}" shape-rendering="crispEdges">${px.join('')}</svg>`;
 const out = fileURLToPath(new URL('../desktop/icon.png', import.meta.url));
-const small = await sharp(Buffer.from(svg)).png().toBuffer();
-await sharp(small).resize(1024, 1024, { kernel: 'nearest' }).png({ compressionLevel: 9 }).toFile(out);
+const left = Math.round(C - wx);
+const top = Math.round(C - wy);
+await sharp(Buffer.from(base))
+  .composite([
+    { input: shadow, left, top: top + 18 },
+    { input: headPng, left, top },
+  ])
+  .png({ compressionLevel: 9 })
+  .toFile(out);
 console.log(`wrote ${out}`);
