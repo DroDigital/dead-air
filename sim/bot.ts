@@ -6,7 +6,6 @@ import { artifactDef } from '../src/content/artifacts';
 import { bargainDef } from '../src/content/bargains';
 import { scratchDef } from '../src/content/scratchCards';
 import { WEDGES } from '../src/content/wedges';
-import { Rng } from '../src/core/rng';
 import { BALANCE } from '../src/game/balance';
 import type { Game } from '../src/game/run';
 import type { PackageId, Segment } from '../src/game/types';
@@ -20,18 +19,16 @@ export interface Policy {
   /** EV bot risk factor (>1 = more cautious). */
   caution?: number;
   shop: boolean;
-  /** Probability the "player" releases in the sweet spot. */
-  skill: number;
   convertFrac: number;
   pkg: PackageId | 'auto';
 }
 
 export const POLICIES: Record<string, Policy> = {
-  'deposit-every-spin': { name: 'deposit-every-spin', deposit: 'every', shop: true, skill: 0.5, convertFrac: 0.5, pkg: 'standard' },
-  'ride-to-3': { name: 'ride-to-3', deposit: 'rideN', rideN: 3, shop: true, skill: 0.5, convertFrac: 0.5, pkg: 'standard' },
-  'ride-to-5': { name: 'ride-to-5', deposit: 'rideN', rideN: 5, shop: true, skill: 0.5, convertFrac: 0.5, pkg: 'standard' },
-  ev: { name: 'ev', deposit: 'ev', caution: 1, shop: true, skill: 0.5, convertFrac: 0.5, pkg: 'auto' },
-  'ev-noshop': { name: 'ev-noshop', deposit: 'ev', caution: 1, shop: false, skill: 0.5, convertFrac: 0, pkg: 'standard' },
+  'deposit-every-spin': { name: 'deposit-every-spin', deposit: 'every', shop: true, convertFrac: 0.5, pkg: 'standard' },
+  'ride-to-3': { name: 'ride-to-3', deposit: 'rideN', rideN: 3, shop: true, convertFrac: 0.5, pkg: 'standard' },
+  'ride-to-5': { name: 'ride-to-5', deposit: 'rideN', rideN: 5, shop: true, convertFrac: 0.5, pkg: 'standard' },
+  ev: { name: 'ev', deposit: 'ev', caution: 1, shop: true, convertFrac: 0.5, pkg: 'auto' },
+  'ev-noshop': { name: 'ev-noshop', deposit: 'ev', caution: 1, shop: false, convertFrac: 0, pkg: 'standard' },
 };
 
 // ---------------------------------------------------------------------------------------
@@ -70,7 +67,6 @@ function wheelStats(g: Game): WheelStats {
 const ARTIFACT_SCORE: Record<string, number> = {
   lucky_penny: 7,
   piggy_bank: 6,
-  stopwatch: 3,
   tooth_fairy: 4,
   house_edge: 4,
   rubber_band: 3,
@@ -87,7 +83,6 @@ const ARTIFACT_SCORE: Record<string, number> = {
   neighbors_envy: 8,
   iron_nerve: 6,
   hot_hand: 7,
-  glass_eye: 3,
   gilded_clapper: 6,
   loaded_flapper: 7,
   metronome: 8,
@@ -158,20 +153,8 @@ function wedgeWorth(g: Game, s: Segment): number {
 // The bot
 // ---------------------------------------------------------------------------------------
 export class Bot {
-  private rng: Rng;
   private ridden = 0;
-  constructor(
-    readonly policy: Policy,
-    seed: string,
-  ) {
-    this.rng = new Rng(`bot:${seed}`);
-  }
-
-  power(g: Game): number {
-    const ch = g.chargeContext();
-    if (this.rng.chance(this.policy.skill)) return BALANCE.sweetCenter + (this.rng.float() * 2 - 1) * ch.sweetHalfWidth * 0.95;
-    return this.rng.float();
-  }
+  constructor(readonly policy: Policy) {}
 
   shouldDeposit(g: Game): boolean {
     const r = g.run;
@@ -222,7 +205,7 @@ export class Bot {
           if (!g.canUseScratch(i)) continue;
           const d = scratchDef(id);
           const useful =
-            id === 'insurance' ? r.tray > 200 : id === 'hot_streak' || id === 'freeze' || id === 'peek' || id === 'polish' || id === 'lucky_coin' || id === 'rebate' || id === 'static_burst' ? true : id === 'safe_deposit' ? r.streak > 1.5 : id === 'lock' ? (r.history[r.history.length - 1]?.cash ?? 0) > 150 : false;
+            id === 'insurance' ? r.tray > 200 : id === 'hot_streak' || id === 'freeze' || id === 'polish' || id === 'lucky_coin' || id === 'rebate' || id === 'static_burst' ? true : id === 'safe_deposit' ? r.streak > 1.5 : false;
           if (useful && d) g.useScratch(i);
         }
         if (this.shouldDeposit(g)) {
@@ -231,7 +214,7 @@ export class Bot {
           return true;
         }
         if (r.spinsLeft <= 0) return true;
-        g.spin(this.power(g), { peek: false });
+        g.spin();
         this.ridden++;
         if (g.run.streak <= g.streakBase()) this.ridden = 0;
         return true;

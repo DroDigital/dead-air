@@ -201,7 +201,7 @@ describe('artifacts', () => {
 
   it('the shelf holds at most 6', () => {
     const g = makeGame(wheelWith());
-    for (const id of ['lucky_penny', 'piggy_bank', 'stopwatch', 'tooth_fairy', 'house_edge', 'rubber_band']) expect(g.grantArtifact(id)).toBe(true);
+    for (const id of ['lucky_penny', 'piggy_bank', 'gilded_clapper', 'tooth_fairy', 'house_edge', 'rubber_band']) expect(g.grantArtifact(id)).toBe(true);
     expect(g.grantArtifact('bent_nail')).toBe(false);
   });
 });

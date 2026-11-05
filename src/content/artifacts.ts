@@ -47,21 +47,6 @@ const A: ArtifactDef[] = [
     },
   },
   {
-    id: 'stopwatch',
-    name: 'Stopwatch',
-    rarity: 'common',
-    cost: 4,
-    text: 'Widens the green band on the lever meter. Release in it to favor valuable wedges.',
-    flavor: 'Stopped at 7:42. Every clock in here did.',
-    prop: 'watch',
-    color: 0xc9c9c9,
-    hooks: {
-      onSpinCharge(_c, e) {
-        e.sweetHalfWidth *= 1.8;
-      },
-    },
-  },
-  {
     id: 'tooth_fairy',
     name: 'Tooth Fairy',
     rarity: 'common',
@@ -361,24 +346,6 @@ const A: ArtifactDef[] = [
             c.trigger('+$10 FOREVER');
           }
         }
-      },
-    },
-  },
-  {
-    id: 'glass_eye',
-    name: 'Glass Eye',
-    rarity: 'uncommon',
-    cost: 7,
-    text: 'Once per Deadline, preview where the wheel will land before you release the lever.',
-    flavor: 'It sees the future. It is not impressed.',
-    prop: 'eye',
-    color: 0xdfe8f0,
-    hooks: {
-      onDeadlineStart(c) {
-        c.inst.state.used = 0;
-      },
-      onSpinCharge(c, e) {
-        if (!c.inst.state.used) e.preview = true;
       },
     },
   },

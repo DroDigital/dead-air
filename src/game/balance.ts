@@ -47,11 +47,6 @@ export const BALANCE = {
   widenStep: 5, // [BRIEF]
   neighborsThreshold: 2, // degrees [BRIEF]
 
-  // ---- Lever / physics bias -------------------------------------------------------------
-  meterPeriod: 1.5,
-  sweetCenter: 0.76,
-  sweetHalfWidth: 0.055,
-  sweetBias: 1.0,
 
   // ---- Shop ---------------------------------------------------------------------------
   /** Added to every artifact's listed cost in the Prize Cabinet. */

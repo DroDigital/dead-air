@@ -6,7 +6,7 @@ import { cash, makeGame, wheelWith } from './helpers';
 
 type Internal = { challengeEvent(e: ChallengeEvent): void };
 const fire = (g: Game, e: ChallengeEvent) => (g as unknown as Internal).challengeEvent(e);
-const spin = (over: Partial<Extract<ChallengeEvent, { type: 'spin' }>> = {}): ChallengeEvent => ({ type: 'spin', kind: 'cash', cash: 0, combos: [], streak: 1, tray: 0, sweet: false, ...over });
+const spin = (over: Partial<Extract<ChallengeEvent, { type: 'spin' }>> = {}): ChallengeEvent => ({ type: 'spin', kind: 'cash', cash: 0, combos: [], streak: 1, tray: 0, ...over });
 const withChallenge = (id: string) => {
   const g = makeGame(wheelWith(cash(100)));
   g.run.marks.chal = CHALLENGES.findIndex((c) => c.id === id) + 1;
@@ -27,15 +27,16 @@ describe("Sponsor's Challenge", () => {
   });
 
   it('count goals accumulate and pay their reward once', () => {
-    const g = withChallenge('sweet');
-    fire(g, spin({ sweet: true }));
-    fire(g, spin({ sweet: true }));
+    const g = withChallenge('ride');
+    fire(g, spin());
+    fire(g, spin());
+    fire(g, spin());
     expect(g.challenge()!.done).toBe(false);
-    fire(g, spin({ sweet: true }));
+    fire(g, spin());
     expect(g.challenge()!.done).toBe(true);
-    expect(g.run.tokens).toBe(1);
-    fire(g, spin({ sweet: true }));
-    expect(g.run.tokens).toBe(1);
+    expect(g.run.tokens).toBe(2);
+    fire(g, spin());
+    expect(g.run.tokens).toBe(2);
   });
 
   it('peak goals compare the best value, and risky goals pay 2', () => {

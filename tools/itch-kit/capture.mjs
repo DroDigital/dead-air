@@ -42,7 +42,7 @@ async function boot() {
   // The game now defaults to 640×360; pin the kit's 320×180 so the 960×540 windows stay whole-number scaled.
   await page.evaluate(() => window.deadAir.applySettings({ ...window.deadAir.settings, resolutionScale: 1 }));
   await step(1500);
-  const settled = () => until(() => window.deadAir.busy === 0 && !window.deadAir.stage.wheel.busy && !window.deadAir.charge && !window.deadAir.stage.rig.inShot, 30000);
+  const settled = () => until(() => window.deadAir.busy === 0 && !window.deadAir.stage.wheel.busy && !window.deadAir.stage.rig.inShot, 30000);
   return { page, step, until, settled };
 }
 

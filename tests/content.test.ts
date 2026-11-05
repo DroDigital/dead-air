@@ -23,7 +23,7 @@ describe('content integrity', () => {
   it('includes every artifact the brief requires', () => {
     const ids = new Set(ARTIFACTS.map((a) => a.id));
     for (const id of [
-      'lucky_penny', 'hollow_tooth', 'rabbits_foot', 'loaded_flapper', 'glass_eye', 'stopwatch', 'snake_eyes',
+      'lucky_penny', 'hollow_tooth', 'rabbits_foot', 'loaded_flapper', 'snake_eyes',
       'neighbors_envy', 'iron_nerve', 'piggy_bank', 'static', 'tooth_fairy', 'understudy', 'gilded_clapper',
       'cracked_mirror', 'collectors_card', 'hot_hand', 'house_edge', 'second_ring',
     ])

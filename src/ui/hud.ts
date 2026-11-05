@@ -17,7 +17,7 @@ export interface ChoiceOption {
   detail?: string;
   disabled?: boolean;
   color?: string;
-  /** Art-pack sprite id drawn at the top of the card (e.g. 'artifact.glass_eye'). */
+  /** Art-pack sprite id drawn at the top of the card (e.g. 'artifact.loaded_flapper'). */
   icon?: string;
 }
 

@@ -6,7 +6,7 @@
 import type { RunState, WedgeKind } from '../game/types';
 
 export type ChallengeEvent =
-  | { type: 'spin'; kind: WedgeKind; cash: number; combos: string[]; streak: number; tray: number; sweet: boolean }
+  | { type: 'spin'; kind: WedgeKind; cash: number; combos: string[]; streak: number; tray: number }
   | { type: 'deposit'; amount: number };
 
 export interface ChallengeDef {
@@ -33,7 +33,6 @@ export const CHALLENGES: readonly ChallengeDef[] = [
   { id: 'streak', name: 'HOT HANDS', reward: 2, text: 'Ride the Streak to ×{n}', mode: 'peak', target: () => 2, progress: (e) => (e.type === 'spin' ? e.streak : 0) },
   { id: 'tray', name: 'HIGH ROLLER', reward: 2, text: 'Hold ${n} in the Tray', mode: 'peak', target: (r) => round25(r.debt * 0.45), progress: (e) => (e.type === 'spin' ? e.tray : 0) },
   { id: 'ride', name: 'NO NET', reward: 2, text: 'Ride {n} spins in a row without depositing', mode: 'count', resetOnDeposit: true, target: () => 4, progress: (e) => (e.type === 'spin' ? 1 : 0) },
-  { id: 'sweet', name: 'SURE GRIP', reward: 1, text: 'Release in the green {n} times', mode: 'count', target: () => 3, progress: (e) => (e.type === 'spin' && e.sweet ? 1 : 0) },
   { id: 'prize', name: 'PRIZE PATROL', reward: 1, text: 'Land a Jackpot, Prize or Mystery', mode: 'count', target: () => 1, progress: (e) => (e.type === 'spin' && (e.kind === 'jackpot' || e.kind === 'artifact' || e.kind === 'mystery') ? 1 : 0) },
 ];
 

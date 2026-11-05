@@ -5,8 +5,6 @@ import {
   angleForSegment,
   computeLayout,
   emptyWidthMods,
-  inSweetSpot,
-  meterValue,
   mod360,
   noPhysicsMods,
   ringSegmentAt,
@@ -169,24 +167,6 @@ describe('simulateSpin', () => {
     for (const x of c) expect(Math.abs(x - 150)).toBeLessThan(55);
   });
 
-  it('sweet-spot bias pulls landings toward favoured segments', () => {
-    const w = wedges(Array(12).fill('cash') as WedgeKind[]);
-    const L2 = computeLayout(w, [], emptyWidthMods());
-    const fav = L2.segments.map((s) => s.idx % 2 === 0);
-    let plain = 0,
-      biased = 0;
-    for (let i = 0; i < 500; i++) {
-      const p = simulateSpin({ layout: L2, ringLen: 8, power: 0.76, startAngle: i * 7.3, ringStartAngle: 0, noTrace: true }, new Rng(i));
-      const mods = noPhysicsMods(L2);
-      mods.bias = 1;
-      mods.favoured = fav;
-      const b = simulateSpin({ layout: L2, ringLen: 8, power: 0.76, startAngle: i * 7.3, ringStartAngle: 0, noTrace: true, mods }, new Rng(i));
-      if (fav[p.outerIndex]) plain++;
-      if (fav[b.outerIndex]) biased++;
-    }
-    expect(biased).toBeGreaterThan(plain);
-  });
-
   it('slippery pegs + glide reduce landings on a marked segment', () => {
     const w = wedges(['bankrupt', 'cash', 'cash', 'cash', 'cash', 'cash'], [60, 60, 60, 60, 60, 60]);
     const L2 = computeLayout(w, [], emptyWidthMods());
@@ -212,17 +192,5 @@ describe('simulateSpin', () => {
     expect(a.innerIndex).toBeGreaterThanOrEqual(0);
     expect(a.innerIndex).toBeLessThan(8);
     expect(ringSegmentAt(8, a.finalRingAngle)).toBe(a.innerIndex);
-  });
-});
-
-describe('lever', () => {
-  it('meter oscillates 0→1→0', () => {
-    expect(meterValue(0)).toBeCloseTo(0);
-    expect(meterValue(0.75, 1.5)).toBeCloseTo(1);
-    expect(meterValue(1.5, 1.5)).toBeCloseTo(0);
-  });
-  it('sweet spot test', () => {
-    expect(inSweetSpot(0.76, 0.05)).toBe(true);
-    expect(inSweetSpot(0.5, 0.05)).toBe(false);
   });
 });

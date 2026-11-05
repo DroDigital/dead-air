@@ -678,7 +678,7 @@ export class WheelView {
     ctx.restore();
   }
 
-  /** Light up a segment (landing glow / Glass Eye preview). */
+  /** Light up a segment (the landing glow). */
   showHighlight(segIdx: number | null, color = 0xffffff, opacity = 0.35): void {
     if (segIdx === null || !this.layout) {
       this.highlightMat.uniforms.uOpacity.value = 0;

@@ -29,7 +29,7 @@ await page.waitForFunction(() => window.deadAir && window.deadAir.stage && windo
 
 const idle = (ms = 15000) =>
   // Settled: nothing presenting, the wheel still, and no cinematic camera shot still easing back.
-  page.waitForFunction(() => window.deadAir.busy === 0 && !window.deadAir.stage.wheel.busy && !window.deadAir.charge && !window.deadAir.stage.rig.inShot, null, { timeout: ms }).then(() => true, () => false);
+  page.waitForFunction(() => window.deadAir.busy === 0 && !window.deadAir.stage.wheel.busy && !window.deadAir.stage.rig.inShot, null, { timeout: ms }).then(() => true, () => false);
 const menuPage = () => page.evaluate(() => window.deadAir.menus.page);
 // Generous timeout: the game-over card only rises after its intro (about 3.6 s).
 const clickMenu = (label) => page.locator('#menus button', { hasText: label }).first().click({ timeout: 12000 });

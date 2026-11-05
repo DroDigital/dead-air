@@ -245,8 +245,8 @@ export class Menus {
         <div class="row">${this.btn('DONE', () => this.show(this.back ?? 'title', this.back === 'pause' ? null : 'title'))}${
           desktop ? this.btn(this.fullscreenLabel(), () => void desktop!.setFullscreen(!this.fullscreen), 'data-fs') : ''
         }</div>
-        <p class="small">KEYS: ARROWS/WASD look · SPACE hold lever · ENTER deposit/confirm · 1-6 cards/artifacts/choices · F fast · ESC pause</p>
-        <p class="small">PAD: D-PAD/LEFT STICK look · A confirm · B back/sell · HOLD X spin · Y gamble · LB peek · RB fast · START pause · RIGHT STICK cursor · RT click</p>
+        <p class="small">KEYS: ARROWS/WASD look · SPACE spins · ENTER deposit/confirm · 1-6 cards/artifacts/choices · F fast · ESC pause</p>
+        <p class="small">PAD: D-PAD/LEFT STICK look · A confirm · B back/sell · X spin · Y gamble · RB fast · START pause · RIGHT STICK cursor · RT click</p>
       </div>`;
       queueMicrotask(() => {
         this.root.querySelectorAll<HTMLInputElement | HTMLSelectElement>('[data-k]').forEach((el) => {

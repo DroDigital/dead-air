@@ -134,6 +134,26 @@ export const RUN_MIGRATIONS: Migrations = {
     out.v = 1;
     return out;
   },
+  // v1 → v2: Lock, Peek, Glass Eye and the Stopwatch went with the sweet spot. A saved run that still holds
+  // them loses those cards and artifacts, and the flags they set.
+  1: (d) => {
+    const out: Record<string, unknown> = { ...d };
+    if (out.flags && typeof out.flags === 'object') {
+      const flags: Record<string, unknown> = { ...(out.flags as Record<string, unknown>) };
+      delete flags.lock;
+      delete flags.peek;
+      out.flags = flags;
+    }
+    if (Array.isArray(out.scratch)) out.scratch = (out.scratch as unknown[]).filter((id) => id !== 'lock' && id !== 'peek');
+    if (Array.isArray(out.artifacts)) {
+      out.artifacts = (out.artifacts as unknown[]).filter((a) => {
+        const id = (a as { id?: unknown } | null)?.id;
+        return id !== 'glass_eye' && id !== 'stopwatch';
+      });
+    }
+    out.v = 2;
+    return out;
+  },
 };
 
 /** Meta-save migrations. v0 → v1: lifetime stats block added. */

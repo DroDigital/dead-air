@@ -124,7 +124,7 @@ describe('debt & run structure', () => {
 
   it('actions in the wrong phase throw', () => {
     const g = Game.newRun({ seed: 'x', stake: 0, startWheel: 'standard' });
-    expect(() => g.spin(0.5)).toThrow();
+    expect(() => g.spin()).toThrow();
     expect(() => g.deposit()).toThrow();
   });
 });
@@ -133,33 +133,10 @@ describe('real spins', () => {
   it('spin() runs physics and resolves the landed segment', () => {
     const g = Game.newRun({ seed: 'phys', stake: 0, startWheel: 'standard' });
     g.choosePackage('standard');
-    const o = g.spin(0.6);
+    const o = g.spin();
     expect(o.resolution).not.toBeNull();
     expect(o.resolution!.segIdx).toBe(o.sim.outerIndex);
     expect(o.sim.trace.outer.length).toBeGreaterThan(10);
-  });
-
-  it('previewLanding predicts spin() exactly', () => {
-    for (const seed of ['p1', 'p2', 'p3', 'p4']) {
-      const g = Game.newRun({ seed, stake: 0, startWheel: 'standard' });
-      g.choosePackage('standard');
-      const pv = g.previewLanding(0.42);
-      const o = g.spin(0.42);
-      expect(o.sim.outerIndex).toBe(pv.segIdx);
-      expect(o.sim.innerIndex).toBe(pv.innerIndex);
-    }
-  });
-
-  it('Lock lands on the same wedge as the last spin', () => {
-    const g = Game.newRun({ seed: 'lock', stake: 0, startWheel: 'standard' });
-    g.choosePackage('standard');
-    const first = g.spin(0.5);
-    if (g.run.phase !== 'AwaitAction') return;
-    g.run.scratch = ['lock'];
-    expect(g.useScratch(0)).toBe(true);
-    const second = g.spin(0.9);
-    expect(second.locked).toBe(true);
-    expect(second.sim.outerIndex).toBe(first.sim.outerIndex);
   });
 
   it('Nudge pauses resolution and moves ±1 wedge', () => {
@@ -167,7 +144,7 @@ describe('real spins', () => {
     g.choosePackage('standard');
     g.run.scratch = ['nudge'];
     g.useScratch(0);
-    const o = g.spin(0.5);
+    const o = g.spin();
     expect(o.resolution).toBeNull();
     expect(g.run.phase).toBe('Nudge');
     const r = g.chooseNudge(1);
@@ -180,25 +157,9 @@ describe('real spins', () => {
     g.run.scratch = ['freeze'];
     g.useScratch(0);
     const s = g.run.spinsLeft;
-    const o = g.spin(0.5);
+    const o = g.spin();
     expect(o.free).toBe(true);
     const kind = o.resolution?.seg.kind;
     if (kind !== 'respin' && kind !== 'overtime') expect(g.run.spinsLeft).toBe(s);
-  });
-
-  it('Glass Eye allows one preview per Deadline', () => {
-    const g = Game.newRun({ seed: 'ge', stake: 0, startWheel: 'standard' });
-    g.grantArtifact('glass_eye');
-    g.choosePackage('standard');
-    expect(g.canPeek()).toBe(true);
-    g.spin(0.5, { peek: true });
-    if (g.run.phase === 'AwaitAction') expect(g.canPeek()).toBe(false);
-  });
-
-  it('Stopwatch widens the sweet spot', () => {
-    const g = Game.newRun({ seed: 'sw', stake: 0, startWheel: 'standard' });
-    const w0 = g.chargeContext().sweetHalfWidth;
-    g.grantArtifact('stopwatch');
-    expect(g.chargeContext().sweetHalfWidth).toBeGreaterThan(w0 * 1.5);
   });
 });

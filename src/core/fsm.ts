@@ -9,7 +9,6 @@ export type AppState =
   | 'DeadlineIntro'
   | 'PackageSelect'
   | 'AwaitAction'
-  | 'Charging'
   | 'Spinning'
   | 'Resolving'
   | 'DeadlineEnd'
@@ -24,8 +23,7 @@ export const APP_TRANSITIONS: Record<AppState, readonly AppState[]> = {
   Menu: ['DeadlineIntro', 'PackageSelect', 'AwaitAction', 'Conversion', 'Shop', 'PhoneCall', 'DeadlineEnd', 'Menu'],
   DeadlineIntro: ['PackageSelect', 'Menu'],
   PackageSelect: ['AwaitAction', 'Menu'],
-  AwaitAction: ['Charging', 'DeadlineEnd', 'PhoneCall', 'Menu', 'AwaitAction', 'Resolving'],
-  Charging: ['Spinning', 'AwaitAction', 'Menu'],
+  AwaitAction: ['Spinning', 'DeadlineEnd', 'PhoneCall', 'Menu', 'AwaitAction', 'Resolving'],
   Spinning: ['Resolving', 'Menu'],
   Resolving: ['AwaitAction', 'DeadlineEnd', 'PhoneCall', 'Menu', 'Resolving'],
   DeadlineEnd: ['Conversion', 'GameOver', 'Victory', 'Menu'],
