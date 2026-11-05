@@ -25,11 +25,12 @@ import { META_VERSION, applyRun, computeRatings, endlessUnlocked, newMeta, noteR
 import { Game, RUN_VERSION, type DeadlineEndResult, type SpinOutcome, type SpinResolution } from './game/run';
 import { sellValue } from './game/shop';
 import type { PackageId, RunState } from './game/types';
-import { angleForSegment, meterValue, mod360 } from './game/wheel';
+import { angleForSegment, mod360 } from './game/wheel';
 import { CabinetView, type ServiceButton } from './render/scene/cabinet';
 import { buildProp } from './render/scene/props';
 import { Stage } from './render/stage';
 import { BootScreens } from './ui/bootScreens';
+import { advanceCharge, type ChargeMeter } from './ui/charge';
 import { Hud, type ChoicePanel } from './ui/hud';
 import { Input, type Action } from './ui/input';
 import { Menus } from './ui/menus';
@@ -77,7 +78,7 @@ export class App {
   private introPending = false;
   private time = 0;
   private hitstop = 0;
-  private charge: { t: number; peek: boolean; lastTick: number } | null = null;
+  private charge: (ChargeMeter & { lastTick: number }) | null = null;
   /** Slow motion: the stage's clock runs at `timeScale`, eased toward `timeScaleTarget`. */
   private timeScale = 1;
   private timeScaleTarget = 1;
@@ -773,7 +774,7 @@ export class App {
     const g = this.game;
     if (!g || g.run.phase !== 'AwaitAction' || this.busy || this.charge || this.grab || this.menus.open || this.hud.choice || this.target || this.stage.wheel.busy) return;
     if (this.stage.rig.station !== 'center') this.stage.rig.go('center');
-    this.charge = { t: 0, peek: false, lastTick: 0 };
+    this.charge = { t: 0, power: 0, peek: false, previewAt: null, lastTick: 0 };
     this.loops.drum?.stop(0.05);
     this.loops.drum = this.sfx.loop('tension', 0.6, 'sfx', 0.25, false, this.music.rate) ?? this.sfx.loop('drumroll', 0.32, 'sfx', 0.3);
     this.fsm.force('Charging');
@@ -788,7 +789,7 @@ export class App {
     this.stage.lever.pull = 0;
     this.stage.wheel.showHighlight(null);
     this.hud.hint = '';
-    await this.doSpin(meterValue(c.t), c.peek);
+    await this.doSpin(c.power, c.peek);
   }
 
   private async doSpin(power: number, peek: boolean, opts: { startAngle?: number; source?: 'lever' | 'hand' } = {}): Promise<void> {
@@ -2019,15 +2020,15 @@ export class App {
     if (this.drama && !this.drama.started && st.wheel.busy && st.wheel.timeLeft > 0 && st.wheel.timeLeft < this.drama.at) this.startSlowMo();
     if (this.drama?.started && st.wheel.timeLeft <= 0) this.endSlowMo();
     if (this.charge && g) {
-      this.charge.t += dt;
-      const p = meterValue(this.charge.t);
+      const refreshPreview = advanceCharge(this.charge, dt);
+      const p = this.charge.power;
       st.lever.pull = p * 0.6;
       st.lever.drawGauge(p, true, this.charge.peek);
       if (Math.floor(this.charge.t * 14) !== this.charge.lastTick) {
         this.charge.lastTick = Math.floor(this.charge.t * 14);
         this.sfx.play('ratchet', { gain: 0.25, pitch: 0.8 + p });
       }
-      if (this.charge.peek && Math.floor(this.time * 30) % 3 === 0) {
+      if (refreshPreview) {
         const pv = g.previewLanding(p);
         st.wheel.showHighlight(pv.segIdx, 0x60a0ff, 0.5);
       }
