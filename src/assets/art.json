@@ -454,6 +454,11 @@
   "w": 160,
   "h": 93
  },
+ "wheel.frame": {
+  "url": "assets/art/wheel/frame.png",
+  "w": 1006,
+  "h": 998
+ },
  "caller.producer": {
   "url": "assets/art/caller/producer.png",
   "w": 264,

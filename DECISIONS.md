@@ -83,7 +83,8 @@ The only library over ~100 kB gz is three.js. GSAP measures ~28 kB gz. Built app
 - The sheet's TV screens are blank in the pose drawings and full screens in the face sheet; the face cell is clipped into the TV's screen shape and given scanlines and a rolling bar.
 - The model sheet is opaque, so parts are cut out with a flood fill from the crop edges that stops at the ink outline, then feathered.
 - He is a billboard facing the contestant's chair. He used to be a low-poly mannequin; the 3D model the owner mentioned can replace the billboard later without changing the `HostView` API.
-- The wheel face stays a 128 px PS1 texture with text labels: at 320×180 a wedge icon would be a few pixels across, so the icons appear in the HUD (landing stamp, cards, Prop Room) instead.
+- The wheel face is a 256 px texture with the pixel font at scale 2, so text is the same on-screen size as the HUD's (it can't shrink and stay legible at 320×180). That fixes what fits: on a standard 15° wedge a four-character value fills the outer half of the wedge, so numbers win over icons there; the icon joins the label on wider wedges and stands alone on non-number wedges. The face is mipmapped (unlike the rest of the PS1 textures) so the painted detail doesn't shimmer while it spins.
+- The owner's painted wheel was a reference; only its ornamental frame is used, at the owner's request.
 
 ## Desktop launcher
 

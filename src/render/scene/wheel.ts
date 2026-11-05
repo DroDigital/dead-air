@@ -8,6 +8,7 @@ import type { Layout, Segment } from '../../game/types';
 import type { PegTick, SpinTrace } from '../../game/wheel';
 import { drawText, textWidth } from '../../ui/bitfont';
 import type { Assets } from '../../assets/loader';
+import { art } from '../../assets/art';
 import { psxMaterial, type PsxMaterial } from '../psxMaterial';
 import { CanvasPanel, DEG, TAU, hexCss, pickable } from './util';
 import { PropBuilder } from './props';
@@ -16,9 +17,149 @@ export const WHEEL_R = 1.25;
 const INNER_R = 0.42;
 const PEG_R = WHEEL_R - 0.05;
 const FLAP_LEN = 0.2;
-const BULBS = 40;
-/** Narrowest wedge (degrees) that still gets a label on the wheel face. */
-const LABEL_MIN_DEG = 12;
+/**
+ * Marquee bulbs: one on each bulb painted on the owner's ornamental frame (five per quarter,
+ * mirrored about the four cartouches), in degrees clockwise from the top. Without the frame
+ * art they fall back to 40 evenly spaced bulbs.
+ */
+const FRAME_BULBS = [16.6, 28.5, 42.2, 56.5, 70.4].flatMap((d) => [d, 180 - d, 180 + d, 360 - d]).sort((x, y) => x - y);
+/** The frame sprite: half its width in world units, so its band's inner edge clears the wheel. */
+const FRAME_HALF = 1.58;
+/** Painted bulb centres sit at this fraction of the sprite's half-width. */
+const FRAME_BULB_R = 0.881;
+/** Wheel face texture size, and the bitmap-font scale on it (native pixel size on screen). */
+const FACE_PX = 256;
+const GLYPH = 2;
+const GLYPH_H = 7 * GLYPH;
+/** The face's rim band (oxblood, cream dots) starts at this fraction of the radius. */
+const RIM_IN = 0.95;
+/** Divider ink width on the face; text and icons keep clear of it. */
+const DIVIDER = 2.5;
+/** Wedge kinds whose label is a number: the number matters more than the icon. */
+const NUMERIC = new Set(['cash', 'cursedCash', 'jackpot', 'token', 'interest', 'overtime', 'doubler']);
+
+/** Shorter forms of a wedge label, tried in order when the full one doesn't fit its wedge. */
+function labelVariants(t: string): string[] {
+  const out = [t];
+  const cash = /^\$(\d+)$/.exec(t);
+  if (cash) {
+    const n = Number(cash[1]);
+    if (n >= 1000) out.push(`$${n % 1000 ? (n / 1000).toFixed(1) : n / 1000}K`);
+  }
+  if (t.endsWith(' TOK')) out.push(t.replace(' TOK', 'T'));
+  if (t.endsWith(' SPN')) out.push(t.replace(' SPN', 'S'));
+  if (t === 'x2 NXT') out.push('x2');
+  if (t === '+5% V') out.push('+5%');
+  if (cash && Number(cash[1]) >= 1000) out.push(out[out.length - 1].slice(1));
+  if (t === 'JACKPOT') out.push('JACK');
+  if (t === 'PAYDAY') out.push('PAY');
+  if (t === 'RESPIN') out.push('SPIN');
+  if (t === 'CHARGE') out.push('ZAP');
+  return out;
+}
+
+/** Push a wedge colour toward the art pack's printed-card palette: warmer, a touch softer. */
+function printColor(hex: number): string {
+  const c = new THREE.Color(hex);
+  const hsl = { h: 0, s: 0, l: 0 };
+  c.getHSL(hsl);
+  c.setHSL(hsl.h, Math.min(1, hsl.s * 1.08), Math.min(0.62, hsl.l * 1.06));
+  c.lerp(new THREE.Color(0xf3dfb0), 0.07);
+  return `#${c.getHexString()}`;
+}
+
+const lum = (hex: number) => {
+  const c = new THREE.Color(hex);
+  return 0.3 * c.r + 0.59 * c.g + 0.11 * c.b;
+};
+
+/** Bitmap text with a 1-px outline all round, so it reads on any wedge colour. */
+function outlinedText(ctx: CanvasRenderingContext2D, t: string, x: number, y: number, color: string, outline: string, scale = GLYPH): void {
+  for (const [dx, dy] of [[-1, -1], [0, -1], [1, -1], [-1, 0], [1, 0], [-1, 1], [0, 1], [1, 1]]) drawText(ctx, t, x + dx, y + dy, { scale, color: outline });
+  drawText(ctx, t, x, y, { scale, color });
+}
+
+/** Paper grain shared by the wheel faces (light, so 'multiply' only ages the print). */
+let GRAIN: HTMLCanvasElement | null = null;
+function grain(size: number): HTMLCanvasElement {
+  if (GRAIN && GRAIN.width === size) return GRAIN;
+  const cv = document.createElement('canvas');
+  cv.width = cv.height = size;
+  const c = cv.getContext('2d')!;
+  const img = c.createImageData(size, size);
+  for (let i = 0; i < size * size; i++) {
+    const v = 228 + Math.random() * 27;
+    img.data[i * 4] = v;
+    img.data[i * 4 + 1] = v * 0.97;
+    img.data[i * 4 + 2] = v * 0.9;
+    img.data[i * 4 + 3] = 255;
+  }
+  c.putImageData(img, 0, 0);
+  // A few faint scuffs.
+  c.strokeStyle = 'rgba(120,80,40,0.18)';
+  for (let k = 0; k < 18; k++) {
+    c.beginPath();
+    const x = Math.random() * size,
+      y = Math.random() * size;
+    c.moveTo(x, y);
+    c.lineTo(x + (Math.random() - 0.5) * 30, y + (Math.random() - 0.5) * 30);
+    c.stroke();
+  }
+  GRAIN = cv;
+  return cv;
+}
+
+/** How a wedge's contents fit: an icon at the rim, a label along the radius, or both. */
+export interface WedgeFit {
+  icon: { size: number; r: number } | null;
+  label: { text: string; r0: number; r1: number } | null;
+}
+
+/**
+ * Choose what goes in a wedge so that everything fits inside its width: the label (bitmap font
+ * at native size, read along the radius) must sit where the wedge is wider than a glyph, and
+ * the icon must fit the chord at its inner edge. Long labels fall back to shorter forms; a
+ * wedge too narrow for text shows its icon alone (the tooltip names it).
+ * Radii are in face pixels; `R` is the face radius, `hub` the inner ring's radius.
+ */
+export function fitWedge(spanDeg: number, kind: string, text: string, R: number, hub: number, glyphH = GLYPH_H, scale = GLYPH): WedgeFit {
+  const span = Math.min(spanDeg, 180) * DEG;
+  const chord = (r: number) => 2 * r * Math.sin(span / 2);
+  const rimIn = R * RIM_IN;
+  // Icons: squares 3 px in from the rim band whose inner edge still fits the wedge, biggest first.
+  const icons: { size: number; r: number }[] = [];
+  for (let sz = Math.round(R * 0.3); sz >= 14; sz -= 2) {
+    const rc = rimIn - 3 - sz / 2;
+    if (rc - sz / 2 > hub + 4 && chord(rc - sz / 2) >= sz + DIVIDER + 1) icons.push({ size: sz, r: rc });
+  }
+  const icon = icons[0] ?? null;
+  // Text needs the wedge to be as wide as a glyph plus its 1-px outline, clear of the dividers.
+  const need = glyphH + 2 + DIVIDER;
+  const r0 = Math.max(hub + 4, need / (2 * Math.sin(span / 2)));
+  const variants = text ? labelVariants(text) : [];
+  const fits = (t: string, r1: number) => r0 + textWidth(t, scale) <= r1;
+  // With a label, the icon shrinks (not below 18 px) until the label fits under it.
+  const withIcon = (t: string): WedgeFit | null => {
+    for (const ic of icons) {
+      if (ic.size < 18) break;
+      const r1 = ic.r - ic.size / 2 - 2;
+      if (fits(t, r1)) return { icon: ic, label: { text: t, r0, r1 } };
+    }
+    return null;
+  };
+  const alone = (t: string) => (fits(t, rimIn - 2) ? { icon: null, label: { text: t, r0, r1: rimIn - 2 } } : null);
+  for (const t of variants) {
+    const f = withIcon(t);
+    if (f) return f;
+  }
+  const numeric = NUMERIC.has(kind);
+  if (!numeric && icon) return { icon, label: null };
+  for (const t of variants) {
+    const f = alone(t);
+    if (f) return f;
+  }
+  return { icon, label: null };
+}
 
 export interface WheelLabelFn {
   (seg: Segment): string;
@@ -47,6 +188,8 @@ export class WheelView {
   private faceMat: PsxMaterial;
   private pegs: THREE.InstancedMesh;
   private bulbs: THREE.InstancedMesh;
+  /** Each marquee bulb's position round the frame, 0..1 clockwise from the top. */
+  private bulbAngles: number[] = [];
   private flapperPivot = new THREE.Group();
   private highlight: THREE.Mesh;
   private highlightMat: PsxMaterial;
@@ -70,21 +213,40 @@ export class WheelView {
     const g = this.group;
     g.position.set(0, 1.55, -0.6);
 
-    // Back plate / frame (static).
+    // Back plate / frame (static). The owner's ornamental ring replaces the plain gold torus.
+    const frameImg = art.img('wheel.frame');
     // Static frame: back plate, gold rim, stand, hub, flapper bracket, inner pointer — one mesh.
     const frame = new PropBuilder()
-      .cyl(0x8a8a92, WHEEL_R + 0.16, WHEEL_R + 0.16, 0.12, [0, 0, -0.08], [Math.PI / 2, 0, 0], 40)
-      .torus(0xd8a830, WHEEL_R + 0.09, 0.045, [0, 0, 0], [0, 0, 0], 40, 5)
-      .box(0x4a4448, [0.35, 1.5, 0.3], [0, -1.0, -0.2])
-      .cyl(0xd8a830, 0.11, 0.13, 0.08, [0, 0, 0.07], [Math.PI / 2, 0, 0], 10)
+      .cyl(frameImg ? 0x24160e : 0x8a8a92, WHEEL_R + (frameImg ? 0.08 : 0.16), WHEEL_R + (frameImg ? 0.08 : 0.16), 0.12, [0, 0, -0.08], [Math.PI / 2, 0, 0], 40)
+      .box(0x3a2216, [0.35, 1.5, 0.3], [0, -1.0, -0.2])
+      .box(0xc89830, [0.39, 0.05, 0.34], [0, -0.3, -0.2])
       .box(0xd8a830, [0.12, 0.1, 0.12], [0, WHEEL_R + 0.2, 0.06])
-      .cone(0xe03020, 0.04, 0.09, [0, INNER_R + 0.02, 0.07], [0, 0, Math.PI])
+      .cone(0xc0392b, 0.04, 0.09, [0, INNER_R + 0.02, 0.07], [0, 0, Math.PI])
       .build();
     g.add(frame);
+    if (frameImg) {
+      const tex = new THREE.Texture(frameImg);
+      tex.colorSpace = THREE.NoColorSpace;
+      tex.magFilter = THREE.NearestFilter;
+      tex.minFilter = THREE.LinearMipmapLinearFilter;
+      tex.needsUpdate = true;
+      const ring = new THREE.Mesh(
+        new THREE.PlaneGeometry(FRAME_HALF * 2, FRAME_HALF * 2 * (frameImg.height / frameImg.width)),
+        // Unlit (slightly dimmed): it's the show's painted marquee, it should read in a dark studio.
+        psxMaterial({ map: tex, alphaTest: 0.5, lit: false, color: 0xd8ccb8, fog: 0.5, side: THREE.DoubleSide }),
+      );
+      ring.position.z = 0.01;
+      // Decoration only: its see-through middle must not block picks on the wheel.
+      ring.raycast = () => {};
+      g.add(ring);
+    } else g.add(new PropBuilder().torus(0xd8a830, WHEEL_R + 0.09, 0.045, [0, 0, 0], [0, 0, 0], 40, 5).build());
     void assets;
 
     // Outer wheel face.
-    this.face = new CanvasPanel(128, 128);
+    this.face = new CanvasPanel(FACE_PX, FACE_PX);
+    // Mipmapped so the painted face and its icons don't shimmer while it spins.
+    this.face.texture.minFilter = THREE.LinearMipmapLinearFilter;
+    this.face.texture.generateMipmaps = true;
     this.faceMat = psxMaterial({ map: this.face.texture, wrap: 0.35 });
     const face = new THREE.Mesh(new THREE.CircleGeometry(WHEEL_R, 48), this.faceMat);
     this.spinner.add(face);
@@ -103,26 +265,55 @@ export class WheelView {
     this.spinner.add(this.highlight);
 
     // Inner ring.
-    this.ringFace = new CanvasPanel(64, 64);
+    this.ringFace = new CanvasPanel(128, 128);
+    this.ringFace.texture.minFilter = THREE.LinearMipmapLinearFilter;
+    this.ringFace.texture.generateMipmaps = true;
     const ringMesh = new THREE.Mesh(new THREE.CircleGeometry(INNER_R, 32), psxMaterial({ map: this.ringFace.texture, wrap: 0.35 }));
     ringMesh.position.z = 0.03;
     this.ringSpinner.add(ringMesh);
     pickable(ringMesh, 'ring');
     g.add(this.ringSpinner);
+    // Hub: a grinning brass sun that stays upright while the wheel turns under it.
+    const sun = new CanvasPanel(96, 96);
+    sun.draw((ctx) => drawSun(ctx, 48));
+    sun.texture.minFilter = THREE.LinearMipmapLinearFilter;
+    sun.texture.generateMipmaps = true;
+    const hub = new THREE.Mesh(new THREE.CircleGeometry(0.17, 24), psxMaterial({ map: sun.texture, alphaTest: 0.5, wrap: 0.5 }));
+    hub.position.z = 0.085;
+    hub.raycast = () => {};
+    g.add(hub);
     // Flapper (leather) hangs from the bracket at the top.
     this.flapperPivot.position.set(0, WHEEL_R + 0.15, 0.07);
-    const flap = new THREE.Mesh(new THREE.BoxGeometry(0.05, FLAP_LEN, 0.015), psxMaterial({ map: assets.texture('tex.leather'), color: 0x8a3020 }));
-    flap.position.y = -FLAP_LEN / 2;
-    this.flapperPivot.add(flap);
+    // The pointer is a cartoon glove pointing down at the winning wedge (leather strap without art).
+    const glove = art.img('ui.handDown');
+    if (glove) {
+      const gt = new THREE.Texture(glove);
+      gt.colorSpace = THREE.NoColorSpace;
+      gt.magFilter = THREE.NearestFilter;
+      gt.minFilter = THREE.LinearMipmapLinearFilter;
+      gt.needsUpdate = true;
+      const gh = FLAP_LEN + 0.14;
+      const flap = new THREE.Mesh(new THREE.PlaneGeometry(gh * (glove.width / glove.height), gh), psxMaterial({ map: gt, alphaTest: 0.5, wrap: 0.6, side: THREE.DoubleSide }));
+      flap.position.set(0, -gh / 2 + 0.06, 0.02);
+      flap.raycast = () => {};
+      this.flapperPivot.add(flap);
+    } else {
+      const flap = new THREE.Mesh(new THREE.BoxGeometry(0.05, FLAP_LEN, 0.015), psxMaterial({ map: assets.texture('tex.leather'), color: 0x8a3020 }));
+      flap.position.y = -FLAP_LEN / 2;
+      this.flapperPivot.add(flap);
+    }
     g.add(this.flapperPivot);
 
     // Marquee bulbs around the frame.
     const bulbMat = psxMaterial({ lit: false, color: 0xffffff, fog: 0.3 });
-    this.bulbs = new THREE.InstancedMesh(new THREE.OctahedronGeometry(0.035, 0), bulbMat, BULBS);
+    this.bulbAngles = frameImg ? FRAME_BULBS.map((d) => d / 360) : Array.from({ length: 40 }, (_, i) => i / 40);
+    const n = this.bulbAngles.length;
+    const br = frameImg ? FRAME_HALF * FRAME_BULB_R : WHEEL_R + 0.13;
+    this.bulbs = new THREE.InstancedMesh(new THREE.OctahedronGeometry(frameImg ? 0.032 : 0.035, 0), bulbMat, n);
     const m = new THREE.Matrix4();
-    for (let i = 0; i < BULBS; i++) {
-      const a = (i / BULBS) * TAU;
-      m.makeTranslation(Math.sin(a) * (WHEEL_R + 0.13), Math.cos(a) * (WHEEL_R + 0.13), 0.04);
+    for (let i = 0; i < n; i++) {
+      const a = this.bulbAngles[i] * TAU;
+      m.makeTranslation(Math.sin(a) * br, Math.cos(a) * br, 0.04);
       this.bulbs.setMatrixAt(i, m);
       this.bulbs.setColorAt(i, new THREE.Color(1, 0.8, 0.3));
     }
@@ -137,56 +328,139 @@ export class WheelView {
   setLayout(layout: Layout, ring: number[], label: WheelLabelFn): void {
     this.layout = layout;
     const R = this.face.w / 2;
-    const lw = Math.max(1, R / 64);
+    const rimIn = R * RIM_IN;
+    const hub = (INNER_R / WHEEL_R) * R;
     this.face.draw((ctx, w, h) => {
       ctx.clearRect(0, 0, w, h);
+      ctx.imageSmoothingEnabled = true;
       ctx.save();
       ctx.translate(R, R);
+      // Wedges: printed card colours, darker toward the hub, a sheen at the rim, fine sunburst rays.
       for (const s of layout.segments) {
         const def = WEDGES[s.kind];
         const a0 = (s.start - 90) * DEG,
           a1 = (s.end - 90) * DEG;
+        ctx.save();
         ctx.beginPath();
         ctx.moveTo(0, 0);
-        ctx.arc(0, 0, R, a0, a1);
+        ctx.arc(0, 0, rimIn, a0, a1);
         ctx.closePath();
-        ctx.fillStyle = hexCss(def.color);
+        ctx.fillStyle = printColor(def.color);
         ctx.fill();
-        if (this.colorblind || s.overridden) this.pattern(ctx, def.pattern, a0, a1, R, def.ink, s.overridden);
-        if (s.gild > 0) {
-          ctx.strokeStyle = '#ffd84a';
-          ctx.lineWidth = lw * 2;
+        ctx.clip();
+        const gr = ctx.createRadialGradient(0, 0, hub, 0, 0, rimIn);
+        gr.addColorStop(0, 'rgba(40,14,4,0.26)');
+        gr.addColorStop(0.5, 'rgba(40,14,4,0)');
+        gr.addColorStop(0.92, 'rgba(255,244,214,0.14)');
+        gr.addColorStop(1, 'rgba(40,14,4,0.25)');
+        ctx.fillStyle = gr;
+        ctx.fillRect(-R, -R, 2 * R, 2 * R);
+        ctx.strokeStyle = lum(def.color) > 0.5 ? 'rgba(60,30,10,0.08)' : 'rgba(255,240,210,0.07)';
+        ctx.lineWidth = 1;
+        for (let d = s.start + 1.5; d < s.end - 0.5; d += 3) {
+          const a = (d - 90) * DEG;
           ctx.beginPath();
-          ctx.arc(0, 0, R - lw * 3, a0 + 0.02, a1 - 0.02);
+          ctx.moveTo(Math.cos(a) * hub, Math.sin(a) * hub);
+          ctx.lineTo(Math.cos(a) * rimIn, Math.sin(a) * rimIn);
+          ctx.stroke();
+        }
+        ctx.restore();
+        if (this.colorblind || s.overridden) this.pattern(ctx, def.pattern, a0, a1, rimIn, def.ink, s.overridden);
+      }
+      // Aged paper over the print.
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(0, 0, rimIn, 0, TAU);
+      ctx.clip();
+      ctx.globalCompositeOperation = 'multiply';
+      ctx.drawImage(grain(w), -R, -R);
+      ctx.restore();
+      // Gilded wedges: a gold inlay inside the rim (two lines for a double gild).
+      for (const s of layout.segments) {
+        if (!s.gild) continue;
+        const a0 = (s.start - 90) * DEG + 0.02,
+          a1 = (s.end - 90) * DEG - 0.02;
+        ctx.strokeStyle = '#ffd84a';
+        ctx.lineWidth = 3;
+        for (let k = 0; k < Math.min(2, s.gild); k++) {
+          ctx.beginPath();
+          ctx.arc(0, 0, rimIn - 5 - k * 6, a0, a1);
           ctx.stroke();
         }
       }
-      // Dividers.
-      ctx.strokeStyle = '#e8c050';
-      ctx.lineWidth = lw;
+      // Dividers: an ink line with a gold core, like the owner's painted wheel.
       for (const s of layout.segments) {
         const a = (s.start - 90) * DEG;
-        ctx.beginPath();
-        ctx.moveTo(Math.cos(a) * INNER_R * (R / WHEEL_R), Math.sin(a) * INNER_R * (R / WHEEL_R));
-        ctx.lineTo(Math.cos(a) * R, Math.sin(a) * R);
-        ctx.stroke();
+        const line = (col: string, lw: number) => {
+          ctx.strokeStyle = col;
+          ctx.lineWidth = lw;
+          ctx.beginPath();
+          ctx.moveTo(Math.cos(a) * hub, Math.sin(a) * hub);
+          ctx.lineTo(Math.cos(a) * rimIn, Math.sin(a) * rimIn);
+          ctx.stroke();
+        };
+        line('#2a1206', DIVIDER);
+        line('#e8b84a', 1);
       }
-      // Labels, radial, reading outward.
+      // Rim band: oxblood with gold piping and a cream marquee dot in the middle of each wedge.
+      ctx.lineWidth = R - rimIn;
+      ctx.strokeStyle = '#4a120c';
+      ctx.beginPath();
+      ctx.arc(0, 0, (R + rimIn) / 2, 0, TAU);
+      ctx.stroke();
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = '#2a0c06';
+      ctx.beginPath();
+      ctx.arc(0, 0, rimIn, 0, TAU);
+      ctx.stroke();
+      ctx.strokeStyle = '#d8a838';
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.arc(0, 0, rimIn + 2, 0, TAU);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(0, 0, R - 1.5, 0, TAU);
+      ctx.stroke();
+      for (const s of layout.segments) {
+        if (s.end - s.start < 6) continue;
+        const a = ((s.start + s.end) / 2 - 90) * DEG;
+        const rr = (R + rimIn) / 2;
+        ctx.fillStyle = '#fff0c8';
+        ctx.beginPath();
+        ctx.arc(Math.cos(a) * rr, Math.sin(a) * rr, 2.2, 0, TAU);
+        ctx.fill();
+      }
+      // Contents: the drawn icon at the rim and the label along the radius, each only if it fits.
       for (const s of layout.segments) {
         const def = WEDGES[s.kind];
         const mid = ((s.start + s.end) / 2 - 90) * DEG;
-        const txt = label(s);
-        // Too narrow to carry a label: the tooltip names it.
-        if (s.end - s.start < LABEL_MIN_DEG) continue;
-        // Labels use the native 5×7 font. Left-hand wedges are flipped so every label reads upright.
-        const flip = Math.cos(mid) < 0;
-        ctx.save();
-        ctx.rotate(flip ? mid + Math.PI : mid);
-        let shown = txt;
-        while (textWidth(shown) > R * 0.6 && shown.length > 1) shown = shown.slice(0, -1);
-        const x = flip ? -R * 0.9 : R * 0.3;
-        drawText(ctx, shown, x, -3.5, { color: hexCss(def.ink), shadow: '#000' });
-        ctx.restore();
+        const fit = fitWedge(s.end - s.start, s.kind, label(s), R, hub);
+        const img = fit.icon ? art.img(`wedge.${s.kind}`) : null;
+        if (fit.icon && img) {
+          ctx.save();
+          ctx.rotate(mid + Math.PI / 2);
+          const sz = fit.icon.size;
+          // A soft drop shadow so the icon sits on the card.
+          ctx.globalAlpha = 0.35;
+          ctx.filter = 'brightness(0)';
+          ctx.drawImage(img, -sz / 2 + 1.5, -fit.icon.r - sz / 2 + 1.5, sz, sz);
+          ctx.filter = 'none';
+          ctx.globalAlpha = 1;
+          ctx.drawImage(img, -sz / 2, -fit.icon.r - sz / 2, sz, sz);
+          ctx.restore();
+        }
+        if (fit.label) {
+          // Read outward; left-hand wedges are flipped so every label reads upright.
+          const flip = Math.cos(mid) < 0;
+          const L = textWidth(fit.label.text, GLYPH);
+          const rc = (fit.label.r0 + fit.label.r1) / 2;
+          ctx.save();
+          ctx.rotate(flip ? mid + Math.PI : mid);
+          const x = flip ? -rc - L / 2 : rc - L / 2;
+          const ink = def.ink;
+          outlinedText(ctx, fit.label.text, x, -GLYPH_H / 2, `#${new THREE.Color(ink).getHexString()}`, lum(ink) > 0.5 ? '#1c0a04' : '#fff0d0');
+          ctx.restore();
+        }
       }
       ctx.restore();
     });
@@ -205,28 +479,86 @@ export class WheelView {
 
   setRing(ring: number[]): void {
     const R = this.ringFace.w / 2;
+    // The brass sun covers the middle; values sit in the band outside it.
+    const sunR = (0.17 / INNER_R) * R;
     this.ringFace.draw((ctx, w, h) => {
       ctx.clearRect(0, 0, w, h);
+      ctx.imageSmoothingEnabled = true;
       ctx.save();
       ctx.translate(R, R);
       const n = ring.length;
+      const span = (360 / n) * DEG;
       for (let i = 0; i < n; i++) {
         const v = ring[i];
         const a0 = ((i / n) * 360 - 90) * DEG,
-          a1 = (((i + 1) / n) * 360 - 90) * DEG;
+          a1 = a0 + span;
         ctx.beginPath();
         ctx.moveTo(0, 0);
         ctx.arc(0, 0, R, a0, a1);
         ctx.closePath();
-        ctx.fillStyle = v === 0 ? '#111' : v === 1 ? '#3a3a48' : v === 2 ? '#2c6a8a' : v === 3 ? '#c09020' : '#c02030';
+        ctx.fillStyle = v === 0 ? '#1c0e08' : v === 1 ? '#efe0bc' : v === 2 ? '#2f7a74' : v === 3 ? '#e2a52e' : '#c2402a';
         ctx.fill();
-        ctx.strokeStyle = '#e8c050';
+      }
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(0, 0, R, 0, TAU);
+      ctx.clip();
+      ctx.globalCompositeOperation = 'multiply';
+      ctx.drawImage(grain(256), -R, -R, 2 * R, 2 * R);
+      ctx.restore();
+      for (let i = 0; i < n; i++) {
+        const a = ((i / n) * 360 - 90) * DEG;
+        ctx.strokeStyle = '#2a1206';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(Math.cos(a) * R, Math.sin(a) * R);
+        ctx.stroke();
+        ctx.strokeStyle = '#e8b84a';
         ctx.lineWidth = 1;
         ctx.stroke();
-        const mid = (a0 + a1) / 2;
+      }
+      // Scalloped gold edge.
+      ctx.fillStyle = '#d8a838';
+      const bumps = Math.max(16, n * 3);
+      for (let k = 0; k < bumps; k++) {
+        const a = (k / bumps) * TAU;
+        ctx.beginPath();
+        ctx.arc(Math.cos(a) * (R - 3), Math.sin(a) * (R - 3), 3.5, 0, TAU);
+        ctx.fill();
+      }
+      ctx.strokeStyle = '#2a1206';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(0, 0, R - 7, 0, TAU);
+      ctx.stroke();
+      // Values: across the segment if the chord allows, else along the radius, else colour only.
+      for (let i = 0; i < n; i++) {
+        const v = ring[i];
+        const t = `×${v}`;
+        const L = textWidth(t, GLYPH);
+        const mid = (((i + 0.5) / n) * 360 - 90) * DEG;
+        const col = v === 0 ? '#ff6a4a' : v === 1 ? '#3a2010' : '#fff4d8';
+        const out = v === 1 ? '#fff4d8' : '#1c0a04';
+        const band0 = sunR + 2,
+          band1 = R - 9;
+        const rText = band1 - GLYPH_H / 2 - 2;
+        const chordAt = (r: number) => 2 * r * Math.sin(span / 2);
         ctx.save();
-        ctx.rotate(mid + Math.PI / 2);
-        drawText(ctx, `×${v}`, 0, -R * 0.78, { scale: 1, align: 'center', color: v === 0 ? '#c03030' : '#fff4c0', shadow: '#000' });
+        if (chordAt(rText - GLYPH_H / 2) >= L + 4) {
+          // Lower half: turned the other way so the value reads upright at rest.
+          const low = Math.sin(mid) > 0;
+          ctx.rotate(low ? mid - Math.PI / 2 : mid + Math.PI / 2);
+          outlinedText(ctx, t, -L / 2, low ? rText - GLYPH_H / 2 : -rText - GLYPH_H / 2, col, out);
+        } else {
+          const r0 = Math.max(band0, (GLYPH_H + 4) / (2 * Math.sin(span / 2)));
+          if (r0 + L <= band1) {
+            const flip = Math.cos(mid) < 0;
+            ctx.rotate(flip ? mid + Math.PI : mid);
+            const rc = (r0 + band1) / 2;
+            outlinedText(ctx, t, flip ? -rc - L / 2 : rc - L / 2, -GLYPH_H / 2, col, out);
+          }
+        }
         ctx.restore();
       }
       ctx.restore();
@@ -407,11 +739,11 @@ export class WheelView {
       sh.t += dt;
       if (sh.t > sh.life) this.show = null;
     }
-    for (let i = 0; i < BULBS; i++) {
+    for (let i = 0; i < this.bulbAngles.length; i++) {
       const on = (Math.floor(this.chase) + i) % 4 === 0 || (hot > 0.5 && (Math.floor(this.chase) + i) % 4 === 2);
       let b = (on ? 1 : 0.18) * this.bulbsOn;
       if (sh) {
-        const f = i / BULBS;
+        const f = this.bulbAngles[i];
         if (sh.kind === 'win') {
           // Two bright heads racing round the rim in gold.
           const head = (sh.t * 1.6) % 1;
@@ -442,4 +774,62 @@ export class WheelView {
   pointerLocal(): number {
     return (((-this.theta % 360) + 360) % 360);
   }
+}
+
+/** The hub: a brass sun with rays and a cartoon grin, in the art pack's ink style. */
+function drawSun(ctx: CanvasRenderingContext2D, r: number): void {
+  ctx.clearRect(0, 0, 2 * r, 2 * r);
+  ctx.save();
+  ctx.translate(r, r);
+  const rays = 12;
+  for (let i = 0; i < rays; i++) {
+    const a = (i / rays) * TAU;
+    ctx.beginPath();
+    ctx.moveTo(Math.cos(a - 0.2) * r * 0.6, Math.sin(a - 0.2) * r * 0.6);
+    ctx.lineTo(Math.cos(a) * r * 0.97, Math.sin(a) * r * 0.97);
+    ctx.lineTo(Math.cos(a + 0.2) * r * 0.6, Math.sin(a + 0.2) * r * 0.6);
+    ctx.closePath();
+    ctx.fillStyle = i % 2 ? '#e2a52e' : '#f3dfb0';
+    ctx.fill();
+    ctx.strokeStyle = '#2a1206';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  }
+  const gr = ctx.createRadialGradient(-r * 0.2, -r * 0.25, r * 0.05, 0, 0, r * 0.62);
+  gr.addColorStop(0, '#fff2b0');
+  gr.addColorStop(0.45, '#e2b040');
+  gr.addColorStop(1, '#9a6418');
+  ctx.beginPath();
+  ctx.arc(0, 0, r * 0.62, 0, TAU);
+  ctx.fillStyle = gr;
+  ctx.fill();
+  ctx.lineWidth = 3;
+  ctx.strokeStyle = '#2a1206';
+  ctx.stroke();
+  // Pie-cut eyes and a wide grin.
+  ctx.fillStyle = '#1c0a04';
+  for (const s of [-1, 1]) {
+    ctx.beginPath();
+    ctx.ellipse(s * r * 0.2, -r * 0.12, r * 0.08, r * 0.14, 0, 0, TAU);
+    ctx.fill();
+    ctx.fillStyle = '#fff8e0';
+    ctx.beginPath();
+    ctx.moveTo(s * r * 0.2, -r * 0.12);
+    ctx.arc(s * r * 0.2, -r * 0.12, r * 0.08, -1.2, -0.5);
+    ctx.fill();
+    ctx.fillStyle = '#1c0a04';
+  }
+  ctx.beginPath();
+  ctx.arc(0, r * 0.05, r * 0.32, 0.25, Math.PI - 0.25);
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillStyle = '#c0392b';
+  ctx.beginPath();
+  ctx.arc(0, r * 0.3, r * 0.1, Math.PI, 0);
+  ctx.fill();
+  ctx.fillStyle = 'rgba(255,255,255,0.55)';
+  ctx.beginPath();
+  ctx.ellipse(-r * 0.28, -r * 0.34, r * 0.1, r * 0.05, -0.6, 0, TAU);
+  ctx.fill();
+  ctx.restore();
 }

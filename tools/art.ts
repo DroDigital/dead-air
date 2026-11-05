@@ -7,6 +7,7 @@
  *   icons-scratch.png       4×3 grid, SCRATCH_CARDS order
  *   host-faces.png          4×4 grid → one 512² atlas (128 px faces) for the host's CRT
  *   callers.png             the Producer and the voice on the other line
+ *   wheel-frame.jpg         the ornamental ring around the prize wheel (cut out of its white paper)
  *   ui-hud.png / ui-panels  named sprites (boxes measured on the sheet, trimmed to the ink)
  *   screen-*.png, title-*   menus and end-of-run screens
  *
@@ -150,7 +151,8 @@ async function boxes(sharp: Sharp, file: string, map: Record<string, Box>, prefi
  * Cut a part out of an opaque sheet: flood-fill the paper background from the crop's edges
  * (the ink outline stops it), feather the edge, trim. Returns nothing; writes host/<name>.png.
  */
-async function cutout(sharp: Sharp, file: string, name: string, [x, y, w, h]: Box, max: number, tol = 34): Promise<void> {
+async function cutout(sharp: Sharp, file: string, name: string, [x, y, w, h]: Box, max: number, tol = 34, opts: { dir?: string; seedCenter?: boolean } = {}): Promise<void> {
+  const dir = opts.dir ?? 'host';
   const { data, info } = await sharp(join(SRC, file)).extract({ left: x, top: y, width: w, height: h }).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
   const W = info.width,
     H = info.height;
@@ -166,6 +168,8 @@ async function cutout(sharp: Sharp, file: string, name: string, [x, y, w, h]: Bo
   const stack: number[] = [];
   for (let i = 0; i < W; i++) stack.push(i, (H - 1) * W + i);
   for (let j = 0; j < H; j++) stack.push(j * W, j * W + W - 1);
+  // A ring (the wheel frame) has paper inside it too: fill from the middle as well.
+  if (opts.seedCenter) stack.push(((H / 2) | 0) * W + ((W / 2) | 0));
   while (stack.length) {
     const i = stack.pop()!;
     if (seen[i] || dist(i) > tol) continue;
@@ -188,7 +192,7 @@ async function cutout(sharp: Sharp, file: string, name: string, [x, y, w, h]: Bo
     }
   }
   const img = sharp(data, { raw: { width: W, height: H, channels: 4 } });
-  await save(sharp, img, `host.${name}`, `host/${name}.png`, max);
+  await save(sharp, img, `${dir}.${name}`, `${dir}/${name}.png`, max);
 }
 
 async function screen(sharp: Sharp, file: string, id: string, width: number): Promise<void> {
@@ -221,6 +225,8 @@ export async function buildArt(): Promise<number> {
   await cutout(sharp, 'host-model-sheet.png', 'bowtie', [540, 700, 420, 300], 192);
   await cutout(sharp, 'host-model-sheet.png', 'glove', [110, 700, 330, 300], 160);
   await cutout(sharp, 'host-model-sheet.png', 'shoe', [1060, 720, 380, 260], 160);
+  // The wheel's ornamental frame (bulbs are lit by the 3D marquee on top of the painted ones).
+  if (existsSync(join(SRC, 'wheel-frame.jpg'))) await cutout(sharp, 'wheel-frame.jpg', 'frame', [0, 0, 1024, 1024], 1024, 40, { dir: 'wheel', seedCenter: true });
   await boxes(sharp, 'callers.png', { producer: [0, 0, 860, 1024], secret: [880, 40, 640, 984] }, 'caller', 320);
   await boxes(sharp, 'ui-hud.png', HUD, 'ui', 192);
   await boxes(sharp, 'ui-panels.png', PANELS, 'panel', 384);

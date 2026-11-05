@@ -87,7 +87,7 @@ Voice-over (custom-designed voices, `eleven_v4`), sound effects (`eleven_text_to
 
 ## Art
 
-The 2D art pack (the Host, his faces, the callers, wedge, artifact and scratch-card icons, the menu and HUD kits, the title plate, the full-screen cards and the studio textures) was provided for this project by the project owner. Sources in `assets-src/art`; `tools/art.ts` slices them into the sprites in `public/assets/art`.
+The 2D art pack (the Host, his faces, the callers, wedge, artifact and scratch-card icons, the menu and HUD kits, the title plate, the wheel frame, the full-screen cards and the studio textures) was provided for this project by the project owner. Sources in `assets-src/art`; `tools/art.ts` slices them into the sprites in `public/assets/art`.
 
 
 ## Libraries

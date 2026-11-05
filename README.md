@@ -21,7 +21,7 @@ Open the printed URL. Other scripts:
 | Command | What it does |
 |---|---|
 | `npm run build` | Typecheck (strict) + production build to `dist/` |
-| `npm test` | 172 Vitest tests: rules, wheel physics, determinism, saves and migrations, content, text coverage, regressions, simulator smoke tests |
+| `npm test` | 199 Vitest tests: rules, wheel physics, determinism, saves and migrations, content, text coverage, regressions, simulator smoke tests |
 | `npm run sim -- --runs 5000 --seed 1` | Headless balance simulator (all bot policies, multi-threaded) |
 | `npm run assets` | Convert `/assets-src` → `/public/assets` (PS1 conformance), slice the 2D art pack into sprites (`tools/art.ts`), regenerate the runtime indexes, CREDITS.md, ASSETS_TODO.md |
 | `npm run assets -- --fetch` | Download any missing CC0/OFL sources first, then convert |
@@ -93,6 +93,7 @@ The project owner's 2D art pack (`assets-src/art`, layouts in `docs/art-prompts.
 - **The host** is a rigged cut-out of the model sheet: TV head, tailcoat, bow tie, gloves and shoes as sprites, rubber-hose arms and legs, springy antennae. Six poses on springs that overshoot and settle, hops, squash and stretch, and gestures timed to his voice. The TV shows the 16 faces from the face sheet, swapped by expression and lip-synced (M/E/O/A mouths, idle line boil, blinks, glances, glitch frames on late Deadlines). Redrawn at 12 fps onto a billboard in the studio.
 - **Menus** use the panel kit (paper panels, pill buttons, ribbons, plaques, checkboxes), with the title backdrop and lettered plate, and the win/lose cards behind the end-of-run summary. The loading screen is the "please stand by" card.
 - **Icons:** the Prop Room and prize picks show the drawn artifact icons, the landed wedge's icon pops up when the wheel stops, and the phone panel shows the Producer or the Other Line.
+- **The wheel:** the owner's ornamental frame (its 20 painted bulbs carry the marquee light shows), a printed-card face with paper grain, ink-and-gold dividers and an oxblood rim, each wedge's drawn icon, a cream inner ring with a scalloped gold edge, a grinning brass sun for a hub, and a cartoon glove for the pointer. Every label is fitted to its wedge: the native-size pixel font is only placed where the wedge is wider than a glyph, long values shorten (`1.5K`, `+2T`), and a wedge too narrow for text shows its icon (tests in `tests/wheelFit.test.ts`).
 - **Studio textures:** wallpaper, curtain, floor, wood, brass, and raked audience seating.
 
 ## Sound
