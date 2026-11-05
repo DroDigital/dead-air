@@ -136,4 +136,26 @@ describe('HUD readability', () => {
     expect(vi.mocked(drawText).mock.calls.map(([, s]) => s)).not.toContain('VAULT $0 / DEBT $300');
   });
 
+  it.each([{ w: 320, h: 180, k: 1 }, { w: 640, h: 360, k: 2 }])('keeps both ticker rows and inspected text separated at $w × $h', ({ w, h, k }) => {
+    const hud = new Hud();
+    hud.chyron = { deadline: '8', spins: 12, spinsMax: 12, tray: 45975, streak: 2.75, vault: 45975, debt: 37500 };
+    hud.update(10);
+    hud.draw(canvas(), w, h, k, { x: 0, y: 0, inside: false }, 0);
+    const calls = vi.mocked(drawText).mock.calls;
+    const tray = calls.find(([, s]) => s.startsWith('TRAY $'))!;
+    const debt = calls.find(([, s]) => s.includes('DEBT $37500'))!;
+    expect(tray[3] + 7).toBeLessThanOrEqual(debt[3]);
+    expect(debt[2] + textWidth(debt[1])).toBeLessThanOrEqual(w);
+    expect(debt[4]?.scale).toBe(1);
+
+    vi.mocked(drawText).mockClear();
+    hud.choice = { title: 'REPLACE', options: [{ label: 'ONE', detail: 'THIS IS A FULL DESCRIPTION FOR THE CHOSEN ARTIFACT.' }], selected: 0, layout: 'list', inspect: true };
+    hud.draw(canvas(), w, h, k, { x: 0, y: 0, inside: false }, 0);
+    const detail = vi.mocked(drawText).mock.calls.find(([, s]) => s.startsWith('THIS IS A FULL DESCRIPTION'))!;
+    const footerLimit = h - 24 * k;
+    expect(detail[3] + 7).toBeLessThanOrEqual(footerLimit);
+    expect(detail[2] + textWidth(detail[1])).toBeLessThanOrEqual(w);
+    expect(detail[4]?.scale).toBe(1);
+  });
+
 });

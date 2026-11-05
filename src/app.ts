@@ -19,7 +19,7 @@ import { scratchDef } from './content/scratchCards';
 import { WEDGES } from './content/wedges';
 import { defaultSettings, sanitizeSettings, SETTINGS_VERSION, type Settings } from './core/config';
 import { APP_TRANSITIONS, Fsm, type AppState } from './core/fsm';
-import { META_MIGRATIONS, RUN_MIGRATIONS, SAVE_KEYS, SaveSlot, defaultStorage } from './core/save';
+import { META_MIGRATIONS, RUN_MIGRATIONS, SAVE_KEYS, SETTINGS_MIGRATIONS, SaveSlot, defaultStorage } from './core/save';
 import { BALANCE } from './game/balance';
 import { META_VERSION, applyRun, computeRatings, endlessUnlocked, newMeta, noteRunProgress, unlockedArtifacts, unlockedWedges, type MetaState } from './game/meta';
 import { Game, RUN_VERSION, type DeadlineEndResult, type SpinOutcome, type SpinResolution } from './game/run';
@@ -69,7 +69,7 @@ export class App {
   private storage = defaultStorage();
   private runSlot = new SaveSlot<RunState>(SAVE_KEYS.run, RUN_VERSION, RUN_MIGRATIONS, this.storage);
   private metaSlot = new SaveSlot<MetaState>(SAVE_KEYS.meta, META_VERSION, META_MIGRATIONS, this.storage);
-  private settingsSlot = new SaveSlot<Settings>(SAVE_KEYS.settings, SETTINGS_VERSION, {}, this.storage);
+  private settingsSlot = new SaveSlot<Settings>(SAVE_KEYS.settings, SETTINGS_VERSION, SETTINGS_MIGRATIONS, this.storage);
   private busy = 0;
   private loading = 0;
   private time = 0;

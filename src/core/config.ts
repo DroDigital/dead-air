@@ -7,7 +7,7 @@ export const INTERNAL_H = 180;
 
 export interface Settings {
   v: number;
-  /** Internal resolution multiplier (1 = 320×180, 2 = 640×360). */
+  /** Internal resolution multiplier (1 = 320×180, 2 = 640×360; the default is 2). */
   resolutionScale: 1 | 2;
   crt: boolean;
   warp: number;
@@ -24,12 +24,12 @@ export interface Settings {
   dither: boolean;
 }
 
-export const SETTINGS_VERSION = 1;
+export const SETTINGS_VERSION = 2;
 
 export function defaultSettings(): Settings {
   return {
     v: SETTINGS_VERSION,
-    resolutionScale: 1,
+    resolutionScale: 2,
     crt: true,
     warp: 1,
     reducedFlashing: false,
@@ -52,7 +52,7 @@ export function sanitizeSettings(s: Partial<Settings> | null | undefined): Setti
   const clamp01 = (x: unknown, def: number) => (typeof x === 'number' && isFinite(x) ? Math.max(0, Math.min(1, x)) : def);
   return {
     v: SETTINGS_VERSION,
-    resolutionScale: s.resolutionScale === 2 ? 2 : 1,
+    resolutionScale: s.resolutionScale === 1 || s.resolutionScale === 2 ? s.resolutionScale : d.resolutionScale,
     crt: typeof s.crt === 'boolean' ? s.crt : d.crt,
     warp: typeof s.warp === 'number' && isFinite(s.warp) ? Math.max(0, Math.min(2, s.warp)) : d.warp,
     reducedFlashing: !!s.reducedFlashing,
