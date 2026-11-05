@@ -100,6 +100,7 @@ The only library over ~100 kB gz is three.js. GSAP measures ~28 kB gz. Built app
 - **No `node_modules` in the package.** Vite already bundles three.js and GSAP into `dist/`, so the app ships only `dist/` and the launcher (an 18 MB asar).
 - **SwiftShader fallback** (`--enable-unsafe-swiftshader`). Without it, Chromium refuses WebGL on machines with no usable GPU (VMs, blocklisted drivers) and the game would hang at boot. The window only ever loads the game's own local build.
 - **itch.io gets the unpacked app**, not the installer, so the itch app can install, launch and patch it with butler's diffs.
+- **The app icon is the host's TV head** from the art pack, clipped to a round window on the wheel's sunburst and set in an 824 px rounded tile (macOS keeps icon artwork inside that safe area). The head art is 290 px, so it is upscaled once. The window's rim covers the clip edge, which hides the bow tie and the strokes under the cabinet. `tools/desktop-icon.ts` regenerates `desktop/icon.png` from `public/assets/art/host/head.png`.
 
 ## Phone dialogue length
 
