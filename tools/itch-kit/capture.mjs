@@ -21,7 +21,7 @@ const want = (n) => !only.length || only.includes(n);
 const browser = await chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--autoplay-policy=no-user-gesture-required'] });
 const report = [];
 
-/** A fresh page on a frozen clock, booted to the title screen (the game's default 320×180). */
+/** A fresh page on a frozen clock, booted to the title screen at the kit's 320×180 look. */
 async function boot() {
   // The game scales its 320×180 image by whole numbers only, so window sizes are exact
   // multiples: clips render at 960×540 (3×), stills at 1920×1080 (6×, see still()).
@@ -39,6 +39,8 @@ async function boot() {
     return false;
   };
   await until(() => window.deadAir?.fsm?.state === 'Menu', 60000);
+  // The game now defaults to 640×360; pin the kit's 320×180 so the 960×540 windows stay whole-number scaled.
+  await page.evaluate(() => window.deadAir.applySettings({ ...window.deadAir.settings, resolutionScale: 1 }));
   await step(1500);
   const settled = () => until(() => window.deadAir.busy === 0 && !window.deadAir.stage.wheel.busy && !window.deadAir.charge && !window.deadAir.stage.rig.inShot, 30000);
   return { page, step, until, settled };
