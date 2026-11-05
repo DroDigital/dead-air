@@ -36,13 +36,17 @@ function labelVariants(t: string): string[] {
   const cash = /^\$(\d+)$/.exec(t);
   if (cash) {
     const n = Number(cash[1]);
-    if (n >= 1000) out.push(`$${n % 1000 ? (n / 1000).toFixed(1) : n / 1000}K`);
+    // Only use a one-decimal K label when it represents the exact amount.
+    if (n >= 1000 && n % 100 === 0) {
+      const compact = `${n / 1000}K`;
+      out.push(`$${compact}`, compact);
+    }
+    if (n >= 1000) out.push(cash[1]);
   }
   if (t.endsWith(' TOK')) out.push(t.replace(' TOK', 'T'));
   if (t.endsWith(' SPN')) out.push(t.replace(' SPN', 'S'));
   if (t === 'x2 NXT') out.push('x2');
   if (t === '+5% V') out.push('+5%');
-  if (cash && Number(cash[1]) >= 1000) out.push(out[out.length - 1].slice(1));
   if (t === 'JACKPOT') out.push('JACK');
   if (t === 'PAYDAY') out.push('PAY');
   if (t === 'RESPIN') out.push('SPIN');

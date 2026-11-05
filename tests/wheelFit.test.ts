@@ -63,6 +63,18 @@ describe('wheel face layout', () => {
     for (const k of ['respin', 'bankrupt', 'mystery', 'boost']) expect(fitWedge(15, k, WEDGES[k as keyof typeof WEDGES].glyph, R, HUB).icon).not.toBeNull();
   });
 
+  it('preserves exact cash values when they must be shortened', () => {
+    expect(fitWedge(15, 'cash', '$1050', R, HUB).label?.text).toBe('1050');
+    for (const amount of [1000, 1050, 1099, 1500, 12000]) {
+      for (let span = 4; span <= 90; span += 0.5) {
+        const label = fitWedge(span, 'cash', `$${amount}`, R, HUB).label?.text;
+        if (!label) continue;
+        const displayed = Number(label.replace('$', '').replace('K', '')) * (label.endsWith('K') ? 1000 : 1);
+        expect(displayed).toBe(amount);
+      }
+    }
+  });
+
   it('big values shorten instead of overflowing', () => {
     expect(fitWedge(15, 'cash', '$1500', R, HUB).label?.text).toBe('1.5K');
     expect(fitWedge(15, 'token', '+2 TOK', R, HUB).label?.text).toBe('+2T');
