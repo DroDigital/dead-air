@@ -322,6 +322,7 @@ export class Menus {
     } else if (p === 'summary' && this.summary) {
       const s = this.summary;
       this.root.classList.add(s.won ? 'won' : 'lost');
+      if (!s.won && this.cb.getSettings().reducedFlashing) this.root.classList.add('reduced-flashing');
       // Lost: the trapdoor scene plays (the host's glove waving from below), GAME OVER drops in,
       // then the run's card rises. The CSS times it; the slam is timed to match.
       if (!s.won) {

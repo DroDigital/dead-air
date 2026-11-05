@@ -124,6 +124,10 @@
         mix-blend-mode: screen;
         animation: golight-halo 4.7s steps(1) infinite;
       }
+      #menus.reduced-flashing .gostage .golight,
+      #menus.reduced-flashing .gostage .golight::after {
+        animation: none;
+      }
       @keyframes golight-dim {
         0% { opacity: 0; }
         11% { opacity: 0.28; }
