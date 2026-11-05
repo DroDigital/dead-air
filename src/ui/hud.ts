@@ -30,8 +30,15 @@ export interface ChoicePanel {
   accent?: string;
   /** Layout: 'cards' (side by side) or 'list'. */
   layout?: 'cards' | 'list';
+  /** Show the highlighted option's complete description in a shared detail area. */
+  inspect?: boolean;
   /** Art-pack portrait shown at the left of the panel (the callers on the phone). */
   portrait?: string;
+}
+
+/** Large values use scientific notation to keep the ticker on screen; tooltips retain exact values. */
+function tickerNumber(value: number): string {
+  return Math.abs(value) >= 1e9 ? value.toExponential(2) : String(Math.round(value));
 }
 
 interface Rect {
@@ -52,6 +59,10 @@ export interface Caption {
 export class Hud {
   choice: ChoicePanel | null = null;
   private optionRects: Rect[] = [];
+  private lastChoice: ChoicePanel | null = null;
+  private lastChoiceSelected = -1;
+  private lastChoiceMouse = { x: -1, y: -1, inside: false };
+  private choiceHoverActive = false;
   private arrowRects: { dir: 'up' | 'down' | 'left' | 'right'; r: Rect }[] = [];
   captions: Caption[] = [];
   toasts: { text: string; color: string; t: number }[] = [];
@@ -146,6 +157,24 @@ export class Hud {
     }
   }
 
+  /** The option whose highlight and details are currently shown. */
+  activeChoiceIndex(): number {
+    if (!this.choice) return -1;
+    if (this.choice === this.lastChoice && this.choiceHoverActive && this.lastChoiceMouse.inside) {
+      const hovered = this.hitChoiceAt(this.lastChoiceMouse.x, this.lastChoiceMouse.y);
+      if (hovered >= 0) return hovered;
+    }
+    return this.choice.selected;
+  }
+
+  /** Keyboard/controller navigation takes control until the pointer moves again. */
+  selectChoice(index: number): void {
+    if (!this.choice) return;
+    this.choice.selected = index;
+    this.lastChoiceSelected = index;
+    this.choiceHoverActive = false;
+  }
+
   hitChoice(x: number, y: number): number {
     for (let i = 0; i < this.optionRects.length; i++) {
       const r = this.optionRects[i];
@@ -163,9 +192,9 @@ export class Hud {
   private drawChyron(ctx: CanvasRenderingContext2D, w: number, h: number, k: number, time: number): void {
     const c = this.chyron!;
     const r = this.roll;
-    const H = 12 * k;
+    const H = 22 * k;
     const y = h - H;
-    const ty = y + Math.round((H - 7 * TS) / 2);
+    const ty = y + Math.round((11 * k - 7 * TS) / 2);
     const d = this.danger;
     const red = Math.round(30 + 40 * d * (0.6 + 0.4 * Math.sin(time * 6)));
     ctx.fillStyle = d > 0 ? 'rgba(' + red + ',4,2,0.88)' : 'rgba(10,4,2,0.86)';
@@ -178,12 +207,12 @@ export class Hud {
     const seg = (sw: number, bg: string | null) => {
       if (bg) {
         ctx.fillStyle = bg;
-        ctx.fillRect(x, y + k, sw, H - k);
+        ctx.fillRect(x, y + k, sw, 10 * k);
       }
       const x0 = x;
       x += sw;
       ctx.fillStyle = 'rgba(255,176,64,0.25)';
-      ctx.fillRect(x - k, y + 2 * k, k, H - 3 * k);
+      ctx.fillRect(x - k, y + 2 * k, k, 8 * k);
       return x0;
     };
     // LIVE with a tally dot.
@@ -208,8 +237,8 @@ export class Hud {
       ctx.fillRect(x0 + pl + i * 4 * k, y + 4 * k, 3 * k, 5 * k);
     }
     // Tray x Streak: the number rolls; the streak heats from pale to red.
-    const tray = 'TRAY $' + Math.round(r.tray);
-    const st = '\u00d7' + c.streak.toFixed(2);
+    const tray = 'TRAY $' + tickerNumber(r.tray);
+    const st = '\u00d7' + (c.streak >= 1e6 ? tickerNumber(c.streak) : c.streak.toFixed(2));
     x0 = seg(textWidth(tray, TS) + textWidth(st, TS) + 14 * k, null);
     const tf = r.trayFlash > 0 && Math.floor(r.trayFlash * 10) % 2 === 0;
     drawText(ctx, tray, x0 + 4 * k, ty, { scale: TS, color: tf ? (r.trayUp ? '#a0ffa0' : '#ff6050') : '#f0e0b0' });
@@ -217,23 +246,23 @@ export class Hud {
     const sc = heat <= 0 ? '#c0b090' : heat < 0.5 ? '#ffd060' : heat < 0.85 ? '#ff9030' : Math.floor(time * 6) % 2 ? '#ff4020' : '#ffd060';
     drawText(ctx, st, x0 + 8 * k + textWidth(tray, TS), ty, { scale: TS, color: sc });
     // Vault vs Debt with a progress bar; the Tray shows as a ghost on top.
-    const vt = 'VAULT $' + Math.round(r.vault) + '/' + c.debt;
-    const vw = Math.max(textWidth(vt, TS) + 8 * k, w - x - 2 * k);
-    x0 = seg(vw, null);
+    const vt = 'VAULT $' + tickerNumber(r.vault) + ' / DEBT $' + tickerNumber(c.debt);
+    const vw = w;
+    x0 = 0;
     const vf = r.vaultFlash > 0 && Math.floor(r.vaultFlash * 10) % 2 === 0;
     const covered = r.vault >= c.debt;
-    drawText(ctx, vt, x0 + 4 * k, ty, { scale: TS, color: vf ? '#ffffff' : covered ? '#90ff90' : '#f0e0b0' });
+    drawText(ctx, vt, x0 + 4 * k, y + 11 * k + Math.round((11 * k - 7 * TS) / 2), { scale: TS, color: vf ? '#ffffff' : covered ? '#90ff90' : '#f0e0b0' });
     const frac = Math.max(0, Math.min(1, r.vault / Math.max(1, c.debt)));
     const bx = x0 + 4 * k;
     const bw = vw - 8 * k;
     ctx.fillStyle = '#2a1a10';
-    ctx.fillRect(bx, y + 10 * k, bw, k);
+    ctx.fillRect(bx, y + 20 * k, bw, k);
     ctx.fillStyle = covered ? '#60ff60' : frac > 0.66 ? '#ffd040' : '#ff7040';
-    ctx.fillRect(bx, y + 10 * k, Math.round(bw * frac), k);
+    ctx.fillRect(bx, y + 20 * k, Math.round(bw * frac), k);
     const ghost = Math.max(0, Math.min(1, (r.vault + r.tray) / Math.max(1, c.debt))) - frac;
     if (ghost > 0) {
       ctx.fillStyle = 'rgba(160,255,160,0.45)';
-      ctx.fillRect(bx + Math.round(bw * frac), y + 10 * k, Math.round(bw * ghost), k);
+      ctx.fillRect(bx + Math.round(bw * frac), y + 20 * k, Math.round(bw * ghost), k);
     }
   }
 
@@ -275,7 +304,7 @@ export class Hud {
               ? { x: w - 12 * k, y: h / 2 - 10 * k, w: 10 * k, h: 20 * k }
               : dir === 'up'
                 ? { x: w / 2 - 10 * k, y: 2 * k, w: 20 * k, h: 10 * k }
-                : { x: w / 2 - 10 * k, y: h - 24 * k, w: 20 * k, h: 10 * k };
+                : { x: w / 2 - 10 * k, y: h - (this.chyron ? (this.hint ? 45 : 34) : (this.hint ? 35 : 24)) * k, w: 20 * k, h: 10 * k };
         this.arrowRects.push({ dir, r });
         const hover = mouse.inside && mouse.x >= r.x && mouse.x < r.x + r.w && mouse.y >= r.y && mouse.y < r.y + r.h;
         const glyph = { left: '←', right: '→', up: '↑', down: '↓' }[dir];
@@ -284,8 +313,8 @@ export class Hud {
     }
 
     // ---- Bottom chyron (broadcast ticker) ----
-    if (this.chyron) this.drawChyron(ctx, w, h, k, time);
-    else if (this.ticker) {
+    if (this.chyron && !this.choice) this.drawChyron(ctx, w, h, k, time);
+    else if (this.ticker && !this.choice) {
       const y = h - 11 * k;
       ctx.fillStyle = 'rgba(10,4,2,0.82)';
       ctx.fillRect(0, y, w, 11 * k);
@@ -296,7 +325,7 @@ export class Hud {
       drawText(ctx, this.ticker, 34 * k, tickerY, { scale: TS, color: '#f0e0b0' });
       if (this.tickerRight) drawText(ctx, this.tickerRight, w - 3 * k, tickerY, { align: 'right', scale: TS, color: '#a0e0a0' });
     }
-    if (this.hint && !this.choice) drawText(ctx, this.hint, w / 2, h - (this.chyron ? 23 : 21) * k, { align: 'center', scale: TS, color: 'rgba(255,240,200,0.8)', shadow: '#000' });
+    if (this.hint && !this.choice) drawText(ctx, this.hint, w / 2, h - (this.chyron ? 33 : 21) * k, { align: 'center', scale: TS, color: 'rgba(255,240,200,0.8)', shadow: '#000' });
 
     // ---- Banner (Deadline intro, SWEEPS, combos) ----
     if (this.banner) {
@@ -361,7 +390,8 @@ export class Hud {
       const lines = wrapText(cap.text, (46 * k) / TS);
       const shown = Math.ceil(cap.t * 40);
       let left = shown;
-      const by = h - (this.ticker ? 14 : 4) * k - lines.length * LINE_H * TS - 9 * k;
+      const reserved = (this.chyron ? (this.hint ? 36 : 24) : this.ticker ? (this.hint ? 24 : 14) : (this.hint ? 24 : 4)) + (this.hint && this.arrows.includes('down') ? 12 : 0);
+      const by = h - reserved * k - lines.length * LINE_H * TS - 9 * k;
       ctx.fillStyle = 'rgba(0,0,0,0.65)';
       ctx.fillRect(14 * k, by - 2 * k, w - 28 * k, lines.length * LINE_H * TS + 8 * k + 4 * TS);
       drawText(ctx, cap.speaker, 18 * k, by, { scale: TS, color: cap.color });
@@ -390,30 +420,31 @@ export class Hud {
     }
 
     // ---- Choice panel ----
-    this.optionRects = [];
-    if (this.choice) this.drawChoice(ctx, w, h, k, mouse);
-
-    // ---- Tooltip ----
-    if (this.tooltip && mouse.inside && !this.choice) {
-      const lines = this.tooltip.split('\n').flatMap((l) => wrapText(l, (34 * k) / TS));
-      const tw = Math.max(...lines.map((l) => textWidth(l, TS))) + 6 * k;
-      const th = lines.length * LINE_H * TS + 4 * k;
-      let x = mouse.x + 8 * k,
-        y = mouse.y + 8 * k;
-      if (x + tw > w) x = mouse.x - tw - 4 * k;
-      if (y + th > h - 12 * k) y = mouse.y - th - 4 * k;
-      ctx.fillStyle = 'rgba(12,8,4,0.92)';
-      ctx.fillRect(x, y, tw, th);
-      ctx.fillStyle = '#c89830';
-      ctx.fillRect(x, y, tw, k);
-      lines.forEach((l, i) => drawText(ctx, l, x + 3 * k, y + 3 * k + i * LINE_H * TS, { scale: TS, color: i === 0 ? '#ffd870' : '#e8e0d0' }));
+    if (this.choice !== this.lastChoice) {
+      this.lastChoice = this.choice;
+      this.lastChoiceSelected = this.choice?.selected ?? -1;
+      this.lastChoiceMouse = { ...mouse };
+      this.choiceHoverActive = false;
+    } else if (this.choice) {
+      if (mouse.x !== this.lastChoiceMouse.x || mouse.y !== this.lastChoiceMouse.y || mouse.inside !== this.lastChoiceMouse.inside) this.choiceHoverActive = true;
+      if (this.choice.selected !== this.lastChoiceSelected) this.choiceHoverActive = false;
+      this.lastChoiceSelected = this.choice.selected;
+      this.lastChoiceMouse = { ...mouse };
     }
+    const hoverChoice = this.choice && mouse.inside && this.choiceHoverActive ? this.hitChoiceAt(mouse.x, mouse.y) : -1;
+    this.optionRects = [];
+    if (this.choice) this.drawChoice(ctx, w, h, k, hoverChoice);
 
     if (this.challenge && !this.choice) {
       const c = this.challenge;
       const y0 = (this.payout ? 26 : 3) * k;
-      drawText(ctx, `SPONSOR: ${c.name}`, 3 * k, y0, { scale: TS, color: c.done ? '#80ff80' : '#ffc040', shadow: '#000' });
-      drawText(ctx, c.done ? 'DONE' : `${c.text} ${c.prog}`, 3 * k, y0 + LINE_H * TS, { scale: TS, color: c.done ? '#60c060' : 'rgba(255,230,180,0.8)', shadow: '#000' });
+      const title = `SPONSOR: ${c.name}`;
+      const detail = c.done ? 'DONE' : `${c.text} ${c.prog}`;
+      // The studio marquee scrolls behind this HUD: make both lines legible as it passes.
+      ctx.fillStyle = '#0c0804';
+      ctx.fillRect(2 * k, y0 - k, Math.max(textWidth(title, TS), textWidth(detail, TS)) + 2 * k, LINE_H * TS + 7 * TS + 2 * k);
+      drawText(ctx, title, 3 * k, y0, { scale: TS, color: c.done ? '#80ff80' : '#ffc040', shadow: '#000' });
+      drawText(ctx, detail, 3 * k, y0 + LINE_H * TS, { scale: TS, color: c.done ? '#60c060' : 'rgba(255,230,180,0.8)', shadow: '#000' });
     }
     if (this.corner && !this.choice) drawText(ctx, this.corner, w - 3 * k, (this.payout ? 26 : 3) * k, { align: 'right', scale: TS, color: '#ffc040', shadow: '#000' });
     if (this.fastMode && !this.choice) drawText(ctx, 'FAST >>', 3 * k, (this.payout ? 26 : 3) * k, { scale: TS, color: '#80ff80', shadow: '#000' });
@@ -426,6 +457,26 @@ export class Hud {
       ctx.fillRect(0, 0, w, bh);
       ctx.fillRect(0, h - bh, w, bh);
     }
+
+    // ---- Tooltip ----
+    if (this.tooltip && mouse.inside && !this.choice) {
+      const lines = this.tooltip.split('\n').flatMap((l) => wrapText(l, (34 * k) / TS));
+      const tw = Math.max(...lines.map((l) => textWidth(l, TS))) + 6 * k;
+      const th = lines.length * LINE_H * TS + 4 * k;
+      let x = mouse.x + 8 * k,
+        y = mouse.y + 8 * k;
+      if (x + tw > w) x = mouse.x - tw - 4 * k;
+      const bottom = h - (this.chyron ? 22 : 12) * k;
+      if (y + th > bottom) y = mouse.y - th - 4 * k;
+      x = Math.max(0, Math.min(x, w - tw));
+      y = Math.max(0, Math.min(y, bottom - th));
+      ctx.fillStyle = 'rgba(12,8,4,0.92)';
+      ctx.fillRect(x, y, tw, th);
+      ctx.fillStyle = '#c89830';
+      ctx.fillRect(x, y, tw, k);
+      lines.forEach((l, i) => drawText(ctx, l, x + 3 * k, y + 3 * k + i * LINE_H * TS, { scale: TS, color: i === 0 ? '#ffd870' : '#e8e0d0' }));
+    }
+
 
     // ---- Cursor ----
     if (this.showCursor && mouse.inside) {
@@ -442,7 +493,7 @@ export class Hud {
     }
   }
 
-  private drawChoice(ctx: CanvasRenderingContext2D, w: number, h: number, k: number, mouse: { x: number; y: number; inside: boolean }): void {
+  private drawChoice(ctx: CanvasRenderingContext2D, w: number, h: number, k: number, hoverIdx: number): void {
     const c = this.choice!;
     const accent = c.accent ?? '#ffd040';
     const layout = c.layout ?? (c.options.length <= 3 && c.options.every((o) => (o.detail ?? '').length < 200) ? 'cards' : 'list');
@@ -462,7 +513,6 @@ export class Hud {
     }
     y += 3 * k;
     const n = c.options.length;
-    const hoverIdx = mouse.inside ? this.hitChoiceAt(mouse.x, mouse.y) : -1;
     // A caller's portrait takes the left of the panel; the cards share what's left.
     const por = c.portrait ? art.img(c.portrait) : null;
     let left = 8 * k;
@@ -474,13 +524,13 @@ export class Hud {
     }
     if (layout === 'cards') {
       const cw = Math.floor((w - 8 * k - left - pad * (n + 1)) / n);
-      const ch = top + panelH - y - (c.footer ? 12 : 4) * k;
+      const ch = top + panelH - y - (c.inspect ? 57 : c.footer ? 12 : 4) * k;
       for (let i = 0; i < n; i++) {
         const o = c.options[i];
         const x = left + pad + i * (cw + pad);
         const r = { x, y, w: cw, h: ch };
         this.optionRects.push(r);
-        const sel = i === c.selected || i === hoverIdx;
+        const sel = i === (hoverIdx >= 0 ? hoverIdx : c.selected);
         ctx.fillStyle = o.disabled ? '#1a1410' : sel ? '#3a2410' : '#20160c';
         ctx.fillRect(x, y, cw, ch);
         ctx.fillStyle = sel ? accent : '#5a4020';
@@ -500,7 +550,7 @@ export class Hud {
         }
         const labLines = wrapText(o.label, Math.floor(cw / (6 * TS)) - 1);
         labLines.forEach((l, j) => drawText(ctx, l, x + cw / 2, y + ty * k + j * LINE_H * TS, { align: 'center', scale: TS, color: o.disabled ? '#605040' : (o.color ?? '#ffffff') }));
-        const det = wrapText(o.detail ?? '', Math.floor(cw / (6 * TS)) - 1);
+        const det = wrapText(c.inspect ? '' : (o.detail ?? ''), Math.floor(cw / (6 * TS)) - 1);
         const room = Math.max(0, Math.floor((ch - ty * k - labLines.length * LINE_H * TS - 2 * k) / (LINE_H * TS)));
         const detShown = det.slice(0, room);
         if (det.length > room && room > 0) detShown[room - 1] = detShown[room - 1].replace(/.$/, '') + '…';
@@ -512,13 +562,24 @@ export class Hud {
         const o = c.options[i];
         const r = { x: left + 6 * k, y, w: w - left - 14 * k, h: rowH - k };
         this.optionRects.push(r);
-        const sel = i === c.selected || i === hoverIdx;
+        const sel = i === (hoverIdx >= 0 ? hoverIdx : c.selected);
         ctx.fillStyle = sel ? '#3a2410' : '#1a120a';
         ctx.fillRect(r.x, r.y, r.w, r.h);
         const rowTy = r.y + Math.round((r.h - 7 * TS) / 2);
         drawText(ctx, `${i + 1} ${o.label}`, r.x + 3 * k, rowTy, { scale: TS, color: o.disabled ? '#605040' : (o.color ?? '#ffffff') });
-        if (o.detail) drawText(ctx, o.detail, r.x + r.w - 3 * k, rowTy, { align: 'right', scale: TS, color: '#c8bca0' });
+        if (o.detail && !c.inspect) drawText(ctx, o.detail, r.x + r.w - 3 * k, rowTy, { align: 'right', scale: TS, color: '#c8bca0' });
         y += rowH;
+      }
+    }
+    if (c.inspect) {
+      const option = c.options[hoverIdx >= 0 ? hoverIdx : c.selected];
+      if (option) {
+        const detailY = top + panelH - 54 * k;
+        ctx.fillStyle = '#120c07';
+        ctx.fillRect(14 * k, detailY, w - 28 * k, 42 * k);
+        drawText(ctx, option.label, 18 * k, detailY + 3 * k, { scale: TS, color: option.color ?? accent });
+        const detailLines = wrapText(option.detail ?? '', Math.floor((w - 36 * k) / (6 * TS)));
+        detailLines.forEach((line, i) => drawText(ctx, line, 18 * k, detailY + 12 * k + i * LINE_H * TS, { scale: TS, color: '#e8dcc0' }));
       }
     }
     if (c.footer) drawText(ctx, c.footer, w / 2, top + panelH - 9 * k, { align: 'center', scale: TS, color: '#a09070' });

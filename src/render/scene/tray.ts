@@ -6,6 +6,7 @@ import * as THREE from 'three';
 import { drawText } from '../../ui/bitfont';
 import { psxMaterial, type PsxMaterial } from '../psxMaterial';
 import { CanvasPanel, panelMesh, pickable } from './util';
+import { worldNumber } from './worldNumbers';
 
 const MAX_COINS = 220;
 const BOX = { w: 0.5, h: 0.26, d: 0.3 };
@@ -59,7 +60,7 @@ export class TrayView {
       ctx.fillRect(0, 0, w, h);
       const col = streak >= 2.5 ? '#ff5030' : streak >= 1.5 ? '#ffb040' : '#ffe8a0';
       drawText(ctx, `LET IT RIDE ×${streak.toFixed(2)}`, w / 2, 1, { align: 'center', color: col });
-      drawText(ctx, `$${tray}`, w / 2, 9, { align: 'center', color: '#c0ffc0', scale: 1 }).toString();
+      drawText(ctx, `$${worldNumber(tray, 20)}`, w / 2, 9, { align: 'center', color: '#c0ffc0', scale: 1 }).toString();
     });
   }
 

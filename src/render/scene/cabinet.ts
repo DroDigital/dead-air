@@ -12,6 +12,7 @@ import { drawText, wrapText } from '../../ui/bitfont';
 import { psxMaterial, type PsxMaterial } from '../psxMaterial';
 import { PropBuilder, buildProp } from './props';
 import { CanvasPanel, hexCss, panelMesh, pickable } from './util';
+import { worldNumber } from './worldNumbers';
 
 export const SERVICE_BUTTONS = ['remove', 'gild', 'widen', 'narrow', 'reroll', 'done'] as const;
 export type ServiceButton = (typeof SERVICE_BUTTONS)[number];
@@ -171,7 +172,7 @@ export class CabinetView {
       ctx.clearRect(0, 0, w, h);
       ctx.fillStyle = '#0a0503';
       ctx.fillRect(w / 2 - 30, 0, 60, 12);
-      drawText(ctx, `TOK ${this.tokenCount}`, w / 2, 3, { align: 'center', color: '#ffc040' });
+      drawText(ctx, `TOK ${worldNumber(this.tokenCount, 6)}`, w / 2, 3, { align: 'center', color: '#ffc040' });
       ctx.translate(0, 16);
       if (!shop) {
         ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -258,9 +259,9 @@ export class CabinetView {
       ctx.fillRect(0, 0, w, h);
       ctx.fillStyle = '#3a0808';
       ctx.fillRect(0, 0, w, 9);
-      drawText(ctx, deadline > 8 ? `DUE ∞${deadline}` : `DUE #${deadline}`, w / 2, 1, { align: 'center', color: '#ffd0c0' });
-      drawText(ctx, `$${debt}`, w / 2, 12, { align: 'center', color: vault >= debt ? '#205020' : '#801010', scale: 1 });
-      drawText(ctx, mutator ? 'SWEEPS!' : `V $${vault}`, w / 2, 22, { align: 'center', color: mutator ? '#a02020' : '#404040' });
+      drawText(ctx, deadline > 8 ? `DUE ∞${worldNumber(deadline, 5)}` : `DUE #${deadline}`, w / 2, 1, { align: 'center', color: '#ffd0c0' });
+      drawText(ctx, `$${worldNumber(debt, 9)}`, w / 2, 12, { align: 'center', color: vault >= debt ? '#205020' : '#801010', scale: 1 });
+      drawText(ctx, mutator ? 'SWEEPS!' : `V $${worldNumber(vault, 7)}`, w / 2, 22, { align: 'center', color: mutator ? '#a02020' : '#404040' });
       ctx.setTransform(1, 0, 0, 1, 0, 0);
     });
   }

@@ -46,7 +46,7 @@ export class LeverView {
       for (let i = 0; i <= 20; i++) {
         const a = Math.PI + (i / 20) * Math.PI;
         const p = i / 20;
-        const inSweet = Math.abs(p - sweetCenter) <= sweetHalf + 0.025;
+        const inSweet = Math.abs(p - sweetCenter) <= sweetHalf;
         ctx.fillStyle = inSweet ? '#40ff60' : '#c8b080';
         const x = cx + Math.cos(a) * r,
           y = cy + Math.sin(a) * r;

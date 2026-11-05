@@ -774,7 +774,7 @@ export class App {
     this.loops.drum?.stop(0.05);
     this.loops.drum = this.sfx.loop('tension', 0.6, 'sfx', 0.25, false, this.music.rate) ?? this.sfx.loop('drumroll', 0.32, 'sfx', 0.3);
     this.fsm.force('Charging');
-    this.hud.hint = g.canPeek() ? 'RELEASE IN THE GREEN · [E] PEEK' : 'RELEASE IN THE GREEN';
+    this.hud.hint = g.canPeek() ? 'WAIT FOR GREEN · [E] PEEK' : 'WAIT FOR GREEN ON THE LEVER METER';
     this.updateArrows();
   }
 
@@ -1213,7 +1213,8 @@ export class App {
         ],
         selected: 0,
         layout: 'cards',
-        footer: '1-4 OR CLICK',
+        inspect: true,
+        footer: '1-4 OR CLICK · HOVER OR SELECT TO INSPECT',
       },
       (i) => {
         if (i >= p.options.length) {
@@ -1242,10 +1243,14 @@ export class App {
     this.setChoice(
       {
         title: 'WHICH ARTIFACT GOES IN THE BIN?',
-        options: g.run.artifacts.map((a, i) => ({ label: `${i + 1} ${artifactDef(a.id).name.toUpperCase()}`, detail: artifactDef(a.id).rarity.toUpperCase() })),
+        inspect: true,
+        options: g.run.artifacts.map((a) => {
+          const d = artifactDef(a.id);
+          return { label: d.name.toUpperCase(), detail: `(${d.rarity.toUpperCase()}) ${d.text}` };
+        }),
         selected: 0,
         layout: 'list',
-        footer: '1-6 · BACKSPACE TO GO BACK',
+        footer: '1-6 · HOVER OR SELECT TO INSPECT · BACKSPACE BACK',
       },
       (i) => {
         this.setChoice(null, null);
@@ -1356,16 +1361,17 @@ export class App {
         portrait: secret ? 'caller.secret' : 'caller.producer',
         lines: [ph.intro],
         options: [
-          ...ph.offers.map((o) => {
+          ...ph.offers.map((o, i) => {
             const b = bargainDef(o.bargainId);
-            return { label: fillDeal(b.deal, o.params, nameOf), detail: `"${b.line}"`, color: secret ? '#d0a0ff' : '#ffb080' };
+            return { label: `OFFER ${i + 1}`, detail: fillDeal(b.deal, o.params, nameOf), color: secret ? '#d0a0ff' : '#ffb080' };
           }),
           { label: 'HANG UP', detail: secret ? 'Click.' : 'He will remember.' },
         ],
         selected: 0,
-        layout: 'cards',
+        layout: 'list',
+        inspect: true,
         accent: secret ? '#c080ff' : '#ff8040',
-        footer: '1-3 OR CLICK',
+        footer: '1-3 OR CLICK · HOVER OR SELECT TO INSPECT',
       },
       (i) => {
         this.phoneTalk.forEach((t) => clearTimeout(t));
@@ -1676,18 +1682,18 @@ export class App {
       const n = this.hud.choice.options.length;
       if (a.type === 'num' && a.n >= 1 && a.n <= n) return this.pickChoice(a.n - 1);
       if (a.type === 'nav' && (a.dir === 'left' || a.dir === 'up')) {
-        this.choiceSel = (this.choiceSel - 1 + n) % n;
-        this.hud.choice.selected = this.choiceSel;
+        this.choiceSel = (this.hud.activeChoiceIndex() - 1 + n) % n;
+        this.hud.selectChoice(this.choiceSel);
         this.sfx.play('blip', { gain: 0.3 });
         return;
       }
       if (a.type === 'nav' && (a.dir === 'right' || a.dir === 'down')) {
-        this.choiceSel = (this.choiceSel + 1) % n;
-        this.hud.choice.selected = this.choiceSel;
+        this.choiceSel = (this.hud.activeChoiceIndex() + 1) % n;
+        this.hud.selectChoice(this.choiceSel);
         this.sfx.play('blip', { gain: 0.3 });
         return;
       }
-      if (a.type === 'confirm') return this.pickChoice(this.choiceSel);
+      if (a.type === 'confirm') return this.pickChoice(this.hud.activeChoiceIndex());
       if (a.type === 'back' && this.choiceBack) return this.choiceBack();
       if (a.type === 'click') {
         const i = this.hud.hitChoice(a.x, a.y);
@@ -2016,6 +2022,8 @@ export class App {
       st.lever.pull = p * 0.6;
       const ch = g.chargeContext();
       st.lever.drawGauge(p, BALANCE.sweetCenter, ch.sweetHalfWidth, true, this.charge.peek);
+      const sweet = inSweetSpot(p, ch.sweetHalfWidth);
+      this.hud.hint = sweet ? (ch.preview ? 'SWEET SPOT! RELEASE · [E] PEEK' : 'SWEET SPOT! RELEASE NOW') : (ch.preview ? 'WAIT FOR GREEN · [E] PEEK' : 'WAIT FOR GREEN ON THE LEVER METER');
       if (Math.floor(this.charge.t * 14) !== this.charge.lastTick) {
         this.charge.lastTick = Math.floor(this.charge.t * 14);
         this.sfx.play('ratchet', { gain: 0.25, pitch: 0.8 + p });
