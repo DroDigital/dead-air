@@ -54,6 +54,8 @@ Build each platform on its own OS (`npm run dist:mac` on a Mac, etc.); CI does a
 
 `.github/workflows/release.yml` runs on every `v*` tag (and on demand from the Actions tab):
 
+For a manual build, open **Actions → Release → Run workflow** and enter a version such as `1.2.3` or `1.2.3-beta.1` in **Version**. A leading `v` is optional. Leave it blank to use the package version with the run number, such as `0.1.0-build.42`. Manual builds provide downloadable workflow artifacts; they do not create a GitHub Release. Tick **Push this build to itch.io** to upload them if itch.io is configured.
+
 1. tests + web build, then the desktop app on macOS, Windows and Linux runners;
 2. a **GitHub Release** with every installer and a web `.zip` (tags only);
 3. a **butler** push to itch.io: channels `windows`, `mac`, `linux` (the unpacked apps, so the itch app installs and patches them) and `html5` (the browser version), each with the release version.
