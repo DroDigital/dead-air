@@ -52,7 +52,7 @@ jobs:
         env:
           MANUAL_VERSION: ${{ inputs.version }}
         run: |
-          if [[ "$GITHUB_REF_TYPE" == "tag" ]]; then
+          if [[ "$GITHUB_EVENT_NAME" == "push" && "$GITHUB_REF_TYPE" == "tag" ]]; then
             version="${GITHUB_REF_NAME#v}"
           elif [[ -n "$MANUAL_VERSION" ]]; then
             version="${MANUAL_VERSION#v}"
@@ -174,7 +174,7 @@ jobs:
 
   github-release:
     name: GitHub Release
-    if: github.ref_type == 'tag'
+    if: github.event_name == 'push' && github.ref_type == 'tag'
     needs: [version, web, desktop]
     runs-on: ubuntu-latest
     steps:
@@ -193,7 +193,7 @@ jobs:
 
   itch:
     name: itch.io (butler)
-    if: github.ref_type == 'tag' || inputs.push_to_itch
+    if: (github.event_name == 'push' && github.ref_type == 'tag') || inputs.push_to_itch
     needs: [version, web, desktop]
     runs-on: ubuntu-latest
     env:
