@@ -188,82 +188,75 @@ export class Hud {
     return null;
   }
 
-  /** Segmented broadcast chyron: LIVE, Deadline, spin pips, Tray x Streak, Vault vs Debt. */
+  /**
+   * Phosphor broadcast HUD: LIVE and the Deadline top left, a seven-segment style spins counter
+   * top right, and Vault against Debt along the bottom edge with the tray as a ghost past the fill.
+   */
   private drawChyron(ctx: CanvasRenderingContext2D, w: number, h: number, k: number, time: number): void {
     const c = this.chyron!;
     const r = this.roll;
-    const H = 22 * k;
-    const y = h - H;
-    const ty = y + Math.round((11 * k - 7 * TS) / 2);
     const d = this.danger;
-    const red = Math.round(30 + 40 * d * (0.6 + 0.4 * Math.sin(time * 6)));
-    ctx.fillStyle = d > 0 ? 'rgba(' + red + ',4,2,0.88)' : 'rgba(10,4,2,0.86)';
-    ctx.fillRect(0, y, w, H);
-    ctx.fillStyle = '#ffb040';
-    ctx.globalAlpha = 0.5;
-    ctx.fillRect(0, y, w, k);
-    ctx.globalAlpha = 1;
-    let x = 0;
-    const seg = (sw: number, bg: string | null) => {
-      if (bg) {
-        ctx.fillStyle = bg;
-        ctx.fillRect(x, y + k, sw, 10 * k);
-      }
-      const x0 = x;
-      x += sw;
-      ctx.fillStyle = 'rgba(255,176,64,0.25)';
-      ctx.fillRect(x - k, y + 2 * k, k, 8 * k);
-      return x0;
-    };
-    // LIVE with a tally dot.
-    let x0 = seg(30 * k, '#a81c10');
+    const AMBER = '#ffa030';
+    const CREAM = '#fff1d6';
+    const LABEL = '#d9b77f';
+    const GREEN = '#9ef08a';
+    const RED = '#ff5a48';
+    const LINE = LINE_H * TS;
+    const right = w - 3 * k;
+
+    // Top left: LIVE tally and the Deadline. FAST (when on) sits beside LIVE.
     const on = Math.floor(time * 1.5) % 2 === 0;
-    ctx.fillStyle = on ? '#ffffff' : '#ff8070';
-    ctx.fillRect(x0 + 3 * k, y + 5 * k, 3 * k, 3 * k);
-    drawText(ctx, 'LIVE', x0 + 18 * k, ty, { align: 'center', scale: TS, color: '#ffffff' });
-    // Deadline.
-    const dl = 'D' + c.deadline;
-    x0 = seg(textWidth(dl, TS) + 8 * k, null);
-    drawText(ctx, dl, x0 + 4 * k, ty, { scale: TS, color: '#ffd040' });
-    // Spins as pips.
-    const pips = Math.min(14, Math.max(c.spinsMax, c.spins));
-    const pl = textWidth('SPINS', TS) + 6 * k;
-    x0 = seg(pips * 4 * k + pl + 3 * k, null);
-    drawText(ctx, 'SPINS', x0 + 3 * k, ty, { scale: TS, color: '#a08060' });
-    for (let i = 0; i < pips; i++) {
-      const left = i < c.spins;
-      const last = left && c.spins === 1;
-      ctx.fillStyle = left ? (last && Math.floor(time * 4) % 2 ? '#ff4030' : '#ffd040') : '#3a2414';
-      ctx.fillRect(x0 + pl + i * 4 * k, y + 4 * k, 3 * k, 5 * k);
-    }
-    // Tray x Streak: the number rolls; the streak heats from pale to red.
-    const tray = 'TRAY $' + tickerNumber(r.tray);
-    const st = '\u00d7' + (c.streak >= 1e6 ? tickerNumber(c.streak) : c.streak.toFixed(2));
-    x0 = seg(textWidth(tray, TS) + textWidth(st, TS) + 14 * k, null);
-    const tf = r.trayFlash > 0 && Math.floor(r.trayFlash * 10) % 2 === 0;
-    drawText(ctx, tray, x0 + 4 * k, ty, { scale: TS, color: tf ? (r.trayUp ? '#a0ffa0' : '#ff6050') : '#f0e0b0' });
-    const heat = Math.min(1, (c.streak - 1) / 2);
-    const sc = heat <= 0 ? '#c0b090' : heat < 0.5 ? '#ffd060' : heat < 0.85 ? '#ff9030' : Math.floor(time * 6) % 2 ? '#ff4020' : '#ffd060';
-    drawText(ctx, st, x0 + 8 * k + textWidth(tray, TS), ty, { scale: TS, color: sc });
-    // Vault vs Debt with a progress bar; the Tray shows as a ghost on top.
-    const vt = 'VAULT $' + tickerNumber(r.vault) + ' / DEBT $' + tickerNumber(c.debt);
-    const vw = w;
-    x0 = 0;
-    const vf = r.vaultFlash > 0 && Math.floor(r.vaultFlash * 10) % 2 === 0;
-    const covered = r.vault >= c.debt;
-    drawText(ctx, vt, x0 + 4 * k, y + 11 * k + Math.round((11 * k - 7 * TS) / 2), { scale: TS, color: vf ? '#ffffff' : covered ? '#90ff90' : '#f0e0b0' });
+    ctx.fillStyle = on ? RED : '#7a2a20';
+    ctx.fillRect(3 * k, 3 * k, 3 * k, 3 * k);
+    drawText(ctx, 'LIVE', 9 * k, 3 * k, { scale: TS, color: '#ff8070' });
+    const dl = 'DEADLINE ' + c.deadline + (Number(c.deadline) <= 8 ? '/8' : '');
+    drawText(ctx, dl, 3 * k, 3 * k + LINE, { scale: TS, color: AMBER });
+
+    // Top right: spins as a counter with unlit ghost digits, the last spin flashing; tokens below.
+    const digits = Math.max(2, String(c.spinsMax).length);
+    const lit = String(Math.max(0, c.spins)).padStart(digits, '0');
+    const flash = c.spins === 1 && Math.floor(time * 4) % 2 === 0;
+    drawText(ctx, 'SPINS LEFT', right, 3 * k, { align: 'right', scale: TS, color: LABEL });
+    drawText(ctx, '8'.repeat(digits), right, 3 * k + LINE, { align: 'right', scale: 2, color: '#2e1c0c' });
+    drawText(ctx, lit, right, 3 * k + LINE, { align: 'right', scale: 2, color: flash ? RED : AMBER });
+    if (this.corner) drawText(ctx, this.corner, right, 3 * k + LINE + 16, { align: 'right', scale: TS, color: CREAM });
+
+    // Bottom edge: Vault against Debt as a full-width meter; the tray shows as a ghost past the fill.
+    const bar = 3 * k;
+    const yBar = h - bar;
+    const yDebt = yBar - 2 * k - 7 * TS;
+    const yVal = yDebt - 2 * k - 14;
+    const yLab = yVal - 2 * k - 7 * TS;
     const frac = Math.max(0, Math.min(1, r.vault / Math.max(1, c.debt)));
-    const bx = x0 + 4 * k;
-    const bw = vw - 8 * k;
-    ctx.fillStyle = '#2a1a10';
-    ctx.fillRect(bx, y + 20 * k, bw, k);
-    ctx.fillStyle = covered ? '#60ff60' : frac > 0.66 ? '#ffd040' : '#ff7040';
-    ctx.fillRect(bx, y + 20 * k, Math.round(bw * frac), k);
-    const ghost = Math.max(0, Math.min(1, (r.vault + r.tray) / Math.max(1, c.debt))) - frac;
-    if (ghost > 0) {
-      ctx.fillStyle = 'rgba(160,255,160,0.45)';
-      ctx.fillRect(bx + Math.round(bw * frac), y + 20 * k, Math.round(bw * ghost), k);
+    const ghost = Math.max(0, Math.min(1, (r.vault + r.tray) / Math.max(1, c.debt)));
+    const covered = r.vault >= c.debt;
+    if (d > 0) {
+      // The last spin fell short of the Debt: a red wash rises behind the bottom stacks.
+      ctx.fillStyle = `rgba(120,8,4,${(0.5 * d).toFixed(3)})`;
+      ctx.fillRect(0, yLab - 3 * k, w, h - (yLab - 3 * k));
     }
+    ctx.fillStyle = '#1a0e06';
+    ctx.fillRect(0, yBar, w, bar);
+    ctx.fillStyle = 'rgba(255,160,48,0.28)';
+    ctx.fillRect(0, yBar, Math.round(w * ghost), bar);
+    ctx.fillStyle = covered ? '#60ff60' : AMBER;
+    ctx.fillRect(0, yBar, Math.round(w * frac), bar);
+
+    // Bottom left: the Vault in large numerals, the Debt beneath it.
+    const vf = r.vaultFlash > 0 && Math.floor(r.vaultFlash * 10) % 2 === 0;
+    drawText(ctx, 'VAULT', 3 * k, yLab, { scale: TS, color: LABEL });
+    drawText(ctx, '$' + tickerNumber(r.vault), 3 * k, yVal, { scale: 2, color: vf ? '#ffffff' : covered ? GREEN : CREAM });
+    drawText(ctx, 'DEBT $' + tickerNumber(c.debt), 3 * k, yDebt, { scale: TS, color: AMBER });
+
+    // Bottom right: the tray at risk, with the streak beneath it heating from pale to red.
+    const tf = r.trayFlash > 0 && Math.floor(r.trayFlash * 10) % 2 === 0;
+    const trayCol = d > 0 ? '#ff6050' : tf ? (r.trayUp ? '#a0ffa0' : '#ff6050') : CREAM;
+    drawText(ctx, 'AT RISK', right, yLab, { align: 'right', scale: TS, color: LABEL });
+    drawText(ctx, '$' + tickerNumber(r.tray), right, yVal, { align: 'right', scale: 2, color: trayCol });
+    const st = '×' + (c.streak >= 1e6 ? tickerNumber(c.streak) : c.streak.toFixed(2));
+    const heat = Math.min(1, (c.streak - 1) / 2);
+    const sc = heat <= 0 ? LABEL : heat < 0.5 ? '#ffd060' : heat < 0.85 ? '#ff9030' : Math.floor(time * 6) % 2 ? '#ff4020' : '#ffd060';
+    drawText(ctx, st, right, yDebt, { align: 'right', scale: TS, color: sc });
   }
 
   draw(ctx: CanvasRenderingContext2D, w: number, h: number, k: number, mouse: { x: number; y: number; inside: boolean }, time: number): void {
@@ -304,7 +297,7 @@ export class Hud {
               ? { x: w - 12 * k, y: h / 2 - 10 * k, w: 10 * k, h: 20 * k }
               : dir === 'up'
                 ? { x: w / 2 - 10 * k, y: 2 * k, w: 20 * k, h: 10 * k }
-                : { x: w / 2 - 10 * k, y: h - (this.chyron ? (this.hint ? 45 : 34) : (this.hint ? 35 : 24)) * k, w: 20 * k, h: 10 * k };
+                : { x: w / 2 - 10 * k, y: h - (this.chyron ? (this.hint ? 24 : 14) : (this.hint ? 35 : 24)) * k, w: 20 * k, h: 10 * k };
         this.arrowRects.push({ dir, r });
         const hover = mouse.inside && mouse.x >= r.x && mouse.x < r.x + r.w && mouse.y >= r.y && mouse.y < r.y + r.h;
         const glyph = { left: '←', right: '→', up: '↑', down: '↓' }[dir];
@@ -325,7 +318,7 @@ export class Hud {
       drawText(ctx, this.ticker, 34 * k, tickerY, { scale: TS, color: '#f0e0b0' });
       if (this.tickerRight) drawText(ctx, this.tickerRight, w - 3 * k, tickerY, { align: 'right', scale: TS, color: '#a0e0a0' });
     }
-    if (this.hint && !this.choice) drawText(ctx, this.hint, w / 2, h - (this.chyron ? 33 : 21) * k, { align: 'center', scale: TS, color: 'rgba(255,240,200,0.8)', shadow: '#000' });
+    if (this.hint && !this.choice) drawText(ctx, this.hint, w / 2, h - (this.chyron ? 12 : 21) * k, { align: 'center', scale: TS, color: 'rgba(255,240,200,0.8)', shadow: '#000' });
 
     // ---- Banner (Deadline intro, SWEEPS, combos) ----
     if (this.banner) {
@@ -372,8 +365,10 @@ export class Hud {
     if (this.payout && !this.choice) {
       const lines = wrapText(this.payout.text, (50 * k) / TS);
       const y0 = 3 * k;
+      // The band is only as wide as its text, so it never covers the LIVE and spins readouts in the corners.
+      const bw = Math.min(w, Math.max(...lines.map((l) => textWidth(l, TS))) + 10 * k);
       ctx.fillStyle = 'rgba(10,4,2,0.8)';
-      ctx.fillRect(0, y0, w, lines.length * LINE_H * TS + 3 * k);
+      ctx.fillRect((w - bw) / 2, y0, bw, lines.length * LINE_H * TS + 3 * k);
       lines.forEach((l, i) => drawText(ctx, l, w / 2, y0 + 2 * k + i * LINE_H * TS, { align: 'center', scale: TS, color: this.payout!.color }));
     }
 
@@ -391,9 +386,11 @@ export class Hud {
       const shown = Math.ceil(cap.t * 40);
       let left = shown;
       const reserved = (this.chyron ? (this.hint ? 36 : 24) : this.ticker ? (this.hint ? 24 : 14) : (this.hint ? 24 : 4)) + (this.hint && this.arrows.includes('down') ? 12 : 0);
-      const by = h - reserved * k - lines.length * LINE_H * TS - 9 * k;
+      const boxH = lines.length * LINE_H * TS + 8 * k + 4 * TS;
+      // Chyron mode: the caption sits above the Vault and Tray stacks in the bottom corners.
+      const by = this.chyron ? h - 13 * k - 28 - boxH + 2 * k : h - reserved * k - lines.length * LINE_H * TS - 9 * k;
       ctx.fillStyle = 'rgba(0,0,0,0.65)';
-      ctx.fillRect(14 * k, by - 2 * k, w - 28 * k, lines.length * LINE_H * TS + 8 * k + 4 * TS);
+      ctx.fillRect(14 * k, by - 2 * k, w - 28 * k, boxH);
       drawText(ctx, cap.speaker, 18 * k, by, { scale: TS, color: cap.color });
       lines.forEach((l, i) => {
         const vis = l.slice(0, Math.max(0, left));
@@ -437,7 +434,7 @@ export class Hud {
 
     if (this.challenge && !this.choice) {
       const c = this.challenge;
-      const y0 = (this.payout ? 26 : 3) * k;
+      const y0 = (this.payout ? 26 : this.chyron ? 22 : 3) * k;
       const title = `SPONSOR: ${c.name}`;
       const detail = c.done ? 'DONE' : `${c.text} ${c.prog}`;
       // The studio marquee scrolls behind this HUD: make both lines legible as it passes.
@@ -446,8 +443,13 @@ export class Hud {
       drawText(ctx, title, 3 * k, y0, { scale: TS, color: c.done ? '#80ff80' : '#ffc040', shadow: '#000' });
       drawText(ctx, detail, 3 * k, y0 + LINE_H * TS, { scale: TS, color: c.done ? '#60c060' : 'rgba(255,230,180,0.8)', shadow: '#000' });
     }
-    if (this.corner && !this.choice) drawText(ctx, this.corner, w - 3 * k, (this.payout ? 26 : 3) * k, { align: 'right', scale: TS, color: '#ffc040', shadow: '#000' });
-    if (this.fastMode && !this.choice) drawText(ctx, 'FAST >>', 3 * k, (this.payout ? 26 : 3) * k, { scale: TS, color: '#80ff80', shadow: '#000' });
+    // In chyron mode the tokens sit under the spins counter (drawChyron).
+    if (this.corner && !this.choice && !this.chyron) drawText(ctx, this.corner, w - 3 * k, (this.payout ? 26 : 3) * k, { align: 'right', scale: TS, color: '#ffc040', shadow: '#000' });
+    if (this.fastMode && !this.choice) {
+      // Beside LIVE in chyron mode, where the corner readouts are.
+      const fast = this.chyron ? { x: 15 * k + 23, y: 3 * k } : { x: 3 * k, y: (this.payout ? 26 : 3) * k };
+      drawText(ctx, 'FAST >>', fast.x, fast.y, { scale: TS, color: '#9ef08a', shadow: '#000' });
+    }
 
     // ---- Letterbox (over the HUD: it's a cinematic moment) ----
     this.letterbox += (this.letterboxTarget - this.letterbox) * 0.18;
@@ -495,11 +497,11 @@ export class Hud {
 
   private drawChoice(ctx: CanvasRenderingContext2D, w: number, h: number, k: number, hoverIdx: number): void {
     const c = this.choice!;
-    const accent = c.accent ?? '#ffd040';
+    const accent = c.accent ?? '#ffa030';
     const layout = c.layout ?? (c.options.length <= 3 && c.options.every((o) => (o.detail ?? '').length < 200) ? 'cards' : 'list');
     const lines = (c.lines ?? []).flatMap((l) => wrapText(l, (48 * k) / TS));
     const pad = 6 * k;
-    ctx.fillStyle = 'rgba(8,4,2,0.94)';
+    ctx.fillStyle = 'rgba(0,0,0,0.92)';
     const top = 10 * k;
     const panelH = h - 24 * k;
     ctx.fillRect(8 * k, top, w - 16 * k, panelH);
@@ -531,12 +533,12 @@ export class Hud {
         const r = { x, y, w: cw, h: ch };
         this.optionRects.push(r);
         const sel = i === (hoverIdx >= 0 ? hoverIdx : c.selected);
-        ctx.fillStyle = o.disabled ? '#1a1410' : sel ? '#3a2410' : '#20160c';
+        ctx.fillStyle = sel ? accent : o.disabled ? '#1a1410' : '#0c0804';
         ctx.fillRect(x, y, cw, ch);
-        ctx.fillStyle = sel ? accent : '#5a4020';
+        ctx.fillStyle = sel ? accent : '#6a4418';
         ctx.fillRect(x, y, cw, k);
         ctx.fillRect(x, y + ch - k, cw, k);
-        drawText(ctx, `${i + 1}`, x + 3 * k, y + 3 * k, { scale: TS, color: '#806040' });
+        drawText(ctx, `${i + 1}`, x + 3 * k, y + 3 * k, { scale: TS, color: sel ? '#150a04' : '#d9b77f' });
         // Icon: bobs a little on the highlighted card.
         const ic = o.icon ? art.img(o.icon) : null;
         let ty = 7;
@@ -549,12 +551,12 @@ export class Hud {
           ty = 5 + is / k;
         }
         const labLines = wrapText(o.label, Math.floor(cw / (6 * TS)) - 1);
-        labLines.forEach((l, j) => drawText(ctx, l, x + cw / 2, y + ty * k + j * LINE_H * TS, { align: 'center', scale: TS, color: o.disabled ? '#605040' : (o.color ?? '#ffffff') }));
+        labLines.forEach((l, j) => drawText(ctx, l, x + cw / 2, y + ty * k + j * LINE_H * TS, { align: 'center', scale: TS, color: o.disabled ? '#605040' : sel ? '#150a04' : (o.color ?? '#fff1d6') }));
         const det = wrapText(c.inspect ? '' : (o.detail ?? ''), Math.floor(cw / (6 * TS)) - 1);
         const room = Math.max(0, Math.floor((ch - ty * k - labLines.length * LINE_H * TS - 2 * k) / (LINE_H * TS)));
         const detShown = det.slice(0, room);
         if (det.length > room && room > 0) detShown[room - 1] = detShown[room - 1].replace(/.$/, '') + '…';
-        detShown.forEach((l, j) => drawText(ctx, l, x + 3 * k, y + ty * k + (labLines.length + j) * LINE_H * TS, { scale: TS, color: o.disabled ? '#504030' : '#c8bca0' }));
+        detShown.forEach((l, j) => drawText(ctx, l, x + 3 * k, y + ty * k + (labLines.length + j) * LINE_H * TS, { scale: TS, color: o.disabled ? '#504030' : sel ? '#150a04' : '#c8bca0' }));
       }
     } else {
       const rowH = 11 * k;
@@ -563,11 +565,11 @@ export class Hud {
         const r = { x: left + 6 * k, y, w: w - left - 14 * k, h: rowH - k };
         this.optionRects.push(r);
         const sel = i === (hoverIdx >= 0 ? hoverIdx : c.selected);
-        ctx.fillStyle = sel ? '#3a2410' : '#1a120a';
+        ctx.fillStyle = sel ? accent : '#0c0804';
         ctx.fillRect(r.x, r.y, r.w, r.h);
         const rowTy = r.y + Math.round((r.h - 7 * TS) / 2);
-        drawText(ctx, `${i + 1} ${o.label}`, r.x + 3 * k, rowTy, { scale: TS, color: o.disabled ? '#605040' : (o.color ?? '#ffffff') });
-        if (o.detail && !c.inspect) drawText(ctx, o.detail, r.x + r.w - 3 * k, rowTy, { align: 'right', scale: TS, color: '#c8bca0' });
+        drawText(ctx, `${i + 1} ${o.label}`, r.x + 3 * k, rowTy, { scale: TS, color: o.disabled ? '#605040' : sel ? '#150a04' : (o.color ?? '#fff1d6') });
+        if (o.detail && !c.inspect) drawText(ctx, o.detail, r.x + r.w - 3 * k, rowTy, { align: 'right', scale: TS, color: sel ? '#150a04' : '#c8bca0' });
         y += rowH;
       }
     }
@@ -582,7 +584,7 @@ export class Hud {
         detailLines.forEach((line, i) => drawText(ctx, line, 18 * k, detailY + 12 * k + i * LINE_H * TS, { scale: TS, color: '#e8dcc0' }));
       }
     }
-    if (c.footer) drawText(ctx, c.footer, w / 2, top + panelH - 9 * k, { align: 'center', scale: TS, color: '#a09070' });
+    if (c.footer) drawText(ctx, c.footer, w / 2, top + panelH - 9 * k, { align: 'center', scale: TS, color: '#e0a050' });
   }
 
   /** Draw an art-pack sprite smoothly (it's a painted image, not pixel art). */

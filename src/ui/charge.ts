@@ -1,5 +1,14 @@
 import { meterValue } from '../game/wheel';
 
+/** Hand spins: a flick slower than this (deg/s) springs back; this fast is full power. */
+export const GRAB_MIN = 140;
+export const GRAB_FULL = 1000;
+
+/** Release power for a hand flick of angular speed `omega` (deg/s, clockwise +): 0 at GRAB_MIN, 1 at GRAB_FULL. */
+export function grabPower(omega: number): number {
+  return Math.max(0, Math.min(1, (omega - GRAB_MIN) / (GRAB_FULL - GRAB_MIN)));
+}
+
 /** The meter's current release power and the last power used for a landing preview. */
 export interface ChargeMeter {
   t: number;

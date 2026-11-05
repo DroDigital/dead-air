@@ -154,7 +154,7 @@ describe('HUD readability', () => {
     hud.update(10);
     hud.draw(canvas(), w, h, k, { x: 0, y: 0, inside: false }, 0);
     const calls = vi.mocked(drawText).mock.calls;
-    const tray = calls.find(([, s]) => s.startsWith('TRAY $'))!;
+    const tray = calls.find(([, s]) => s === 'AT RISK')!;
     const debt = calls.find(([, s]) => s.includes('DEBT $37500'))!;
     expect(tray[3] + 7).toBeLessThanOrEqual(debt[3]);
     expect(debt[2] + textWidth(debt[1])).toBeLessThanOrEqual(w);
