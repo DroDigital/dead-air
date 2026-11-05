@@ -137,7 +137,7 @@ if (want('spin')) {
   await startRun(c, 'ITCH-SPIN');
   await still(c.page, '02-the-wheel');
   let shot = false;
-  await clip(c, 'spin', 60, 12, async (f) => {
+  await clip(c, 'spin', 57, 12, async (f) => {
     if (f === 4) await c.page.keyboard.down(' ');
     if (f === 20) await c.page.keyboard.up(' ');
     if (!shot && f === 21) {
@@ -162,7 +162,7 @@ if (want('flick')) {
   });
   const at = (deg) => [geo.cx + Math.cos((deg * Math.PI) / 180) * geo.rad, geo.cy + Math.sin((deg * Math.PI) / 180) * geo.rad];
   await c.page.mouse.move(...at(170));
-  await clip(c, 'flick', 84, 12, async (f) => {
+  await clip(c, 'flick', 37, 12, async (f) => {
     if (f === 6) {
       await c.page.mouse.move(...at(180));
       await c.page.mouse.down();
@@ -192,7 +192,7 @@ if (want('phone')) {
     g.changed('phone');
   });
   // Let it ring, then keep answering until the call is on the line.
-  await clip(c, 'phone', 96, 12, async (f) => {
+  await clip(c, 'phone', 63, 12, async (f) => {
     if (f >= 30 && f % 4 === 0 && !(await c.page.evaluate(() => !!window.deadAir.hud.choice))) await c.page.keyboard.press('Enter');
   });
   await c.step(1500);
@@ -253,7 +253,7 @@ if (want('gameover')) {
   await c.step(300);
   await c.page.keyboard.up(' ');
   await c.until(() => window.deadAir.fsm.state === 'GameOver', 40000);
-  await clip(c, 'game-over', 84, 12);
+  await clip(c, 'game-over', 84, 12, null, { width: 720 });
   await c.step(3000);
   await still(c.page, '06-game-over');
   await c.page.close();
