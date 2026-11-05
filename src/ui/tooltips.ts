@@ -72,7 +72,7 @@ export function tooltipFor(hit: PickHit, g: Game | null): string | null {
   if (id === 'host') return 'YOUR HOST\nAlways smiling. Always.';
   if (id === 'lever') {
     const ch = g.chargeContext();
-    return `THE LEVER [HOLD SPACE]\nRelease in the green band for a nudge toward high-value wedges.${ch.preview ? '\n[E] while charging: GLASS EYE PREVIEW' : ''}\nSPINS LEFT ${r.spinsLeft}`;
+    return `THE LEVER [HOLD SPACE]\nWatch the meter by the lever. Release in its green band to favor valuable wedges (not guaranteed).${ch.preview ? '\n[E] while charging: GLASS EYE PREVIEW' : ''}\nSPINS LEFT ${r.spinsLeft}`;
   }
   if (id === 'crank') return r.shop ? `THE CRANK [R]\nRotate new stock into view.\nCOST ${r.shop.freeRerolls > 0 ? 'FREE' : `${r.shop.rerollCost} TOK`}` : 'THE CRANK\nThe cabinet is closed.';
   if (id === 'services' && hit.uv) {

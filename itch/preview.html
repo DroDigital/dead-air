@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>DEAD AIR page preview</title>
+    <!--
+      Local stand-in for the itch.io game page, using the theme settings from README.md:
+      open this file in a browser to see the background, banner, cover and description together.
+    -->
+    <style>
+      :root {
+        --bg: #140a06;
+        --bg2: #1e120a;
+        --text: #f6ead0;
+        --link: #e0a830;
+        --button: #b3291a;
+        --button-text: #f6ead0;
+        --border: #e0a830;
+      }
+      @font-face {
+        font-family: 'Shrikhand';
+        src: url('../public/assets/fonts/Shrikhand-Regular.ttf');
+      }
+      html,
+      body {
+        margin: 0;
+        background: var(--bg) url('background/edge-haunt.gif') repeat-y center top;
+        color: var(--text);
+        font: 17px/1.5 Georgia, 'Times New Roman', serif;
+      }
+      img {
+        image-rendering: pixelated;
+        max-width: 100%;
+        height: auto;
+      }
+      a {
+        color: var(--link);
+      }
+      .banner {
+        text-align: center;
+        padding: 24px 16px 8px;
+      }
+      .column {
+        max-width: 960px;
+        margin: 0 auto 48px;
+        background: var(--bg2);
+        border: 3px solid var(--border);
+        box-shadow: 0 0 0 3px #3a1a08, 0 0 40px #000;
+      }
+      .top {
+        display: grid;
+        grid-template-columns: 315px 1fr;
+        gap: 20px;
+        padding: 20px;
+        border-bottom: 1px solid #3a2410;
+      }
+      .top h1 {
+        font: 34px 'Shrikhand', serif;
+        color: var(--link);
+        margin: 0 0 8px;
+      }
+      .top .short {
+        color: #c8b090;
+        margin: 0 0 14px;
+      }
+      .btn {
+        display: inline-block;
+        background: var(--button);
+        color: var(--button-text);
+        font: 17px 'Shrikhand', serif;
+        padding: 10px 16px;
+        margin: 0 8px 8px 0;
+        text-decoration: none;
+        border: 2px solid #2a1206;
+      }
+      .btn:hover {
+        box-shadow: 0 0 12px var(--button);
+      }
+      .desc {
+        padding: 8px 24px 24px;
+      }
+      .desc td {
+        border-bottom: 1px solid #3a2410;
+        padding: 6px 8px;
+      }
+      .desc td:first-child {
+        color: var(--link);
+      }
+      .desc table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      .note {
+        max-width: 960px;
+        margin: 0 auto 24px;
+        padding: 0 16px;
+        color: #806040;
+        font-size: 16px;
+        text-align: center;
+      }
+      @media (max-width: 700px) {
+        .top {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="banner"><img src="banner/banner-animated.gif" alt="DEAD AIR" width="960" height="360" /></div>
+    <div class="column">
+      <div class="top">
+        <img src="cover/cover-animated.gif" alt="DEAD AIR cover" width="315" height="250" />
+        <div>
+          <h1>DEAD AIR</h1>
+          <p class="short">A prize-wheel gambling roguelite in a rotting TV studio.</p>
+          <a class="btn" href="#">RUN GAME</a>
+          <a class="btn" href="#">DOWNLOAD</a>
+          <p class="short">Windows · macOS · Linux · Browser</p>
+        </div>
+      </div>
+      <div class="desc" id="desc">Loading the description…</div>
+    </div>
+    <p class="note">Preview only. The live page uses the same files; see itch/README.md.</p>
+    <script>
+      // Pull in page/description.html so the preview never drifts from the real copy.
+      fetch('page/description.html')
+        .then((r) => r.text())
+        .then((html) => {
+          document.getElementById('desc').innerHTML = html.replaceAll('src="../', 'src="');
+        })
+        .catch(() => {
+          document.getElementById('desc').innerHTML =
+            '<p>Open this preview through a local web server so it can load page/description.html: run <code>python3 -m http.server 8000</code> in the repo root, then open http://localhost:8000/itch/preview.html.</p>';
+        });
+    </script>
+  </body>
+</html>

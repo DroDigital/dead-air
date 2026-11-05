@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
+import { CHALLENGES } from '../src/content/challenges';
 import { ARTIFACTS } from '../src/content/artifacts';
 import { BARGAINS, PRODUCER_INTROS } from '../src/content/bargains';
-import { HOST_LINES, HOST_SILENT_LINES } from '../src/content/hostLines';
+import { DEADLINE_LINES, HOST_LINES, HOST_SILENT_LINES, PRODUCER_ACCEPT, PRODUCER_HANGUP, SECRET_ACCEPT } from '../src/content/hostLines';
 import { MUTATORS } from '../src/content/mutators';
 import { SCRATCH_CARDS } from '../src/content/scratchCards';
 import { WEDGES, WEDGE_KINDS } from '../src/content/wedges';
@@ -22,6 +23,8 @@ function bitmapStrings(): { where: string; text: string }[] {
   for (const [k, lines] of Object.entries(HOST_LINES)) for (const l of lines) out.push({ where: `host ${k}`, text: l });
   for (const l of HOST_SILENT_LINES) out.push({ where: 'host silent', text: l });
   for (const l of Object.values(PRODUCER_INTROS).flat()) out.push({ where: 'producer intro', text: l });
+  for (const l of [...DEADLINE_LINES, ...PRODUCER_ACCEPT, ...PRODUCER_HANGUP, SECRET_ACCEPT]) out.push({ where: 'host/producer extra', text: l });
+  for (const c of CHALLENGES) out.push({ where: 'challenge', text: `SPONSOR: ${c.name} ${c.text.replace('{n}', '1')} DONE` });
   for (const [k, v] of Object.entries(COMBO_TEXT)) out.push({ where: `combo ${k}`, text: `${COMBO_NAMES[k as keyof typeof COMBO_NAMES]} ${v}` });
   return out;
 }

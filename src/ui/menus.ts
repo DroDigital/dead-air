@@ -2,12 +2,14 @@
  * DOM menus: title, new broadcast, settings, collection (the prop room), credits, pause,
  * end-of-run summary. Fully keyboard navigable (Tab/arrows/Enter) and mouse driven.
  */
+import type { Action } from './input';
 import sourceManifest from '../../assets/manifest.json';
 import runtimeIndex from '../assets/manifest.json';
 import { ARTIFACTS, LOCKED_ARTIFACTS } from '../content/artifacts';
 import { LORE } from '../content/lore';
 import { STAKES, STARTING_WHEELS } from '../content/wheels';
 import type { Settings } from '../core/config';
+import { desktop } from '../core/desktop';
 import { randomSeedString } from '../core/rng';
 import { UNLOCKS, endlessUnlocked, isUnlocked, maxStake, unlockedWheels, type MetaState, type RatingsBreakdown, type Unlock } from '../game/meta';
 
@@ -26,28 +28,57 @@ export interface MenuCallbacks {
   onSettings(s: Settings): void;
   onEndlessContinue(): void;
   onRetire(): void;
-  onUiSound(kind: 'move' | 'select' | 'back'): void;
+  onUiSound(kind: 'move' | 'select' | 'back' | 'slam'): void;
+  /** A lore note was opened (the archivist reads it aloud) or closed. */
+  onLoreNote?(text: string | null): void;
+  /** Whether a note has a recorded reading. */
+  loreVoiced?(text: string): boolean;
   getMeta(): MetaState;
   getSettings(): Settings;
   hasSave(): boolean;
-  artifactIcon(id: string): string | null;
+  /** Icon URL; `drawnOnly` skips the rendered-prop fallback (used for silhouettes). */
+  artifactIcon(id: string, drawnOnly?: boolean): string | null;
 }
 
-type Page = 'title' | 'new' | 'settings' | 'collection' | 'credits' | 'pause' | 'summary' | null;
+type Page = 'title' | 'new' | 'settings' | 'collection' | 'credits' | 'pause' | 'abandon' | 'summary' | null;
 
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
+
+/** Game-over timing (keep in step with the CSS in index.html): GAME OVER lands, then the card rises. */
+const GAMEOVER_TITLE_LANDS_MS = 2250;
+const GAMEOVER_CARD_MS = 3100;
 
 export class Menus {
   private root: HTMLDivElement;
   page: Page = null;
   private back: Page = null;
   private summary: { won: boolean; deadline: number; ratings: RatingsBreakdown; unlocks: Unlock[]; canEndless: boolean } | null = null;
+  /** Desktop build only: whether the window is fullscreen (labels the settings toggle). */
+  private fullscreen = false;
 
   constructor(private cb: MenuCallbacks) {
     this.root = document.createElement('div');
     this.root.id = 'menus';
     document.body.appendChild(this.root);
     this.root.addEventListener('keydown', (e) => this.keys(e));
+    if (desktop) {
+      const label = () => {
+        const b = this.root.querySelector<HTMLButtonElement>('button[data-fs]');
+        if (b) b.textContent = this.fullscreenLabel();
+      };
+      void desktop.isFullscreen().then((on) => {
+        this.fullscreen = on;
+        label();
+      });
+      desktop.onFullscreenChange((on) => {
+        this.fullscreen = on;
+        label();
+      });
+    }
+  }
+
+  private fullscreenLabel(): string {
+    return this.fullscreen ? 'WINDOWED (F11)' : 'FULLSCREEN (F11)';
   }
 
   get open(): boolean {
@@ -69,6 +100,39 @@ export class Menus {
   showSummary(won: boolean, deadline: number, ratings: RatingsBreakdown, unlocks: Unlock[], canEndless: boolean): void {
     this.summary = { won, deadline, ratings, unlocks, canEndless };
     this.show('summary');
+  }
+
+  /** Route controller actions directly to native menu controls. */
+  action(a: Action): void {
+    const focusables = [...this.root.querySelectorAll<HTMLElement>('button:not([disabled]), input:not([disabled]), select:not([disabled]), details[data-lore] > summary')];
+    const active = document.activeElement as HTMLElement | null;
+    const i = focusables.indexOf(active as HTMLElement);
+    if (a.type === 'nav') {
+      const horizontal = a.dir === 'left' || a.dir === 'right';
+      const step = a.dir === 'left' || a.dir === 'up' ? -1 : 1;
+      if (horizontal && active instanceof HTMLInputElement && active.type === 'range') {
+        if (step < 0) active.stepDown(); else active.stepUp();
+        active.dispatchEvent(new Event('input', { bubbles: true }));
+      } else if (horizontal && active instanceof HTMLSelectElement) {
+        let next = active.selectedIndex + step;
+        while (next >= 0 && next < active.options.length && active.options[next].disabled) next += step;
+        if (next >= 0 && next < active.options.length) {
+          active.selectedIndex = next;
+          active.dispatchEvent(new Event('input', { bubbles: true }));
+          active.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+      } else {
+        focusables[(i + step + focusables.length) % focusables.length]?.focus();
+      }
+      this.cb.onUiSound('move');
+    } else if (a.type === 'confirm') {
+      if (active instanceof HTMLButtonElement || active instanceof HTMLInputElement && active.type === 'checkbox' || active?.tagName === 'SUMMARY') active.click();
+    } else if (a.type === 'back' || a.type === 'pause') {
+      if (this.page === 'pause') this.cb.onResume();
+      else if (this.back) this.show(this.back, this.back === 'pause' ? null : 'title');
+      else return;
+      this.cb.onUiSound('back');
+    }
   }
 
   private keys(e: KeyboardEvent): void {
@@ -114,7 +178,7 @@ export class Menus {
     const meta = this.cb.getMeta();
     if (p === 'title') {
       html = `<div class="panel title">
-        <div class="logo">DEAD<span>AIR</span></div>
+        <div class="logo"><img src="assets/art/title/lettered.png" alt="DEAD AIR" onerror="this.parentElement.innerHTML='DEAD<span>AIR</span>'"></div>
         <div class="tag">a prize-wheel gambling roguelite</div>
         <div class="col">
           ${this.cb.hasSave() ? this.btn('CONTINUE BROADCAST', () => this.cb.onContinue()) : ''}
@@ -122,6 +186,7 @@ export class Menus {
           ${this.btn('THE PROP ROOM', () => this.show('collection', 'title'))}
           ${this.btn('SETTINGS', () => this.show('settings', 'title'))}
           ${this.btn('CREDITS', () => this.show('credits', 'title'))}
+          ${desktop ? this.btn('QUIT TO DESKTOP', () => void desktop!.quit()) : ''}
         </div>
         <div class="foot">RATINGS ${meta.ratings} · BROADCASTS ${meta.runs} · PAID OFF ${meta.wins}</div>
       </div>`;
@@ -177,8 +242,11 @@ export class Menus {
           ${slider('voice', 'VOICE')}
           ${slider('ambience', 'AMBIENCE')}
         </div>
-        <div class="row">${this.btn('DONE', () => this.show(this.back ?? 'title', this.back === 'pause' ? null : 'title'))}</div>
+        <div class="row">${this.btn('DONE', () => this.show(this.back ?? 'title', this.back === 'pause' ? null : 'title'))}${
+          desktop ? this.btn(this.fullscreenLabel(), () => void desktop!.setFullscreen(!this.fullscreen), 'data-fs') : ''
+        }</div>
         <p class="small">KEYS: ARROWS/WASD look · SPACE hold lever · ENTER deposit/confirm · 1-6 cards/artifacts/choices · F fast · ESC pause</p>
+        <p class="small">PAD: D-PAD/LEFT STICK look · A confirm · B back/sell · HOLD X spin · Y gamble · LB peek · RB fast · START pause · RIGHT STICK cursor · RT click</p>
       </div>`;
       queueMicrotask(() => {
         this.root.querySelectorAll<HTMLInputElement | HTMLSelectElement>('[data-k]').forEach((el) => {
@@ -196,16 +264,18 @@ export class Menus {
       const cards = ARTIFACTS.map((a) => {
         const locked = LOCKED_ARTIFACTS.includes(a.id) && !isUnlocked(meta, `artifact:${a.id}`);
         const known = seen.has(a.id);
-        const icon = known ? this.cb.artifactIcon(a.id) : null;
+        // Unseen props show as a silhouette when the drawn icon exists.
+        const icon = known || !locked ? this.cb.artifactIcon(a.id, !known) : null;
         return `<div class="prop ${known ? 'known' : ''} ${locked ? 'locked' : ''} r-${a.rarity}">
-          <div class="icon">${icon ? `<img src="${icon}" alt="">` : locked ? 'LOCK' : '?'}</div>
+          <div class="icon">${icon ? `<img src="${icon}" alt=""${known ? '' : ' class="unseen"'}>` : locked ? 'LOCK' : '?'}</div>
           <div class="pn">${known ? esc(a.name) : locked ? 'LOCKED' : '???'}</div>
           <div class="pt">${known ? esc(a.text) : locked ? `Unlocks at ${UNLOCKS.find((u) => u.id === `artifact:${a.id}`)?.at ?? '?'} Ratings` : 'Not yet found.'}</div>
         </div>`;
       }).join('');
       const lore = LORE.map((n) => {
         const un = n.unlocked(meta);
-        return `<details class="note ${un ? '' : 'locked'}" ${un ? '' : 'disabled'}><summary>${un ? esc(n.title) : '— TORN NOTE —'}</summary><p>${un ? esc(n.text) : esc(n.hint)}</p></details>`;
+        const voiced = un && this.cb.loreVoiced?.(n.text);
+        return `<details class="note ${un ? '' : 'locked'}" ${un ? `data-lore="${LORE.indexOf(n)}"` : 'disabled'}><summary>${un ? esc(n.title) : '— TORN NOTE —'}${voiced ? ' <span class="reel">◉ REEL</span>' : ''}</summary><p>${un ? esc(n.text) : esc(n.hint)}</p></details>`;
       }).join('');
       const unl = UNLOCKS.map((u) => `<li class="${isUnlocked(meta, u.id) ? 'on' : ''}">${u.at} — ${esc(u.kind.toUpperCase())}: ${esc(u.name)}</li>`).join('');
       html = `<div class="panel wide proproom">
@@ -237,14 +307,29 @@ export class Menus {
           ${this.btn('RESUME', () => this.cb.onResume())}
           ${this.btn('SETTINGS', () => this.show('settings', 'pause'))}
           ${this.btn('QUIT TO TITLE (SAVED)', () => this.cb.onQuitToTitle())}
-          ${this.btn('ABANDON BROADCAST', () => {
-            if (confirm('Abandon this broadcast? The run ends and counts as a loss.')) this.cb.onAbandon();
-          })}
+          ${this.btn('ABANDON BROADCAST', () => this.show('abandon', 'pause'))}
+        </div>
+      </div>`;
+    } else if (p === 'abandon') {
+      html = `<div class="panel">
+        <h2>ABANDON BROADCAST?</h2>
+        <p>The run ends and counts as a loss.</p>
+        <div class="col">
+          ${this.btn('KEEP BROADCASTING', () => this.show('pause'))}
+          ${this.btn('ABANDON BROADCAST', () => this.cb.onAbandon())}
         </div>
       </div>`;
     } else if (p === 'summary' && this.summary) {
       const s = this.summary;
-      html = `<div class="panel">
+      this.root.classList.add(s.won ? 'won' : 'lost');
+      if (!s.won && this.cb.getSettings().reducedFlashing) this.root.classList.add('reduced-flashing');
+      // Lost: the trapdoor scene plays (the host's glove waving from below), GAME OVER drops in,
+      // then the run's card rises. The CSS times it; the slam is timed to match.
+      if (!s.won) {
+        const page = this.page;
+        setTimeout(() => this.page === page && this.summary === s && this.cb.onUiSound('slam'), GAMEOVER_TITLE_LANDS_MS);
+      }
+      html = `${s.won ? '' : '<div class="gostage" aria-hidden="true"><div class="gowave"></div><div class="golight"></div></div><div class="gotitle-wrap"><div class="gotitle"><span class="back">GAME OVER</span><span class="front">GAME OVER</span></div></div>'}<div class="panel">
         <h2 class="${s.won ? 'win' : 'lose'}">${s.won ? 'PAID IN FULL' : "THAT'S OUR SHOW"}</h2>
         <p>${s.won ? 'All eight Deadlines paid. The Network is… pleased.' : `The floor opened at Deadline ${s.deadline}.`}</p>
         <table class="ratings">${s.ratings.lines.map((l) => `<tr><td>${esc(l.label)}</td><td>+${l.value}</td></tr>`).join('')}<tr class="tot"><td>RATINGS</td><td>${s.ratings.total}</td></tr></table>
@@ -255,7 +340,28 @@ export class Menus {
         </div>
       </div>`;
     }
+    this.cb.onLoreNote?.(null);
     this.root.innerHTML = html;
-    setTimeout(() => this.root.querySelector<HTMLElement>('button, input, select')?.focus(), 0);
+    this.root.querySelectorAll<HTMLDetailsElement>('details[data-lore]').forEach((d) =>
+      d.addEventListener('toggle', () => {
+        if (d.open) this.root.querySelectorAll<HTMLDetailsElement>('details[data-lore]').forEach((o) => o !== d && (o.open = false));
+        this.cb.onLoreNote?.(d.open ? LORE[Number(d.dataset.lore)].text : null);
+      }),
+    );
+    // On the game-over screen the buttons only take focus once the card has risen; a click skips
+    // straight to the card.
+    const gameOver = p === 'summary' && !!this.summary && !this.summary.won;
+    const focusFirst = () => this.root.querySelector<HTMLElement>('button, input, select')?.focus();
+    setTimeout(focusFirst, gameOver ? GAMEOVER_CARD_MS : 0);
+    if (gameOver)
+      this.root.addEventListener(
+        'pointerdown',
+        () => {
+          if (this.root.classList.contains('goskip')) return;
+          this.root.classList.add('goskip');
+          setTimeout(focusFirst, 50);
+        },
+        { once: true },
+      );
   }
 }

@@ -24,13 +24,15 @@ const browser = await chromium.launch({ args: ['--use-gl=angle', '--use-angle=sw
 const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
 page.on('pageerror', (e) => pageErrors.push(e.message));
 page.on('dialog', (d) => d.accept());
-await page.goto(url);
+await page.goto(url.includes('?') ? `${url}&skipintro` : `${url}?skipintro`);
 await page.waitForFunction(() => window.deadAir && window.deadAir.stage && window.deadAir.fsm.state === 'Menu', null, { timeout: 90000 });
 
 const idle = (ms = 15000) =>
-  page.waitForFunction(() => window.deadAir.busy === 0 && !window.deadAir.stage.wheel.busy && !window.deadAir.charge, null, { timeout: ms }).then(() => true, () => false);
+  // Settled: nothing presenting, the wheel still, and no cinematic camera shot still easing back.
+  page.waitForFunction(() => window.deadAir.busy === 0 && !window.deadAir.stage.wheel.busy && !window.deadAir.charge && !window.deadAir.stage.rig.inShot, null, { timeout: ms }).then(() => true, () => false);
 const menuPage = () => page.evaluate(() => window.deadAir.menus.page);
-const clickMenu = (label) => page.locator('#menus button', { hasText: label }).first().click({ timeout: 5000 });
+// Generous timeout: the game-over card only rises after its intro (about 3.6 s).
+const clickMenu = (label) => page.locator('#menus button', { hasText: label }).first().click({ timeout: 12000 });
 
 // ---- 1. Prize Room and Credits render without undefined/NaN text ----------------------
 await page.locator('#menus button', { hasText: 'THE PROP ROOM' }).first().click();
@@ -96,6 +98,40 @@ const NAMES = { cash: 'CASH', jackpot: 'JACKPOT', bankrupt: 'BANKRUPT', dud: 'DU
 const want = NAMES[hover.expectedKind] ?? hover.expectedKind;
 check('tooltip on the wheel names the wedge under the pointer', !!tip && tipName.startsWith(want), `tooltip "${tipName}", wedge under flapper: ${want}`);
 
+// ---- 4b. Grab the wheel with the mouse and flick it clockwise: it spins -----------------
+await idle(20000);
+const geo = await page.evaluate(() => {
+  const a = window.deadAir;
+  const r = a.canvas.getBoundingClientRect();
+  const vp = a.stage.post.viewport(r.width, r.height);
+  const c = a.toScreen(a.stage.wheel.centerWorld());
+  const e = a.toScreen(a.stage.wheel.rimWorld());
+  return { cx: r.left + vp.x + c.x * vp.k, cy: r.top + vp.y + c.y * vp.k, rad: Math.hypot(e.x - c.x, e.y - c.y) * vp.k * 0.7, spins: a.game.run.stats.spins, phase: a.game.run.phase };
+});
+const at = (deg) => [geo.cx + Math.cos((deg * Math.PI) / 180) * geo.rad, geo.cy + Math.sin((deg * Math.PI) / 180) * geo.rad];
+// A feeble drag springs back without spending a spin.
+await page.mouse.move(...at(200));
+await page.mouse.down();
+await page.waitForTimeout(150);
+await page.mouse.move(...at(206), { steps: 4 });
+await page.waitForTimeout(250);
+await page.mouse.up();
+await page.waitForTimeout(800);
+const afterFeeble = await page.evaluate(() => window.deadAir.game.run.stats.spins);
+// A real flick: grab at nine o'clock, sweep over the top fast, let go.
+await idle(20000);
+await page.mouse.move(...at(180));
+await page.mouse.down();
+await page.waitForTimeout(120);
+for (let d = 186; d <= 320; d += 14) {
+  await page.mouse.move(...at(d));
+  await page.waitForTimeout(12);
+}
+await page.mouse.up();
+const flicked = await page.waitForFunction((n) => window.deadAir.game.run.stats.spins > n, geo.spins, { timeout: 6000 }).then(() => true, () => false);
+check('grabbing the wheel: a feeble drag springs back, a clockwise flick spins it', geo.phase === 'AwaitAction' && afterFeeble === geo.spins && flicked, `spins before ${geo.spins}, after feeble drag ${afterFeeble}, flick spun: ${flicked}`);
+await idle(30000);
+
 // ---- 5. Quitting during a spin waits for the spin, then quits cleanly -------------------
 await idle(20000);
 await page.keyboard.down(' ');
@@ -149,7 +185,9 @@ await page.evaluate(() => {
   window.deadAir.sync(false);
 });
 await page.keyboard.press('2');
-await page.waitForTimeout(1200);
+// The package intro may still own the input after a fixed delay, especially when
+// software rendering at 2× resolution. Wait until the run can accept a spin.
+await page.waitForFunction(() => window.deadAir.game?.run.phase === 'AwaitAction' && window.deadAir.fsm.state === 'AwaitAction' && window.deadAir.busy === 0 && !window.deadAir.stage.wheel.busy, null, { timeout: 60000 });
 await page.evaluate(() => { window.deadAir.game.run.spinsLeft = 1; });
 await page.keyboard.down(' ');
 await page.waitForTimeout(300);

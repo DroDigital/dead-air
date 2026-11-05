@@ -61,8 +61,12 @@ The only library over ~100 kB gz is three.js. GSAP measures ~28 kB gz. Built app
 4. **Prize Cabinet artifact prices +3 Tokens** over listed rarity costs (tuned, see BALANCE.md).
 5. **Choice moments are on-air graphics.** Package select, Nudge, artifact 1-of-3, surplus conversion and the Producer's offers are drawn as broadcast chyrons in the pixel font (the show is a TV broadcast, so its own graphics are diegetic). Everything else is in-world: tray, vault nixie, flip clock, placard, cabinet price tags, shelf, marquee, host captions.
 6. **Dust motes** use `THREE.Points` with a tiny PointsMaterial rather than the PSX ShaderMaterial (1-px points have no texture/lighting to speak of). Everything else uses the single PSX material.
-7. **Some audio is still procedural.** Eight cues now use CC0 recordings from OpenGameArt's "RPG Sound Pack" by artisticdude (coins, flapper tick, vault door, lever, phone bell, button, scratch card, cabinet crank). Kenney.nl and Freesound are not reachable from the build environment. The bankrupt crash, crowd groan, jackpot bells and the music loop have no matching CC0 recording yet. They stay synthesised, and ASSETS_TODO.md links a search for each one. Dropping a CC0 WAV at `assets-src/audio/<name>.wav` and running `npm run assets` swaps it in by id.
-8. **Host animation** is procedural (stepped at 12 fps), not Mixamo — Mixamo requires an Adobe login and its licence forbids redistributing raw files.
+7. **Audio sources, in order of precedence.** Music is the project owner's own score (six Suno tracks by digitaldro: title, wheel, Prize Cabinet, deadline, spin tension, game-over cue). Voice-over, the remaining sound effects and the phone-call lounge track were generated with ElevenLabs for this project (custom-designed voices; prompts in `assets/elevenlabs.json`). Eight small cues are CC0 recordings from OpenGameArt's "RPG Sound Pack" by artisticdude. Anything missing falls back to the procedural synth, so the game still runs from a bare checkout.
+8. **Voices are performed, then placed.** Each speaker has a custom ElevenLabs voice and every line is read with `eleven_v4` audio tags. The clips are clean; the room is added at runtime by a per-speaker WebAudio chain (CRT speaker for the host, phone line for the Producer, a crossed line for the secret caller, reel-to-reel for the archive). The host's chain wears with the Deadline and glitches when the show goes wrong, so one recording serves every point in a run.
+9. **Double or Nothing is EV-neutral and outside the simulator.** Once per Deadline, with at least $300 in the Tray, the player may stake the whole Tray on an even-odds flip (events RNG stream, so replays stay deterministic). The expected value is exactly zero, so it changes variance, not the balance targets; the bots never take it, and BALANCE.md's numbers are unaffected. `tests/gamble.test.ts` checks the odds, the once-per-Deadline rule and save round-trips.
+10. **Host animation** is procedural (stepped at 12 fps), not Mixamo — Mixamo requires an Adobe login and its licence forbids redistributing raw files.
+11. **The Sponsor's Challenge pays for risk.** One goal per Deadline, drawn from the events stream and stored in `run.marks` (no save-format change). A first version that also rewarded a big single deposit let the always-deposit bot live past Deadline 5, so the deposit goal became NO NET (ride four spins) and easy goals pay 1 Token, risky ones 2. BALANCE.md has the before and after.
+12. **One key for the whole score.** The title and wheel themes were in G minor, the Cabinet and deadline tracks in C minor, the phone lounge in A minor, and the cues in C major. `tools/music-key.ts` (chromagram + Krumhansl–Schmuckler profiles, peak-interpolated tuning) picked the key that needs the least weighted shifting: A minor, with every shift within ±3 semitones (+2 for the G-minor tracks, −3 for the C-minor ones). The pipeline applies it with rubberband at high quality, tempo unchanged, and also pulls each track onto A440 (up to 6¢). Re-analysing the outputs reads A minor / C major within ±1¢. The tension and game-over cues play at the music's tape speed so the per-Deadline slowdown keeps them in tune.
 
 ## Technical choices
 
@@ -72,3 +76,46 @@ The only library over ~100 kB gz is three.js. GSAP measures ~28 kB gz. Built app
 - **Saves.** `deadair.run`, `deadair.meta`, `deadair.settings` envelopes `{v, savedAt, data}` with step-wise migrations; autosave after every rules action (each is a safe state; mid-Nudge spins are serialised as `pendingSpin`).
 - **Draw calls.** Static geometry is merged per material (`Batcher`), props are vertex-coloured merges (`PropBuilder`), imported GLBs are flattened to one mesh per texture, panels share canvases. Measured: 26–36 calls per station including the two post passes; ~3–4.5k triangles.
 - **In-world text** uses the game's own 5×7 bitmap font (`ui/bitfont.ts`); DOM menus use Silkscreen (OFL).
+
+## The host as a 2D cut-out
+
+- The art pack has a pose sheet (12 drawings, two per pose) and a model sheet with spare parts. The host is rigged from the model sheet's parts instead of flipping the pose drawings, so he can blend between any two poses, react to the voice every frame and keep one consistent face screen; the pose sheet served as the reference for the six poses.
+- The sheet's TV screens are blank in the pose drawings and full screens in the face sheet; the face cell is clipped into the TV's screen shape and given scanlines and a rolling bar.
+- The model sheet is opaque, so parts are cut out with a flood fill from the crop edges that stops at the ink outline, then feathered.
+- He is a billboard facing the contestant's chair. He used to be a low-poly mannequin; the 3D model the owner mentioned can replace the billboard later without changing the `HostView` API.
+- The wheel face is a 256 px texture with the pixel font at scale 2, so text is the same on-screen size as the HUD's (it can't shrink and stay legible at 320×180). That fixes what fits: on a standard 15° wedge a four-character value fills the outer half of the wedge, so numbers win over icons there; the icon joins the label on wider wedges and stands alone on non-number wedges. The face is mipmapped (unlike the rest of the PS1 textures) so the painted detail doesn't shimmer while it spins.
+- The owner's painted wheel and ornamental frame were references; the frame was tried around the wheel and taken out again at the owner's request (it didn't sit right), so the wheel keeps its gold rim and 40 marquee bulbs.
+
+## Grabbing the wheel, and the slow-motion finishes
+
+- A hand spin uses the same physics and the same sweet-spot rule as the lever: the flick's angular speed over the last 0.12 s maps to power (140°/s is the least that spins, 1000°/s is full power), and the spin starts from wherever the player let go. Starting angle is a new input to `Game.spin` (`startAngle`); runs stay deterministic for the same inputs. Because the omega jitter still applies, letting go at a chosen angle doesn't let a player aim a wedge.
+- A feeble or backwards flick springs back to where the wheel stopped, so the wheel can't be parked by hand between spins.
+- Mouse only: the gamepad cursor and keyboard keep the lever.
+- Which spins get the slow-motion finish is decided when the spin starts (the outcome is already known), so the close-up begins in time rather than reacting late. Fast mode skips it, and Reduced Flashing drops the flash frames and softens the shock.
+
+## Desktop launcher
+
+- **Electron, not Tauri.** Tauri renders with the OS web view, which is WebKitGTK on Linux and WebKit on macOS: uneven WebGL2, Gamepad API and WebAudio support across the three platforms. Electron ships one Chromium everywhere, the same engine the game is developed and playtested in. The cost is size (~100 MB installers).
+- **`app://` origin instead of `file://`.** `fetch()` of audio and voice files does not work from `file://`, and a custom privileged scheme gives localStorage a stable origin for saves.
+- **No `node_modules` in the package.** Vite already bundles three.js and GSAP into `dist/`, so the app ships only `dist/` and the launcher (an 18 MB asar).
+- **SwiftShader fallback** (`--enable-unsafe-swiftshader`). Without it, Chromium refuses WebGL on machines with no usable GPU (VMs, blocklisted drivers) and the game would hang at boot. The window only ever loads the game's own local build.
+- **itch.io gets the unpacked app**, not the installer, so the itch app can install, launch and patch it with butler's diffs.
+- **The app icon is the host's TV head** from the art pack, clipped to a round window on the wheel's sunburst and set in an 824 px rounded tile (macOS keeps icon artwork inside that safe area). The head art is 290 px, so it is upscaled once. The window's rim covers the clip edge, which hides the bow tie and the strokes under the cabinet. `tools/desktop-icon.ts` regenerates `desktop/icon.png` from `public/assets/art/host/head.png`.
+
+## Intro and loading
+
+- **The loading banner is the owner's "please stand by" video, scrubbed to the real loading progress.** Its own tuning bar runs from 0.2 s to 5.1 s, so the loader seeks to the point that matches the work done (`src/ui/bootTimeline.ts`). The bar climbs at most 0.42 a second, so a fast load still plays the banner through and the bar never runs ahead of the work. Where the platform cannot seek the video (the desktop shell's media protocol may not serve byte ranges), the banner plays through instead.
+- **Both videos carry the VHS treatment in the asset build** (`tools/video.ts`): colour fringe, 240-line scanlines, grain, a rolling tracking bar, vignette and worn-tape warmth. It is baked in, so every platform shows the same tape. The intro keeps its soundtrack.
+- **Press to start.** Browsers only let a video sound after a user gesture, so the intro waits behind a "press any key" prompt. That press also unlocks the audio mixer. The menu's music waits for the intro to end, and the intro takes the place of the host's greeting.
+- **The intro's camera pushes in on the host's last raise** (13.6 s in, as the curtain is revealed): an ease to 1.16 times with a 2.2 px blur over 0.7 s, toward the raised hand. It is a CSS transform on the playing video, so it can be tuned without re-encoding.
+- **`?skipintro`** skips the loader's wait and the intro. The browser checks (`tools/scenarios.mjs`, `tools/shot.mjs`, `tools/playtest.mjs`) use it.
+
+## Phone dialogue length
+
+- Every caller line on a phone card is at most two sentences (a test enforces it). The lines were shortened by keeping two of their original sentences, so the existing voice takes were cut rather than re-recorded (`tools/vo.ts cut`). Sentence timings for the cuts came from a forced alignment of each take against its script (pocketsphinx), because the silence-based aligner misplaces boundaries around very short sentences ("Cash. Today.").
+
+## Resolution and HUD text
+
+- **The default internal resolution is 640×360.** The HUD reads cleanly at 1280×720, and the window stays a whole-number 2× on the common screen sizes. Saves from the old default (320×180, written on first launch) move to 640×360 once, through the settings v1 → v2 migration. Other settings are kept.
+- **HUD text is drawn at its native 5×7 size at every resolution** (`TS` in `src/ui/hud.ts`). It used to scale with the layout, so at 640×360 it crowded the bottom bar and captions. Boxes and spacing still scale with the resolution; text widths, line steps and wrap widths use `TS`.
+- **The HUD overlay texture is rebuilt when the resolution changes.** A three.js texture keeps the GPU size it was first made at, so at 640×360 every upload failed and the overlay disappeared.

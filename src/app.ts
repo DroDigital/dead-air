@@ -2,30 +2,34 @@
  * App controller: owns the FSM, the Game, the Stage, audio and UI. The rules core runs
  * instantly; this layer replays results as animations, captions and sound.
  */
+import { art } from './assets/art';
 import { Assets } from './assets/loader';
 import { Mixer } from './audio/mixer';
 import { Music } from './audio/music';
 import { Sfx } from './audio/sfx';
 import { HOST_VOICE, PRODUCER_VOICE, SECRET_VOICE, Voice } from './audio/voice';
+import { VoPlayer, type VoMood } from './audio/vo';
 import { artifactDef } from './content/artifacts';
 import { bargainDef, fillDeal } from './content/bargains';
 import { COMBO_NAMES } from './game/combos';
-import { HOST_LINES, HOST_SILENT_LINES, type HostTrigger } from './content/hostLines';
+import { DEADLINE_LINES, HOST_LINES, HOST_SILENT_LINES, PRODUCER_ACCEPT, PRODUCER_HANGUP, SECRET_ACCEPT, type HostTrigger } from './content/hostLines';
+import { challengeText } from './content/challenges';
 import { mutatorDef } from './content/mutators';
 import { scratchDef } from './content/scratchCards';
 import { WEDGES } from './content/wedges';
 import { defaultSettings, sanitizeSettings, SETTINGS_VERSION, type Settings } from './core/config';
 import { APP_TRANSITIONS, Fsm, type AppState } from './core/fsm';
-import { META_MIGRATIONS, RUN_MIGRATIONS, SAVE_KEYS, SaveSlot, defaultStorage } from './core/save';
+import { META_MIGRATIONS, RUN_MIGRATIONS, SAVE_KEYS, SETTINGS_MIGRATIONS, SaveSlot, defaultStorage } from './core/save';
 import { BALANCE } from './game/balance';
 import { META_VERSION, applyRun, computeRatings, endlessUnlocked, newMeta, noteRunProgress, unlockedArtifacts, unlockedWedges, type MetaState } from './game/meta';
 import { Game, RUN_VERSION, type DeadlineEndResult, type SpinOutcome, type SpinResolution } from './game/run';
 import { sellValue } from './game/shop';
 import type { PackageId, RunState } from './game/types';
-import { angleForSegment, meterValue } from './game/wheel';
+import { angleForSegment, inSweetSpot, meterValue, mod360 } from './game/wheel';
 import { CabinetView, type ServiceButton } from './render/scene/cabinet';
 import { buildProp } from './render/scene/props';
 import { Stage } from './render/stage';
+import { BootScreens } from './ui/bootScreens';
 import { Hud, type ChoicePanel } from './ui/hud';
 import { Input, type Action } from './ui/input';
 import { Menus } from './ui/menus';
@@ -37,6 +41,11 @@ type TargetMode = 'replace' | 'remove' | 'gild' | 'widen' | 'narrow';
 
 const wait = (s: number) => new Promise<void>((r) => setTimeout(r, s * 1000));
 
+/** Hand spins: a flick slower than this (deg/s) springs back; this fast is full power. */
+const GRAB_MIN = 140;
+const GRAB_FULL = 1000;
+const DEG = Math.PI / 180;
+
 export class App {
   readonly assets = new Assets();
   stage!: Stage;
@@ -44,6 +53,13 @@ export class App {
   readonly sfx = new Sfx(this.mixer);
   readonly music = new Music(this.mixer);
   readonly voice = new Voice(this.mixer);
+  readonly vo = new VoPlayer(this.mixer);
+  private loops: { drum?: { stop: (f?: number) => void } | null; heart?: { stop: (f?: number) => void } | null } = {};
+  private lastSpinSaid = -1;
+  /** Spins the current Deadline started with (for the chyron pips). */
+  private spinsMax = 8;
+  private spinsMaxFor = -1;
+  private phoneTalk: number[] = [];
   readonly hud = new Hud();
   input!: Input;
   menus!: Menus;
@@ -54,12 +70,21 @@ export class App {
   private storage = defaultStorage();
   private runSlot = new SaveSlot<RunState>(SAVE_KEYS.run, RUN_VERSION, RUN_MIGRATIONS, this.storage);
   private metaSlot = new SaveSlot<MetaState>(SAVE_KEYS.meta, META_VERSION, META_MIGRATIONS, this.storage);
-  private settingsSlot = new SaveSlot<Settings>(SAVE_KEYS.settings, SETTINGS_VERSION, {}, this.storage);
+  private settingsSlot = new SaveSlot<Settings>(SAVE_KEYS.settings, SETTINGS_VERSION, SETTINGS_MIGRATIONS, this.storage);
   private busy = 0;
-  private loading = 0;
+  private bootScreens: BootScreens | null = null;
+  /** True until the intro has played or been skipped: the menu's sound waits for it. */
+  private introPending = false;
   private time = 0;
   private hitstop = 0;
   private charge: { t: number; peek: boolean; lastTick: number } | null = null;
+  /** Slow motion: the stage's clock runs at `timeScale`, eased toward `timeScaleTarget`. */
+  private timeScale = 1;
+  private timeScaleTarget = 1;
+  /** A dramatic spin's finish (decided when the spin starts): when its slow-motion close-up begins. */
+  private drama: { at: number; started: boolean; kind: 'jackpot' | 'bankrupt' | 'big' | 'near'; beds: { stop: (fade?: number) => void }[] } | null = null;
+  /** The wheel in the player's hand: the mouse's angle round the hub, the wheel's angle, recent samples. */
+  private grab: { ang: number; theta: number; samples: { t: number; th: number }[]; seg: number } | null = null;
   private target: { mode: TargetMode; idx: number } | null = null;
   private shopSel = 0;
   private convertN = 0;
@@ -92,61 +117,99 @@ export class App {
       onContinue: () => void this.continueRun(),
       onNewRun: (c) => void this.newRun(c.seed, c.stake, c.startWheel),
       onResume: () => this.resume(),
-      onAbandon: () => this.abandon(),
+      onAbandon: () => {
+        this.menus.show('pause');
+        this.abandon();
+      },
       onQuitToTitle: () => this.quitToTitle(),
       onSettings: (s) => this.applySettings(s),
       onEndlessContinue: () => this.endlessContinue(),
       onRetire: () => this.retire(),
-      onUiSound: (k) => this.sfx.play(k === 'select' ? 'button' : 'blip', { gain: 0.5 }),
+      onUiSound: (k) => (k === 'slam' ? (this.sfx.play('impact', { gain: 0.9 }), this.sfx.play('thunk', { gain: 0.5, pitch: 0.7 })) : this.sfx.play(k === 'select' ? 'button' : 'blip', { gain: 0.5 })),
+      onLoreNote: (text) => {
+        if (!text) return this.vo.stop();
+        this.sfx.play('static', { gain: 0.25, pitch: 0.7 });
+        this.vo.play('archive', text, { wear: 0.4, glitch: 0.05 });
+      },
+      loreVoiced: (text) => this.vo.has('archive', text),
       getMeta: () => this.meta,
       getSettings: () => this.settings,
       hasSave: () => this.runSlot.exists() && !!this.runSlot.load(),
-      artifactIcon: (id) => this.artifactIcon(id),
+      artifactIcon: (id, drawnOnly) => (drawnOnly ? art.url(`artifact.${id}`) : this.artifactIcon(id)),
     });
+    let audioStarted = false;
     const firstGesture = () => {
+      if (audioStarted) return;
       void this.mixer.resume().then(() => {
-        this.music.kick();
-        this.music.startAmbience();
-        this.mixer.setVolumes(this.settings);
-      });
-      window.removeEventListener('pointerdown', firstGesture);
-      window.removeEventListener('keydown', firstGesture);
+        if (audioStarted || !this.mixer.running) return;
+        audioStarted = true;
+        window.removeEventListener('pointerdown', firstGesture);
+        window.removeEventListener('keydown', firstGesture);
+        // While the intro plays, its soundtrack is the only sound; the menu's music waits for it.
+        if (!this.introPending) this.startMenuAudio(true);
+      }).catch(() => { /* A later user gesture can retry audio. */ });
     };
     window.addEventListener('pointerdown', firstGesture);
     window.addEventListener('keydown', firstGesture);
-
-    // Diegetic loading screen: a 2D pixel canvas (studio lights powering on one by one).
-    const lc = document.createElement('canvas');
-    lc.id = 'loading';
-    lc.width = 320;
-    lc.height = 180;
-    document.body.appendChild(lc);
-    const lctx = lc.getContext('2d')!;
-    let loadingDone = false;
-    const loop = (t: number) => {
-      if (loadingDone) return;
-      this.hud.drawLoading(lctx, 320, 180, 1, this.loading, t / 1000);
-      requestAnimationFrame(loop);
+    this.input.onGamepadAction = (a) => {
+      firstGesture();
+      if (this.introPending) {
+        this.bootScreens?.press();
+        return;
+      }
+      if (this.menus.open) {
+        if (a.type === 'pause' && this.menus.page === 'pause') this.resume();
+        else this.menus.action(a);
+      } else this.input.push(a);
     };
-    requestAnimationFrame(loop);
-    await this.assets.preload((p) => {
-      this.loading = p;
-      this.sfx.play('powerup', { gain: 0.15, pitch: 0.8 + p * 0.6 });
-    });
+
+    void art.preload(undefined, (id) => id === 'screen.standby');
+    // The boot: the VHS loading banner runs to the real progress, then (unless skipped) the intro.
+    const skipIntro = new URLSearchParams(location.search).has('skipintro');
+    this.introPending = !skipIntro;
+    const screens = new BootScreens(() => this.settings.masterVolume);
+    this.bootScreens = screens;
+    await Promise.all([
+      this.assets.preload((p) => {
+        screens.progress(p);
+        this.sfx.play('powerup', { gain: 0.15, pitch: 0.8 + p * 0.6 });
+      }),
+      art.preload(),
+    ]);
     await this.sfx.loadFiles();
-    this.loading = 1;
-    await wait(0.3);
-    loadingDone = true;
-    lc.parentElement?.removeChild(lc);
+    void this.music.loadTracks();
+    this.vo.preload(Object.values(HOST_LINES).flat().map((text) => ({ speaker: 'host' as const, text })));
+    screens.progress(1);
     this.buildStage();
     this.wireInput();
     window.addEventListener('resize', () => this.stage.resize());
     this.applySettings(this.settings);
     requestAnimationFrame((t) => this.frame(t));
+    await screens.whenReady(skipIntro);
+    if (skipIntro) screens.close();
+    else await screens.playIntro();
+    this.introPending = false;
+    this.bootScreens = null;
+    if (!skipIntro && this.mixer.running) this.startMenuAudio(false);
     await this.powerOn();
     this.fsm.go('Menu');
     this.menus.show('title');
     if (new URLSearchParams(location.search).has('debug')) this.debug = true;
+  }
+
+  /** The menu's music and ambience. On a first touch the host greets the player, unless the intro already did. */
+  private startMenuAudio(greet: boolean): void {
+    if (!this.game) {
+      this.music.setTrack('menu');
+      this.music.start();
+    }
+    this.music.kick();
+    this.music.startAmbience();
+    this.mixer.setVolumes(this.settings);
+    if (greet && !this.game) {
+      const t = HOST_LINES.title[Math.floor(Math.random() * HOST_LINES.title.length)];
+      setTimeout(() => !this.game && this.vo.play('host', t, { wear: 0.25, glitch: 0.1 }), 600);
+    }
   }
 
   private buildStage(): void {
@@ -196,6 +259,7 @@ export class App {
     this.stage.post.dither = this.settings.dither;
     this.stage.setWarp(this.settings.warp);
     this.stage.vfx.reducedFlashing = this.settings.reducedFlashing;
+    this.hud.reducedFlashing = this.settings.reducedFlashing;
     this.stage.marquee.reduced = this.settings.reducedFlashing;
     this.stage.wheel.setColorblind(this.settings.colorblind);
     this.hud.fastMode = this.settings.fastMode;
@@ -213,6 +277,8 @@ export class App {
   }
 
   private artifactIcon(id: string): string | null {
+    const drawn = art.url(`artifact.${id}`);
+    if (drawn) return drawn;
     if (this.iconCache.has(id)) return this.iconCache.get(id)!;
     try {
       const def = artifactDef(id);
@@ -261,6 +327,16 @@ export class App {
       this.runSlot.save(this.game.snapshot());
     });
     g.bus.on('deadlineEnd', (e) => this.pendingEnds.push(e));
+    g.bus.on('challenge', () => {
+      const ch = g.challenge();
+      if (!ch) return;
+      setTimeout(() => {
+        this.hud.showBanner("SPONSOR'S CHALLENGE", `${ch.def.name} — +${ch.def.reward} TOKEN${ch.def.reward > 1 ? 'S' : ''}`, '#80ff80', 2.2 / this.speed);
+        this.sfx.play('register', { gain: 0.6 });
+        this.sfx.play('applause', { gain: 0.35, delay: 0.2 });
+        this.stage.lights.applause = 2;
+      }, 900);
+    });
     g.bus.on('trigger', (t) => {
       this.stage.shelf.trigger(t.slot);
       this.sfx.play('blip', { pitch: 1.4 + t.slot * 0.1, gain: 0.4 });
@@ -275,6 +351,7 @@ export class App {
       void e;
     });
     this.music.setDeadline(g.run.deadline);
+    this.music.setTrack('main');
     this.music.start();
     this.music.setLevel(1);
     this.stage.studio.openTrapdoor(0);
@@ -286,7 +363,48 @@ export class App {
   }
 
   /** Normal lighting, closed trapdoor, host at rest and an empty cabinet: the state every run starts from. */
+  /** Colour grade, danger tint and lighting mood follow the state of the show. */
+  private updateMood(dt: number): void {
+    const st = this.stage;
+    const r = this.game?.run;
+    const short = !!r && r.phase === 'AwaitAction' && r.spinsLeft <= 1 && r.vault + r.tray < r.debt;
+    const phone = r?.phase === 'PhoneCall';
+    const wear = r ? Math.min(1, (r.deadline - 1) / 8) : 0;
+    if (short) {
+      st.post.grade.setRGB(1.12, 0.86, 0.8);
+      st.post.sat = 0.75;
+    } else if (phone) {
+      st.post.grade.setRGB(0.88, 0.97, 1.1);
+      st.post.sat = 0.7;
+    } else {
+      // The picture yellows and fades as the run wears on.
+      st.post.grade.setRGB(1.02 + wear * 0.06, 0.98, 0.92 - wear * 0.1);
+      st.post.sat = 1 - wear * 0.25;
+    }
+    this.hud.danger += ((short ? 1 : 0) - this.hud.danger) * Math.min(1, dt * 3);
+    // Heartbeat in the vignette while the last spin is short.
+    const beat = short ? Math.pow(Math.max(0, Math.sin(this.time * 7.2)), 8) : 0;
+    st.post.vig = 0.05 * this.hud.danger + beat * 0.25;
+    st.post.flashAmt = Math.max(0, st.post.flashAmt - dt * 1.6);
+    if (short && st.lights.mode === 'idle') st.lights.setMode('tense');
+    else if (!short && !phone && st.lights.mode === 'tense') st.lights.setMode('idle');
+    st.lights.reducedFlashing = this.settings.reducedFlashing;
+    if (this.settings.reducedFlashing) st.post.shock = Math.min(st.post.shock, 0.3);
+  }
+
+  private stopHeartbeat(): void {
+    this.loops.heart?.stop(0.8);
+    this.loops.heart = null;
+  }
+
   private resetStageVisuals(): void {
+    this.stopHeartbeat();
+    this.stage.lights.setMode('idle');
+    this.stage.lights.onAir = true;
+    this.stage.rig.dollyTarget = 0;
+    this.loops.drum?.stop(0.05);
+    this.loops.drum = null;
+    this.vo.stop();
     const st = this.stage;
     st.post.fade = 1;
     st.rig.offset.set(0, 0, 0);
@@ -350,12 +468,19 @@ export class App {
     this.game = null;
     this.hud.choice = null;
     this.hud.ticker = '';
+    this.hud.chyron = null;
     this.hud.hint = '';
     this.choiceHandler = null;
     this.stage.phone.ringing = false;
     this.sfx.stopRinging();
+    this.vo.stop();
+    this.stopHeartbeat();
+    this.phoneTalk.forEach((t) => clearTimeout(t));
+    this.phoneTalk = [];
     this.stage.post.roll = 0;
     this.fsm.force('Menu');
+    this.music.setTrack('menu');
+    this.music.start();
     this.menus.show('title');
   }
 
@@ -376,6 +501,7 @@ export class App {
     if (!this.game) return;
     this.menus.hide();
     this.game.continueEndless();
+    this.music.start();
     void this.enterPhase();
   }
 
@@ -394,18 +520,33 @@ export class App {
   // ===================================================================================
   // Presentation helpers
   // ===================================================================================
-  private hostSay(trigger: HostTrigger, face: Parameters<Stage['host']['say']>[0] = 'talk', pose?: Parameters<Stage['host']['setPose']>[0]): void {
+  private hostSay(trigger: HostTrigger, face: Parameters<Stage['host']['say']>[0] = 'talk', pose?: Parameters<Stage['host']['setPose']>[0], text?: string): void {
     const silent = !!this.game?.run.marks.hostSilent;
     const pool = silent ? HOST_SILENT_LINES : HOST_LINES[trigger];
-    const line = pool[Math.floor(Math.random() * pool.length)];
-    const dur = silent ? 1.5 : this.voice.speak(line, HOST_VOICE, this.speed > 1 ? 1.4 : 1);
+    const line = silent ? pool[Math.floor(Math.random() * pool.length)] : (text ?? pool[Math.floor(Math.random() * pool.length)]);
+    const voiced = silent ? 0 : this.vo.play('host', line, this.hostMood(trigger));
+    if (voiced) this.voice.stop();
+    const dur = silent ? 1.5 : voiced || this.voice.speak(line, HOST_VOICE, this.speed > 1 ? 1.4 : 1);
     this.stage.host.say(face, dur);
     if (pose) this.stage.host.setPose(pose);
-    if (this.settings.captions) this.hud.caption('HOST', line, '#7dffa8', dur / (this.speed > 1 ? 1.5 : 1));
+    if (this.settings.captions) this.hud.caption('HOST', line, '#7dffa8', voiced ? dur : dur / (this.speed > 1 ? 1.5 : 1));
+  }
+
+  /** The host's voice wears out with the show: more tape wear each Deadline, glitches when it goes wrong. */
+  private hostMood(trigger: HostTrigger): VoMood {
+    const r = this.game?.run;
+    const d = r?.deadline ?? 1;
+    const wear = Math.min(1, (d - 1) / 8);
+    const bad = trigger === 'debtMissed' || trigger === 'gameOver';
+    const glitch = bad ? 0.75 : trigger === 'bankrupt' ? 0.3 : d >= 7 ? 0.22 : d >= 5 ? 0.1 : r?.mutator ? 0.12 : 0;
+    return { wear, glitch, powerDown: trigger === 'gameOver' };
   }
 
   private producerSay(text: string, secret: boolean): number {
-    const dur = this.voice.speak(text, secret ? SECRET_VOICE : PRODUCER_VOICE, 1.2);
+    const deadAir = this.game?.run.phone?.reason === 'deadAir';
+    const voiced = this.vo.play(secret ? 'secret' : 'producer', text, { wear: 0, glitch: deadAir ? 0.3 : 0 });
+    if (voiced) this.voice.stop();
+    const dur = voiced || this.voice.speak(text, secret ? SECRET_VOICE : PRODUCER_VOICE, 1.2);
     if (this.settings.captions) this.hud.caption(secret ? '???' : 'THE PRODUCER', text, secret ? '#c080ff' : '#ff9060', dur);
     return dur;
   }
@@ -416,8 +557,18 @@ export class App {
     const r = g.run;
     const d = r.deadline > BALANCE.deadlinesPerRun ? `∞${r.deadline}` : `${r.deadline}/8`;
     this.hud.ticker = `D${d}  SPINS ${r.spinsLeft}  TRAY $${r.tray} ×${r.streak.toFixed(2)}  VAULT $${r.vault}/${r.debt}`;
+    this.hud.chyron = { deadline: d, spins: r.spinsLeft, spinsMax: Math.max(this.spinsMax, r.spinsLeft), tray: r.tray, streak: r.streak, vault: r.vault, debt: r.debt };
     this.hud.tickerRight = '';
     this.hud.corner = `TOK ${r.tokens}`;
+    const ch = g.challenge();
+    this.hud.challenge = ch
+      ? {
+          name: ch.def.name,
+          text: challengeText(ch.def, r).toUpperCase(),
+          prog: ch.def.mode === 'count' ? `${Math.min(ch.progress, ch.target)}/${ch.target}` : ch.def.id === 'streak' ? `(×${ch.progress.toFixed(2)})` : `($${Math.round(ch.progress)})`,
+          done: ch.done,
+        }
+      : null;
   }
 
   /** Push the current run state to every view. */
@@ -490,6 +641,9 @@ export class App {
     this.target = null;
     this.hud.hint = '';
     this.stage.phone.ringing = r.phase === 'PhoneCall' && !this.phoneAnswered;
+    const shortLast = r.phase === 'AwaitAction' && r.spinsLeft === 1 && r.vault + r.tray < r.debt;
+    this.music.setTrack(r.phase === 'PhoneCall' ? 'phone' : r.phase === 'Shop' || r.phase === 'Conversion' || r.phase === 'WedgeReplace' ? 'shop' : shortLast ? 'deadline' : 'main');
+    if (r.phase !== 'AwaitAction') this.stopHeartbeat();
     switch (r.phase) {
       case 'PackageSelect':
         if (this.introShownFor !== r.deadline) await this.deadlineIntro();
@@ -499,7 +653,13 @@ export class App {
       case 'AwaitAction':
         this.fsm.force('AwaitAction');
         this.setChoice(null, null);
-        this.hud.hint = this.stage.rig.station === 'center' ? 'HOLD SPACE (OR THE LEVER) TO SPIN' : '';
+        this.hud.hint = this.stage.rig.station === 'center' ? (g.canGamble() ? 'HOLD SPACE TO SPIN · [D] DOUBLE OR NOTHING' : 'HOLD SPACE (OR THE LEVER) TO SPIN') : '';
+        if (r.spinsLeft === 1 && this.lastSpinSaid !== r.deadline * 1000 + r.spinsLeft) {
+          this.lastSpinSaid = r.deadline * 1000 + r.spinsLeft;
+          this.hostSay('lastSpin', 'nervous', 'point');
+          this.hud.showBanner('LAST SPIN', r.vault + r.tray >= r.debt ? 'THE DEBT IS COVERED' : `$${r.debt - r.vault - r.tray} SHORT`, r.vault + r.tray >= r.debt ? '#80ff80' : '#ff5040', 1.8 / this.speed);
+          if (r.vault + r.tray < r.debt) this.loops.heart ??= this.sfx.loop('heartbeat', 0.5, 'sfx', 1.5);
+        }
         break;
       case 'Nudge':
         this.fsm.force('Resolving');
@@ -544,17 +704,30 @@ export class App {
       this.fsm.force('DeadlineIntro');
       this.music.setDeadline(r.deadline);
       this.stage.rig.go('center', 0.5);
+      this.stage.rig.craneIn();
+      this.stage.lights.setMode('party');
+      this.stage.lights.applause = 1.6;
+      this.stage.post.shock = 0.3;
       const mut = mutatorDef(r.mutator);
       const title = r.deadline > BALANCE.deadlinesPerRun ? `ENDLESS ${r.deadline}` : `DEADLINE ${r.deadline}`;
       this.hud.showBanner(title, `THE NETWORK WANTS $${r.debt}`, mut ? '#ff5040' : '#ffd040', 2.6 / this.speed);
       this.stage.marquee.set(`DEADLINE ${r.deadline} — $${r.debt} DUE`, '#ffd040', true);
       this.sfx.play('sting', { gain: 0.6 });
-      this.hostSay(r.deadline === 1 ? 'intro' : mut ? 'sweep' : 'package', 'grin', 'present');
+      if (r.deadline > BALANCE.deadlinesPerRun) this.hostSay('endless', 'grin', 'present');
+      else if (r.deadline === 1 && Math.random() < 0.5) this.hostSay('intro', 'grin', 'present');
+      else this.hostSay(mut ? 'sweep' : 'package', 'grin', 'present', DEADLINE_LINES[r.deadline - 1]);
       await wait(1.6 / this.speed);
+      const chal = g.challenge();
+      if (chal) {
+        this.hud.showBanner(`SPONSOR: ${chal.def.name}`, `${challengeText(chal.def, r).toUpperCase()} — +${chal.def.reward} TOK`, '#ffc040', 2.2 / this.speed);
+        this.sfx.play('blip', { pitch: 1.5, gain: 0.4 });
+        await wait(1.4 / this.speed);
+      }
       if (mut) {
         this.hud.showBanner(`SWEEPS: ${mut.name}`, mut.text, '#ff5040', 3 / this.speed);
         this.stage.post.roll = 0.6;
         this.sfx.play('buzz', { gain: 0.4 });
+        this.sfx.play('static', { gain: 0.5 });
         await wait(1.8 / this.speed);
         this.stage.post.roll = 0;
       }
@@ -604,8 +777,10 @@ export class App {
     if (!g || g.run.phase !== 'AwaitAction' || this.busy || this.charge || this.menus.open) return;
     if (this.stage.rig.station !== 'center') this.stage.rig.go('center');
     this.charge = { t: 0, peek: false, lastTick: 0 };
+    this.loops.drum?.stop(0.05);
+    this.loops.drum = this.sfx.loop('tension', 0.6, 'sfx', 0.25, false, this.music.rate) ?? this.sfx.loop('drumroll', 0.32, 'sfx', 0.3);
     this.fsm.force('Charging');
-    this.hud.hint = g.canPeek() ? 'RELEASE IN THE GREEN · [E] PEEK' : 'RELEASE IN THE GREEN';
+    this.hud.hint = g.canPeek() ? 'WAIT FOR GREEN · [E] PEEK' : 'WAIT FOR GREEN ON THE LEVER METER';
     this.updateArrows();
   }
 
@@ -621,20 +796,41 @@ export class App {
     await this.doSpin(power, c.peek);
   }
 
-  private async doSpin(power: number, peek: boolean): Promise<void> {
+  private async doSpin(power: number, peek: boolean, opts: { startAngle?: number; source?: 'lever' | 'hand' } = {}): Promise<void> {
     const g = this.game!;
+    const hand = opts.source === 'hand';
     await this.withBusy(async () => {
       this.fsm.force('Spinning');
       this.hud.payout = null;
-      const outcome = g.spin(power, { peek });
-      this.sfx.play('lever', { gain: 0.8 });
-      this.stage.lever.pull = 1;
-      setTimeout(() => (this.stage.lever.pull = 0), 250);
+      this.stage.rig.dollyTarget = 1;
+      if (g.run.spinsLeft > this.spinsMax || this.spinsMaxFor !== g.run.deadline) {
+        this.spinsMax = g.run.spinsLeft;
+        this.spinsMaxFor = g.run.deadline;
+      }
+      const outcome = g.spin(power, { peek, startAngle: opts.startAngle });
+      if (!hand) {
+        this.sfx.play('lever', { gain: 0.8 });
+        this.stage.lever.pull = 1;
+        setTimeout(() => (this.stage.lever.pull = 0), 250);
+      }
+      // Dramatic finishes (decided now; the outcome is already known) get a slow-motion close-up.
+      this.drama = this.settings.fastMode ? null : this.dramaFor(outcome);
       this.stage.marquee.set(outcome.sweet ? 'SWEET SPOT!' : outcome.locked ? 'LOCKED!' : 'SPINNING…', outcome.sweet ? '#60ff80' : '#ffe060');
       if (outcome.sweet) this.sfx.play('blip', { pitch: 2, gain: 0.5 });
       // Wheel layout at spin time (Static jackpots etc. are already visible).
       this.stage.wheel.setLayout(outcome.layout, outcome.ring, (s) => segmentLabel(g, s));
       this.layoutSig = '';
+      const st = this.stage;
+      if (!hand && !this.settings.fastMode) {
+        // Wind-up: the wheel rocks back against the brake, the camera draws breath, then — go.
+        const th = st.wheel.theta;
+        this.sfx.play('ratchet', { gain: 0.45, pitch: 0.7 });
+        st.rig.punch(3);
+        await st.wheel.rotateTo(th - 9, 0.2);
+        this.sfx.play('whoosh', { gain: 0.6 });
+        st.rig.punch(-5);
+        await st.wheel.rotateTo(th, 0.05);
+      } else if (hand) st.rig.punch(-4);
       await this.stage.wheel.playTrace(outcome.sim.trace, {
         hang: outcome.sim.hang,
         onTick: (t) => {
@@ -642,6 +838,7 @@ export class App {
           this.stage.wheel.kickFlapper();
         },
       });
+      this.endSlowMo();
       this.fsm.force('Resolving');
       this.stage.wheel.showHighlight(outcome.sim.outerIndex, 0xffffff, 0.3);
       if (!outcome.resolution) {
@@ -651,6 +848,165 @@ export class App {
       await this.presentResolution(outcome, outcome.resolution);
     });
     await this.enterPhase();
+  }
+
+  /** Which spins earn the slow-motion finish: Jackpot, Bankrupt, a big win, or a near miss. */
+  private dramaFor(o: ReturnType<Game['spin']>): NonNullable<App['drama']> | null {
+    const segs = o.layout.segments;
+    const n = segs.length;
+    const i = o.sim.outerIndex;
+    const s = segs[i];
+    const cash = o.resolution?.payout.cash ?? 0;
+    let kind: NonNullable<App['drama']>['kind'] | null = null;
+    if (s.kind === 'jackpot') kind = 'jackpot';
+    else if (s.kind === 'bankrupt') kind = 'bankrupt';
+    else if (cash >= Math.max(400, this.game!.run.debt * 0.4)) kind = 'big';
+    else {
+      // A near miss: it stops within 3° of a Jackpot or a Bankrupt next door.
+      const local = mod360(-o.sim.finalAngle);
+      const hot = (x: { kind: string }) => x.kind === 'jackpot' || x.kind === 'bankrupt';
+      const prev = segs[(i - 1 + n) % n],
+        next = segs[(i + 1) % n];
+      if ((hot(prev) && mod360(local - s.start) < 3) || (hot(next) && mod360(s.end - local) < 3)) kind = 'near';
+    }
+    return kind ? { at: kind === 'near' ? 0.7 : 0.95, started: false, kind, beds: [] } : null;
+  }
+
+  /** Slow motion in: the clock drops, the camera pushes onto the pointer, letterbox, heartbeat. */
+  private startSlowMo(): void {
+    const dr = this.drama;
+    if (!dr || dr.started) return;
+    dr.started = true;
+    const st = this.stage;
+    this.timeScaleTarget = 0.32;
+    // Aim just below the glove so the wedges ticking past it fill the shot.
+    const look = st.wheel.pointerTipWorld().add(new THREE.Vector3(0, -0.3, 0));
+    st.rig.focus(look, { push: 0.3, fov: 34, roll: dr.kind === 'bankrupt' ? -0.06 : 0.05, in: 0.5, hold: Infinity });
+    this.hud.letterboxTarget = 1;
+    this.mixer.setMuffle(0.45);
+    this.music.setLevel(0.35, 0.4);
+    this.sfx.play('riser', { gain: 0.7 });
+    const hb = this.sfx.loop('heartbeat', 0.8, 'sfx', 0.1);
+    if (hb) dr.beds.push(hb);
+  }
+
+  /** Slow motion out, on the landing: a hard cut back to speed with an impact. */
+  private endSlowMo(): void {
+    const dr = this.drama;
+    this.drama = null;
+    if (!dr || !dr.started) return;
+    const st = this.stage;
+    this.timeScaleTarget = 1;
+    this.timeScale = 1;
+    for (const b of dr.beds) b.stop(0.3);
+    this.mixer.setMuffle(0);
+    this.music.setLevel(1, 0.6);
+    this.hud.letterboxTarget = 0;
+    this.hitstop = Math.max(this.hitstop, 0.12);
+    this.sfx.play('impact', { gain: 0.9, pitch: dr.kind === 'bankrupt' ? 0.75 : 1 });
+    st.rig.punch(-7);
+    if (this.settings.screenShake) st.rig.shake(0.45);
+    st.post.shock = Math.max(st.post.shock, this.settings.reducedFlashing ? 0.25 : 0.6);
+    this.hud.impact(dr.kind === 'bankrupt' ? '#000' : '#fff', 2);
+    setTimeout(() => {
+      st.rig.release(0.5);
+      this.sfx.play('whoosh', { gain: 0.35, pitch: 0.8 });
+    }, 650);
+    // A reaction shot: whip to the host for the big ones.
+    if (dr.kind === 'jackpot' || dr.kind === 'big') {
+      setTimeout(() => {
+        this.sfx.play('whoosh', { gain: 0.5, pitch: 1.2 });
+        st.rig.whip(1);
+        st.rig.focus(st.host.headWorld(), { push: 0.32, fov: 30, in: 0.25, hold: 1.1, out: 0.4 });
+      }, 1250);
+    }
+  }
+
+  /** World point → internal-resolution pixel. */
+  private toScreen(v: THREE.Vector3): { x: number; y: number } {
+    const p = v.clone().project(this.stage.rig.camera);
+    return { x: (p.x * 0.5 + 0.5) * this.stage.post.width, y: (-p.y * 0.5 + 0.5) * this.stage.post.height };
+  }
+
+  // ===================================================================================
+  // Grab the wheel (mouse): drag it round, flick it clockwise, let go.
+  // ===================================================================================
+  private canGrab(): boolean {
+    const g = this.game;
+    return !!g && g.run.phase === 'AwaitAction' && !this.busy && !this.charge && !this.grab && !this.menus.open && !this.hud.choice && !this.target && !this.stage.wheel.busy;
+  }
+
+  private startGrab(): void {
+    const st = this.stage;
+    const m = this.input.mouse;
+    const c = this.toScreen(st.wheel.centerWorld());
+    this.grab = { ang: Math.atan2(m.y - c.y, m.x - c.x) / DEG, theta: st.wheel.theta, samples: [{ t: this.time, th: st.wheel.theta }], seg: -1 };
+    this.sfx.play('clunk', { gain: 0.6 });
+    st.rig.punch(-1.5);
+    this.hud.hint = 'FLICK IT CLOCKWISE AND LET GO';
+    this.updateArrows();
+  }
+
+  /** Angular speed of the hand over the last ~0.12 s, degrees per second (clockwise +). */
+  private grabOmega(): number {
+    const sm = this.grab?.samples ?? [];
+    if (sm.length < 2) return 0;
+    const a = sm[0],
+      b = sm[sm.length - 1];
+    const dt = b.t - a.t;
+    return dt > 0.015 ? (b.th - a.th) / dt : 0;
+  }
+
+  private grabPower(omega: number): number {
+    return Math.max(0, Math.min(1, (omega - GRAB_MIN) / (GRAB_FULL - GRAB_MIN)));
+  }
+
+  private updateGrab(): void {
+    const gr = this.grab!;
+    const g = this.game!;
+    const st = this.stage;
+    const m = this.input.mouse;
+    const c = this.toScreen(st.wheel.centerWorld());
+    const a = Math.atan2(m.y - c.y, m.x - c.x) / DEG;
+    const d = mod360(a - gr.ang + 180) - 180;
+    // Right over the hub the angle jumps about: only turn the wheel from a few pixels out.
+    if (Math.hypot(m.x - c.x, m.y - c.y) > 6 * st.post.scale) gr.theta += d;
+    gr.ang = a;
+    st.wheel.theta = gr.theta;
+    gr.samples.push({ t: this.time, th: gr.theta });
+    while (gr.samples.length > 2 && this.time - gr.samples[0].t > 0.12) gr.samples.shift();
+    // The lever's gauge reads the flick, so the sweet spot can be aimed by hand too.
+    const power = this.grabPower(this.grabOmega());
+    st.lever.drawGauge(power, BALANCE.sweetCenter, g.chargeContext().sweetHalfWidth, true, false);
+    // Pegs click past the pointer as the wheel is dragged.
+    const L = g.layout();
+    const seg = segmentAt(L, st.wheel.pointerLocal());
+    if (gr.seg >= 0 && seg !== gr.seg) {
+      this.sfx.tick(Math.min(1, Math.abs(d) / 8));
+      st.wheel.kickFlapper();
+    }
+    gr.seg = seg;
+  }
+
+  private releaseGrab(): void {
+    const g = this.game;
+    if (!this.grab || !g) return;
+    const omega = this.grabOmega();
+    const theta = this.grab.theta;
+    this.grab = null;
+    this.hud.hint = '';
+    if (omega >= GRAB_MIN && g.run.phase === 'AwaitAction') {
+      const power = this.grabPower(omega);
+      this.sfx.play('whoosh', { gain: 0.8, pitch: 0.8 + power * 0.5 });
+      if (inSweetSpot(power, g.chargeContext().sweetHalfWidth)) this.sfx.play('ding', { gain: 0.6 });
+      void this.doSpin(power, false, { startAngle: theta, source: 'hand' });
+    } else {
+      // Too feeble (or backwards): the wheel springs back to where it was.
+      this.sfx.play('boing', { gain: 0.55 });
+      this.hud.toast(omega <= -GRAB_MIN ? 'THE OTHER WAY!' : 'PUT SOME ARM INTO IT!', '#ffd040');
+      void this.stage.wheel.rotateTo(g.run.wheelAngle, 0.45);
+      this.updateArrows();
+    }
   }
 
   private showNudge(): void {
@@ -701,6 +1057,7 @@ export class App {
     const p = res.payout;
     const sp = this.speed;
     const steps = p.steps.filter((s) => !s.label.startsWith('='));
+    if (p.landedKind) this.hud.stamp(`wedge.${p.resolvedKind ?? p.landedKind}`);
     // Step-by-step marquee with rising pitch.
     let acc = '';
     for (let i = 0; i < steps.length; i++) {
@@ -726,7 +1083,9 @@ export class App {
       if (c === 'deadAir') continue;
       st.vfx.float(st.wheel.group.position.clone().add(new THREE.Vector3(0, 1.2, 0)), COMBO_NAMES[c], '#ff70ff', 2, 1.6);
     }
-    if (res.combos.some((c) => c !== 'deadAir') && Math.random() < 0.5) this.hostSay('combo', 'grin', 'cheer');
+    if (res.combos.includes('hatTrick')) this.hostSay('hatTrick', 'shock', 'cheer');
+    else if (res.combos.includes('neighbors') && Math.random() < 0.5) this.hostSay('neighbors', 'shock', 'point');
+    else if (res.combos.some((c) => c !== 'deadAir') && Math.random() < 0.5) this.hostSay('combo', 'grin', 'cheer');
 
     // Notes (prize effects).
     const tally = new Map<string, number>();
@@ -734,6 +1093,10 @@ export class App {
     for (const [n, c] of [...tally].slice(0, 4)) this.hud.toast(c > 1 ? `${n} ×${c}` : n);
 
     const big = p.cash >= Math.max(500, g.run.debt * 0.5);
+    st.rig.dollyTarget = 0;
+    // The tension cue ends when the wheel lands.
+    this.loops.drum?.stop(0.35);
+    this.loops.drum = null;
     if (p.bankrupt && !p.bankruptBlocked) await this.bankruptDrama(p.trayLost, p.deadAir);
     else if (p.bankruptBlocked) {
       this.hud.toast('BANKRUPT BLOCKED!', '#80ffff');
@@ -743,19 +1106,40 @@ export class App {
       if (big) {
         this.hitstop = 0.18;
         if (this.settings.screenShake) st.rig.shake(0.5);
+        st.rig.punch(-6);
+        st.post.shock = 0.5;
+        st.lights.setMode('party');
+        st.lights.applause = 2.5;
         this.sfx.play('cheer', { gain: 0.6 });
+      } else if (p.cash >= 150) {
+        st.rig.punch(-2.5);
+        st.lights.applause = 1.2;
       }
       this.sfx.play('cascade', { gain: Math.min(1, 0.3 + p.cash / 1500), pitch: 1 });
+      st.coins.burst(st.tray.group.position.clone().add(new THREE.Vector3(0, 0.15, 0)), Math.min(40, 4 + Math.round(p.cash / 25)));
+      if (big || p.cash >= 200) st.wheel.lightShow('win');
     }
     if (p.resolvedKind === 'jackpot' || p.landedKind === 'jackpot') {
       this.sfx.play('jackpot', { gain: 0.8 });
       if (!this.settings.reducedFlashing) st.vfx.confetti(st.post.width, 100);
       st.studio.accent.color.setRGB(1.2, 1.0, 0.3);
+      st.rig.punch(-9);
+      st.post.shock = 0.8;
+      st.post.flashColor.setRGB(1, 0.85, 0.4);
+      st.post.flashAmt = this.settings.reducedFlashing ? 0.15 : 0.45;
+      st.lights.setMode('party');
+      st.lights.applause = 3.5;
+      st.wheel.lightShow('jackpot', 3.5);
+      st.coins.rain(90);
       st.studio.accent.pos.set(0, 2.5, 0.5);
       setTimeout(() => st.studio.accent.color.setRGB(0, 0, 0), 1500);
       this.hostSay('jackpot', 'shock', 'cheer');
     } else if (big) this.hostSay('bigWin', 'grin', 'cheer');
-    else if (p.landedKind === 'dud' && Math.random() < 0.5) this.hostSay('dud', 'wink', 'shrug');
+    else if (p.landedKind === 'dud') {
+      this.sfx.play('rimshot', { gain: 0.55 });
+      if (Math.random() < 0.35) this.sfx.play('laugh', { gain: 0.35, pitch: 0.85, delay: 0.5 });
+      if (Math.random() < 0.5) this.hostSay('dud', Math.random() < 0.5 ? 'wink' : 'nervous', 'shrug');
+    }
     else if (p.landedKind === 'tax') this.hostSay('tax', 'grin', 'point');
     else if (p.landedKind === 'mystery' && Math.random() < 0.4) this.hostSay('mystery', 'talk', 'present');
     else if (p.landedKind === 'artifact') this.hostSay('artifact', 'grin', 'present');
@@ -780,8 +1164,15 @@ export class App {
 
   private async bankruptDrama(lost: number, deadAir: boolean): Promise<void> {
     const st = this.stage;
+    st.wheel.sunMood = 'gloat';
+    setTimeout(() => (st.wheel.sunMood = 'idle'), 4000);
     this.sfx.play('bankrupt', { gain: 0.9 });
     if (this.settings.screenShake) st.rig.shake(1);
+    st.rig.tilt(0.12 * (Math.random() < 0.5 ? -1 : 1), 1.4);
+    st.rig.punch(5);
+    st.post.shock = 1;
+    st.lights.setMode('alarm');
+    st.wheel.lightShow('bankrupt', 1.8);
     // Lights out for half a second (a gentle dim with Reduced Flashing).
     st.studio.lightLevel = this.settings.reducedFlashing ? 0.45 : 0;
     st.wheel.bulbsOn = this.settings.reducedFlashing ? 0.4 : 0;
@@ -795,10 +1186,13 @@ export class App {
     this.mixer.setMuffle(0);
     this.music.setLevel(1, 2);
     this.sfx.play('groan', { gain: 0.6 });
+    if (lost >= 300) this.sfx.play('gasp', { gain: 0.5 });
+    if (Math.random() < 0.3) this.sfx.play('laugh', { gain: 0.3, pitch: 0.7, delay: 1.2 });
     if (lost > 0) st.vfx.float(st.tray.group.position.clone().add(new THREE.Vector3(0, 0.4, 0)), `-$${lost}`, '#ff4040', 1, 1.8);
     st.marquee.set(deadAir ? 'DEAD AIR' : 'BANKRUPT', '#ff3020', true);
-    this.hostSay('bankrupt', 'grin', 'shrug');
+    this.hostSay('bankrupt', 'laugh', 'shrug');
     if (deadAir) {
+      this.sfx.play('static', { gain: 0.6 });
       this.stage.post.roll = 1;
       await wait(0.8);
     }
@@ -819,13 +1213,14 @@ export class App {
         options: [
           ...p.options.map((id) => {
             const d = artifactDef(id);
-            return { label: d.name.toUpperCase(), detail: `(${d.rarity.toUpperCase()}) ${d.text}`, color: d.rarity === 'cursed' ? '#c080ff' : d.rarity === 'rare' ? '#ffd040' : d.rarity === 'uncommon' ? '#80d0ff' : '#ffffff' };
+            return { icon: `artifact.${id}`, label: d.name.toUpperCase(), detail: `(${d.rarity.toUpperCase()}) ${d.text}`, color: d.rarity === 'cursed' ? '#c080ff' : d.rarity === 'rare' ? '#ffd040' : d.rarity === 'uncommon' ? '#80d0ff' : '#ffffff' };
           }),
           { label: 'SKIP', detail: 'Leave them on the shelf.' },
         ],
         selected: 0,
         layout: 'cards',
-        footer: '1-4 OR CLICK',
+        inspect: true,
+        footer: '1-4 OR CLICK · HOVER OR SELECT TO INSPECT',
       },
       (i) => {
         if (i >= p.options.length) {
@@ -854,10 +1249,14 @@ export class App {
     this.setChoice(
       {
         title: 'WHICH ARTIFACT GOES IN THE BIN?',
-        options: g.run.artifacts.map((a, i) => ({ label: `${i + 1} ${artifactDef(a.id).name.toUpperCase()}`, detail: artifactDef(a.id).rarity.toUpperCase() })),
+        inspect: true,
+        options: g.run.artifacts.map((a) => {
+          const d = artifactDef(a.id);
+          return { label: d.name.toUpperCase(), detail: `(${d.rarity.toUpperCase()}) ${d.text}` };
+        }),
         selected: 0,
         layout: 'list',
-        footer: '1-6 · BACKSPACE TO GO BACK',
+        footer: '1-6 · HOVER OR SELECT TO INSPECT · BACKSPACE BACK',
       },
       (i) => {
         this.setChoice(null, null);
@@ -939,10 +1338,21 @@ export class App {
     this.stage.phone.offHook = 1;
     this.stage.post.roll = 0.15;
     this.stage.rig.go('left');
+    this.stage.lights.setMode('tense');
     this.music.setLevel(0.25);
     this.hud.hint = '';
     const ph = g.run.phone!;
-    this.producerSay(ph.intro, ph.reason === 'secret');
+    this.sfx.play('static', { gain: 0.2, pitch: 1.3 });
+    const secret = ph.reason === 'secret';
+    // The caller pitches each deal in turn; choosing anything cuts them off.
+    let at = this.producerSay(ph.intro, secret) + 0.5;
+    for (const o of ph.offers) {
+      const line = bargainDef(o.bargainId).line;
+      if (!this.vo.has(secret ? 'secret' : 'producer', line)) continue;
+      const delay = at;
+      this.phoneTalk.push(window.setTimeout(() => this.producerSay(line, secret), delay * 1000));
+      at += this.vo.duration(secret ? 'secret' : 'producer', line) + 0.6;
+    }
     this.showPhoneOffers();
   }
 
@@ -954,34 +1364,45 @@ export class App {
     this.setChoice(
       {
         title: secret ? 'THE OTHER LINE' : ph.reason === 'deadAir' ? 'THE PRODUCER — DEAD AIR' : 'THE PRODUCER',
+        portrait: secret ? 'caller.secret' : 'caller.producer',
         lines: [ph.intro],
         options: [
-          ...ph.offers.map((o) => {
+          ...ph.offers.map((o, i) => {
             const b = bargainDef(o.bargainId);
-            return { label: fillDeal(b.deal, o.params, nameOf), detail: `"${b.line}"`, color: secret ? '#d0a0ff' : '#ffb080' };
+            return { label: `OFFER ${i + 1}`, detail: fillDeal(b.deal, o.params, nameOf), color: secret ? '#d0a0ff' : '#ffb080' };
           }),
           { label: 'HANG UP', detail: secret ? 'Click.' : 'He will remember.' },
         ],
         selected: 0,
-        layout: 'cards',
+        layout: 'list',
+        inspect: true,
         accent: secret ? '#c080ff' : '#ff8040',
-        footer: '1-3 OR CLICK',
+        footer: '1-3 OR CLICK · HOVER OR SELECT TO INSPECT',
       },
       (i) => {
+        this.phoneTalk.forEach((t) => clearTimeout(t));
+        this.phoneTalk = [];
         this.setChoice(null, null);
         this.stage.phone.offHook = 0;
         this.stage.post.roll = 0;
         this.music.setLevel(1, 1.5);
         if (i < ph.offers.length) {
           const b = bargainDef(ph.offers[i].bargainId);
-          this.producerSay(secret ? '(the line goes quiet. somewhere below you, something unlocks.)' : 'Pleasure doing business. The Network thanks you.', secret);
+          const d = this.producerSay(secret ? SECRET_ACCEPT : PRODUCER_ACCEPT[Math.floor(Math.random() * PRODUCER_ACCEPT.length)], secret);
+          if (!secret) setTimeout(() => !this.vo.speaking && this.game && this.hostSay('dealTaken', 'grin', 'point'), (d + 0.5) * 1000);
           g.phoneAccept(i);
           this.hud.toast('DEAL.', '#ff9060');
           void b;
           this.layoutSig = '';
         } else {
           g.phoneHangUp();
-          this.sfx.play('hangup');
+          const d = secret ? 0 : this.producerSay(PRODUCER_HANGUP[Math.floor(Math.random() * PRODUCER_HANGUP.length)], false);
+          setTimeout(() => {
+            this.vo.stop();
+            this.sfx.play('hangup');
+            this.sfx.play('static', { gain: 0.15, pitch: 1.6 });
+            if (!secret) setTimeout(() => this.game && this.hostSay('dealRefused', 'angry', 'point'), 500);
+          }, Math.max(0, d - 0.2) * 1000);
           this.hud.toast('CLICK.', '#c0c0c0');
         }
         this.phoneAnswered = false;
@@ -998,6 +1419,7 @@ export class App {
     await this.withBusy(async () => {
       this.fsm.force('DeadlineEnd');
       this.setChoice(null, null);
+      this.music.setTrack('deadline');
       st.rig.go('down', 0.5);
       await wait(0.6);
       if (e.deposit && e.deposit.amount > 0) {
@@ -1012,15 +1434,17 @@ export class App {
       st.marquee.set(`PAYMENT DUE: $${e.debt}`, '#ffd040', true);
       this.hud.showBanner(e.paid ? 'PAID' : 'SHORT', e.paid ? `$${e.debt} TO THE NETWORK` : `VAULT $${e.vaultBefore} OF $${e.debt}`, e.paid ? '#80ff80' : '#ff3020', 2.2);
       if (e.paid) {
+        this.sfx.play('register', { gain: 0.6 });
         st.vault.setVault(e.vaultAfter);
         st.vault.shake = 0.4;
         this.sfx.play('thunk', { pitch: 0.8 });
         this.sfx.play('applause', { gain: 0.4 });
+        st.lights.applause = 2;
         if (e.saved) this.hud.toast('THE TRAPDOOR LEVER SAVED YOU', '#ffd040');
         this.hostSay('debtPaid', 'grin', 'cheer');
         await wait(1.6 / this.speed);
       } else {
-        this.hostSay('debtMissed', 'sad', 'slump');
+        this.hostSay('debtMissed', this.game && this.game.run.deadline >= 5 ? 'melt' : 'sad', 'slump');
         await wait(1.2);
       }
       this.sync(false);
@@ -1033,7 +1457,8 @@ export class App {
     await this.withBusy(async () => {
       this.fsm.force('GameOver');
       this.runSlot.clear();
-      this.music.stop();
+      this.stopHeartbeat();
+      this.music.tapeStop(1.8);
       st.rig.go('center', 0.4);
       await wait(0.4);
       // Lights die one by one.
@@ -1041,11 +1466,15 @@ export class App {
       this.sfx.play('powerup', { pitch: 0.5, gain: 0.5 });
       await wait(0.4);
       st.studio.spotLevel = 0;
+      st.lights.setMode('off');
+      st.lights.onAir = false;
       await wait(0.4);
       st.studio.lightLevel = 0.15;
       st.host.expression = 'dead';
+      this.hostSay('gameOver', 'dead', 'slump');
       await wait(0.6);
       this.sfx.play('trapdoor', { gain: 1 });
+      this.sfx.play('gameoverCue', { gain: 0.8, delay: 0.5, jitter: 0, pitch: this.music.rate });
       if (this.settings.screenShake) st.rig.shake(1.2);
       const t0 = performance.now();
       while (performance.now() - t0 < 900) {
@@ -1056,6 +1485,7 @@ export class App {
         await wait(1 / 60);
       }
       st.post.fade = 0;
+      this.sfx.play('signoff', { gain: 0.5, delay: 2.2 });
     });
     const r = g.run;
     if (!r.marks.metaApplied) {
@@ -1066,6 +1496,7 @@ export class App {
     }
     this.game = null;
     this.hud.ticker = '';
+    this.hud.chyron = null;
   }
 
   private async victory(): Promise<void> {
@@ -1074,8 +1505,11 @@ export class App {
     await this.withBusy(async () => {
       this.fsm.force('Victory');
       st.rig.go('center', 0.5);
-      this.sfx.play('jackpot');
-      this.sfx.play('applause', { gain: 0.8 });
+      this.sfx.play('fanfare', { gain: 0.8 });
+      st.lights.setMode('party');
+      st.lights.applause = 5;
+      st.rig.punch(-8);
+      this.sfx.play('applause', { gain: 0.8, delay: 0.6 });
       if (!this.settings.reducedFlashing) st.vfx.confetti(st.post.width, 160);
       st.marquee.set('PAID IN FULL — PAID IN FULL —', '#80ff80', true);
       this.hostSay('victory', 'grin', 'cheer');
@@ -1218,6 +1652,12 @@ export class App {
       if (this.target) return this.endTarget();
       if (g) {
         this.charge = null;
+        if (this.grab) {
+          this.grab = null;
+          void this.stage.wheel.rotateTo(g.run.wheelAngle, 0.3);
+        }
+        this.loops.drum?.stop(0.1);
+        this.loops.drum = null;
         this.menus.show('pause', null);
       }
       return;
@@ -1231,9 +1671,11 @@ export class App {
     if (!g) return;
     if (a.type === 'leverDown') return this.startCharge();
     if (a.type === 'leverUp') {
+      if (this.grab) return this.releaseGrab();
       if (this.charge) void this.releaseCharge();
       return;
     }
+    if (this.grab) return;
     if (this.charge) {
       if (a.type === 'key' && a.key === 'e' && g.canPeek()) {
         this.charge.peek = true;
@@ -1246,18 +1688,18 @@ export class App {
       const n = this.hud.choice.options.length;
       if (a.type === 'num' && a.n >= 1 && a.n <= n) return this.pickChoice(a.n - 1);
       if (a.type === 'nav' && (a.dir === 'left' || a.dir === 'up')) {
-        this.choiceSel = (this.choiceSel - 1 + n) % n;
-        this.hud.choice.selected = this.choiceSel;
+        this.choiceSel = (this.hud.activeChoiceIndex() - 1 + n) % n;
+        this.hud.selectChoice(this.choiceSel);
         this.sfx.play('blip', { gain: 0.3 });
         return;
       }
       if (a.type === 'nav' && (a.dir === 'right' || a.dir === 'down')) {
-        this.choiceSel = (this.choiceSel + 1) % n;
-        this.hud.choice.selected = this.choiceSel;
+        this.choiceSel = (this.hud.activeChoiceIndex() + 1) % n;
+        this.hud.selectChoice(this.choiceSel);
         this.sfx.play('blip', { gain: 0.3 });
         return;
       }
-      if (a.type === 'confirm') return this.pickChoice(this.choiceSel);
+      if (a.type === 'confirm') return this.pickChoice(this.hud.activeChoiceIndex());
       if (a.type === 'back' && this.choiceBack) return this.choiceBack();
       if (a.type === 'click') {
         const i = this.hud.hitChoice(a.x, a.y);
@@ -1292,7 +1734,7 @@ export class App {
     }
     if (a.type === 'nav') {
       this.stage.rig.nav(a.dir);
-      this.hud.hint = this.stage.rig.station === 'center' && g.run.phase === 'AwaitAction' ? 'HOLD SPACE (OR THE LEVER) TO SPIN' : g.run.phase === 'Shop' ? this.hud.hint : '';
+      this.hud.hint = this.stage.rig.station === 'center' && g.run.phase === 'AwaitAction' ? (g.canGamble() ? 'HOLD SPACE TO SPIN · [D] DOUBLE OR NOTHING' : 'HOLD SPACE (OR THE LEVER) TO SPIN') : g.run.phase === 'Shop' ? this.hud.hint : '';
       if (g.run.phase === 'PhoneCall' && !this.phoneAnswered) this.hud.hint = 'THE PHONE IS RINGING — [ENTER] TO ANSWER';
       this.updateArrows();
       return;
@@ -1337,6 +1779,7 @@ export class App {
       if (k === ',' || k === '<') return this.moveSelected(-1);
       if (k === '.' || k === '>') return this.moveSelected(1);
       if (k === 'x' && this.stage.shelf.selected >= 0) return this.sellSelected();
+      if (k === 'd' && g.run.phase === 'AwaitAction') return this.offerGamble();
       if (k === 'h' && g.run.phase === 'PhoneCall' && this.phoneAnswered) return this.pickChoice(this.hud.choice ? this.hud.choice.options.length - 1 : 0);
     }
   }
@@ -1376,7 +1819,8 @@ export class App {
     if (id === 'services' && uv) return this.service(CabinetView.serviceAt(uv));
     if (id === 'host') return this.hostSay('idle', 'wink', 'present');
     if (id === 'wheel' || id === 'ring') {
-      if (this.stage.rig.station !== 'center') this.stage.rig.go('center');
+      if (this.stage.rig.station !== 'center') return this.stage.rig.go('center');
+      if (button === 0 && id === 'wheel' && this.canGrab()) this.startGrab();
       return;
     }
     if (id === 'tray' || id === 'vault') {
@@ -1395,11 +1839,96 @@ export class App {
     if (before > 0) {
       this.sfx.play('cascade', { gain: 0.5, pitch: 0.8 });
       setTimeout(() => this.sfx.play('thunk'), 300);
+      if (before >= 200) this.sfx.play('register', { gain: 0.4, delay: 0.15 });
       if (res.lost) this.hud.toast(`LOST $${res.lost} ON THE WAY`, '#ff8060');
       if (res.keptStreak) this.hud.toast('STREAK KEPT', '#80ffff');
       if (Math.random() < 0.6) this.hostSay('deposit', 'talk', 'present');
     }
     this.sync(false);
+  }
+
+  /** Double or Nothing: confirm, then a drumroll and a coin flip on the marquee. */
+  private offerGamble(): void {
+    const g = this.game;
+    if (!g || this.busy || this.charge || this.menus.open) return;
+    if (!g.canGamble()) {
+      this.sfx.play('error');
+      this.hud.toast(g.run.marks.gambledAt === g.run.deadline ? 'ALREADY GAMBLED THIS DEADLINE' : `NEED $${BALANCE.gambleMin} IN THE TRAY`, '#ff8060');
+      return;
+    }
+    const stake = g.run.tray;
+    this.hostSay('gambleOffer', 'grin', 'present');
+    this.stage.rig.go('center');
+    this.setChoice(
+      {
+        title: 'DOUBLE OR NOTHING?',
+        lines: [`STAKE THE WHOLE TRAY: $${stake}`, `EVEN ODDS. WIN: $${stake * 2}, STREAK STANDS. LOSE: $0, STREAK RESETS.`, 'ONCE PER DEADLINE.'],
+        options: [
+          { icon: 'ui.coin', label: `DOUBLE IT ($${stake * 2})`, detail: '50/50. The house always says it is fair.', color: '#ffd040' },
+          { icon: 'ui.tray', label: 'WALK AWAY', detail: `Keep $${stake} riding.` },
+        ],
+        selected: 1,
+        layout: 'cards',
+        accent: '#ffd040',
+        footer: '1-2 OR CLICK',
+      },
+      (i) => {
+        this.setChoice(null, null);
+        if (i === 0) void this.playGamble();
+        else this.hud.toast('WALKED AWAY', '#c0c0c0');
+      },
+    );
+  }
+
+  private async playGamble(): Promise<void> {
+    const g = this.game!;
+    const st = this.stage;
+    await this.withBusy(async () => {
+      this.fsm.force('Resolving');
+      const res = g.gamble();
+      const drum = this.sfx.loop('drumroll', 0.45, 'sfx', 0.2);
+      st.lights.setMode('tense');
+      st.host.say('static', 2.2);
+      // The marquee flips between the two outcomes, slowing down, and lands on the result.
+      let delay = 0.06;
+      let face = 0;
+      while (delay < 0.32) {
+        face ^= 1;
+        st.marquee.set(face ? 'DOUBLE' : 'NOTHING', face ? '#ffd040' : '#ff4030', false);
+        st.wheel.bulbsOn = face ? 1 : 0.3;
+        this.sfx.play('nixie', { pitch: face ? 1.4 : 0.9, gain: 0.5 });
+        await wait(delay / Math.max(1, this.speed * 0.7));
+        delay *= 1.16;
+      }
+      drum?.stop(0.05);
+      st.wheel.bulbsOn = 1;
+      if (res.won) {
+        st.marquee.set(`DOUBLE! $${res.tray}`, '#ffd040', true);
+        this.sfx.play('jackpot', { gain: 0.8 });
+        this.sfx.play('applause', { gain: 0.6, delay: 0.3 });
+        st.rig.punch(-8);
+        st.post.shock = 0.6;
+        st.lights.setMode('party');
+        st.lights.applause = 3;
+        if (!this.settings.reducedFlashing) st.vfx.confetti(st.post.width, 70);
+        st.vfx.float(st.tray.group.position.clone().add(new THREE.Vector3(0, 0.4, 0)), `+$${res.stake}`, '#80ff80', 2, 1.8);
+        this.hostSay('gambleWin', 'shock', 'cheer');
+      } else {
+        st.marquee.set('NOTHING.', '#ff3020', true);
+        this.sfx.play('bankrupt', { gain: 0.8 });
+        this.sfx.play('groan', { gain: 0.6, delay: 0.4 });
+        if (this.settings.screenShake) st.rig.shake(0.8);
+        st.rig.tilt(0.1, 1.2);
+        st.post.shock = 1;
+        st.lights.setMode('alarm');
+        st.tray.setAmount(0, false);
+        st.vfx.float(st.tray.group.position.clone().add(new THREE.Vector3(0, 0.4, 0)), `-$${res.stake}`, '#ff4040', 2, 1.8);
+        this.hostSay('gambleLose', 'laugh', 'shrug');
+      }
+      this.sync(true);
+      await wait(1.2 / this.speed);
+    });
+    void this.enterPhase();
   }
 
   private useCard(i: number): void {
@@ -1413,6 +1942,7 @@ export class App {
     const id = g.run.scratch[i];
     g.useScratch(i);
     this.sfx.play('scratch');
+    if (Math.random() < 0.4) this.hostSay('scratch', 'grin', 'point');
     this.hud.toast(`${scratchDef(id).name.toUpperCase()}!`, '#ffe080');
     this.layoutSig = '';
     this.sync(false);
@@ -1467,6 +1997,7 @@ export class App {
     this.stage.shelf.selected = -1;
     this.sfx.play('cascade', { gain: 0.4, pitch: 1.6 });
     this.hud.toast(`SOLD +${v} TOK`);
+    if (Math.random() < 0.5) this.hostSay('sell', 'wink', 'present');
     this.sync(false);
   }
 
@@ -1484,6 +2015,12 @@ export class App {
     }
     const st = this.stage;
     const g = this.game;
+    const realDt = dt;
+    this.timeScale += (this.timeScaleTarget - this.timeScale) * Math.min(1, realDt * 8);
+    if (this.grab) this.updateGrab();
+    // A dramatic finish: slow motion for the last stretch of the spin, then a hard cut back.
+    if (this.drama && !this.drama.started && st.wheel.busy && st.wheel.timeLeft > 0 && st.wheel.timeLeft < this.drama.at) this.startSlowMo();
+    if (this.drama?.started && st.wheel.timeLeft <= 0) this.endSlowMo();
     // Lever charging: the meter oscillates; ratchet ticks; Glass Eye live preview.
     if (this.charge && g) {
       this.charge.t += dt;
@@ -1491,6 +2028,8 @@ export class App {
       st.lever.pull = p * 0.6;
       const ch = g.chargeContext();
       st.lever.drawGauge(p, BALANCE.sweetCenter, ch.sweetHalfWidth, true, this.charge.peek);
+      const sweet = inSweetSpot(p, ch.sweetHalfWidth);
+      this.hud.hint = sweet ? (ch.preview ? 'SWEET SPOT! RELEASE · [E] PEEK' : 'SWEET SPOT! RELEASE NOW') : (ch.preview ? 'WAIT FOR GREEN · [E] PEEK' : 'WAIT FOR GREEN ON THE LEVER METER');
       if (Math.floor(this.charge.t * 14) !== this.charge.lastTick) {
         this.charge.lastTick = Math.floor(this.charge.t * 14);
         this.sfx.play('ratchet', { gain: 0.25, pitch: 0.8 + p });
@@ -1508,18 +2047,46 @@ export class App {
       }
     } else this.idleTimer = 0;
     this.music.setBuzz(st.studio.lightLevel);
+    this.updateMood(dt);
+    st.host.mouthAmp = this.vo.speaking ? this.vo.amplitude() : -1;
+    st.host.twitch = this.game ? Math.max(0, (this.game.run.deadline - 4) / 6) * (this.vo.speaking ? 1 : 0.3) : 0;
+    st.wheel.reducedFlashing = this.settings.reducedFlashing;
+    if (this.vo.speaking) st.host.talking = Math.max(st.host.talking, 0.15);
     st.post.roll = Math.max(g?.run.phase === 'PhoneCall' && !this.phoneAnswered ? 0.7 : 0, st.post.roll - dt * 0.4);
     if (this.settings.reducedFlashing) st.post.roll = Math.min(st.post.roll, 0.25);
-    st.update(dt, this.time, this.speed);
+    // The wheel rots with the show, and its sun keeps an eye on the player's hand.
+    if (g) st.wheel.decay = Math.min(1, (g.run.deadline - 1) / 7);
+    {
+      const c = this.toScreen(st.wheel.centerWorld());
+      const lm = this.input.mouse;
+      if (lm.inside && st.rig.station === 'center') {
+        const dx = lm.x - c.x,
+          dy = lm.y - c.y,
+          d = Math.max(1, Math.hypot(dx, dy));
+        st.wheel.sunLook = { x: dx / d, y: dy / d };
+      } else st.wheel.sunLook = { x: 0, y: 0.6 };
+    }
+    st.update(dt * this.timeScale, this.time, this.speed);
+    // Speed lines round the wheel while it's really going.
+    const sp = st.wheel.spinSpeed;
+    if (st.rig.station === 'center' && sp > 150 && !this.menus.open) {
+      const c = this.toScreen(st.wheel.centerWorld());
+      const r = this.toScreen(st.wheel.rimWorld());
+      this.hud.speedLines = { x: c.x, y: c.y, r: Math.hypot(r.x - c.x, r.y - c.y), amt: Math.min(1, (sp - 150) / 700), rot: st.wheel.theta * DEG };
+    } else this.hud.speedLines = null;
+    this.input.pollGamepad(dt, st.post.width, st.post.height);
     this.input.flush();
     this.hud.update(dt);
 
     // Hover tooltip.
     const m = this.input.mouse;
+    let hoverId: string | null = null;
     if (!this.target) {
       const hit = m.inside && !this.hud.choice ? st.pick(m.x, m.y) : null;
-      this.hud.tooltip = hit ? tooltipFor(hit, g) : null;
+      hoverId = hit?.id ?? null;
+      this.hud.tooltip = hit && !this.grab ? tooltipFor(hit, g) : null;
     }
+    this.hud.cursor = this.grab ? 'grab' : hoverId === 'wheel' && st.rig.station === 'center' && this.canGrab() ? 'open' : null;
     // Overlay.
     const ctx = st.post.ui;
     const w = st.post.width,

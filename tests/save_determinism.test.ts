@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { MemoryStorage, RUN_MIGRATIONS, META_MIGRATIONS, SaveSlot, SAVE_KEYS } from '../src/core/save';
-import { META_VERSION, applyRun, computeRatings, newMeta, type MetaState } from '../src/game/meta';
+import { META_VERSION, applyRun, computeRatings, maxStake, newMeta, type MetaState } from '../src/game/meta';
 import { Game, RUN_VERSION } from '../src/game/run';
 import type { RunState } from '../src/game/types';
 
@@ -127,6 +127,10 @@ describe('save slots', () => {
 });
 
 describe('meta', () => {
+  it('offers every difficulty to a new player', () => {
+    expect(maxStake(newMeta())).toBe(3);
+  });
+
   it('ratings reward deadlines survived and scale with stake', () => {
     const g = Game.newRun({ seed: 'meta', stake: 0, startWheel: 'standard' });
     g.run.deadlines = [

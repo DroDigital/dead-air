@@ -9,6 +9,7 @@ import { scratchDef } from '../../content/scratchCards';
 import { drawText, wrapText } from '../../ui/bitfont';
 import { psxMaterial, type PsxMaterial } from '../psxMaterial';
 import { CanvasPanel, hexCss, panelMesh, pickable } from './util';
+import { worldNumber } from './worldNumbers';
 
 export class VaultView {
   readonly group = new THREE.Group();
@@ -93,12 +94,13 @@ export class VaultView {
     this.nixie.draw((ctx, w, h) => {
       ctx.fillStyle = '#0a0503';
       ctx.fillRect(0, 0, w, h);
-      const digits = String(Math.max(0, Math.round(v))).padStart(7, '0');
+      const amount = worldNumber(v, 7);
+      const digits = amount.padStart(7, amount.startsWith('~') || amount === '∞' || amount === '?' ? ' ' : '0');
       for (let i = 0; i < digits.length; i++) {
         const x = 4 + i * 13;
         ctx.fillStyle = '#1a0c06';
         ctx.fillRect(x - 1, 2, 11, 20);
-        const lit = i >= digits.length - String(Math.round(v)).length;
+        const lit = i >= digits.length - amount.length;
         drawText(ctx, digits[i], x + 5, 5, { align: 'center', scale: 2, color: lit ? '#ff9a30' : '#3a1a08', shadow: lit ? '#a02000' : null });
       }
     });

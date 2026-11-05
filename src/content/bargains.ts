@@ -47,7 +47,7 @@ export const BARGAINS: readonly BargainDef[] = [
   {
     id: 'cash_for_bankrupt',
     tier: 'normal',
-    line: "Eight hundred dollars, friend. Cash. Today. All I need is one more little black slice on that wheel. Tiny. You'll hardly see it.",
+    line: 'Eight hundred dollars, friend. All I need is one more little black slice on that wheel.',
     deal: '+$800 in the Vault. Add a Bankrupt wedge.',
     weight: 10,
     apply: (ops) => {
@@ -58,7 +58,7 @@ export const BARGAINS: readonly BargainDef[] = [
   {
     id: 'purge_duds',
     tier: 'normal',
-    line: "Those Duds are embarrassing us on air. I'll have them repainted as cash tonight. The paint crew works slow, so you'll lose a little time.",
+    line: "Those Duds are embarrassing us on air. The paint crew works slow, so you'll lose a little time.",
     deal: 'Every Dud becomes $75 Cash. −2 spins next Deadline.',
     weight: 8,
     available: (r) => r.wheel.some((w) => w.kind === 'dud'),
@@ -70,7 +70,7 @@ export const BARGAINS: readonly BargainDef[] = [
   {
     id: 'rare_for_debt',
     tier: 'normal',
-    line: "I've got something in the prop room with your name on it. Literally — we engraved it years ago. The Network will want a little extra, of course.",
+    line: "I've got something in the prop room with your name on it. The Network will want a little extra, of course.",
     deal: 'Gain {artifact}. This Debt +25%.',
     weight: 9,
     available: (r) => r.artifacts.length < 6,
@@ -94,7 +94,7 @@ export const BARGAINS: readonly BargainDef[] = [
   {
     id: 'gild_all',
     tier: 'normal',
-    line: "Gold leaf on every dollar sign. Gorgeous. Very telegenic. Of course, the black slices will want to feel included.",
+    line: 'Gold leaf on every dollar sign. Of course, the black slices will want to feel included.',
     deal: 'Gild every Cash wedge. Every Bankrupt is 5° wider.',
     weight: 7,
     apply: (ops) => {
@@ -107,7 +107,7 @@ export const BARGAINS: readonly BargainDef[] = [
   {
     id: 'jackpot_for_artifact',
     tier: 'normal',
-    line: "Two Jackpots. Imagine it. I'll just need the trinket on the far left of your shelf. Call it a deposit. A permanent one.",
+    line: "Two Jackpots. I'll just need the trinket on the far left of your shelf.",
     deal: 'Add a second Jackpot. Lose your leftmost artifact.',
     weight: 7,
     available: (r) => r.artifacts.length > 0,
@@ -120,7 +120,7 @@ export const BARGAINS: readonly BargainDef[] = [
   {
     id: 'spins_for_debt',
     tier: 'normal',
-    line: "Overtime! Three extra spins next show. The union won't like it. The Network will bill you for the union.",
+    line: 'Three extra spins next show. The Network will bill you for the union.',
     deal: '+3 spins next Deadline. This Debt +15%.',
     weight: 9,
     apply: (ops) => {
@@ -131,7 +131,7 @@ export const BARGAINS: readonly BargainDef[] = [
   {
     id: 'double_vault',
     tier: 'normal',
-    line: "I'll double whatever's in that safe of yours. Up to fifteen hundred. All I ask is your little Token collection. You weren't using them. Were you?",
+    line: "I'll double whatever's in that safe of yours. All I ask is your little Token collection.",
     deal: 'Double your Vault (max +$1500). Lose all Tokens.',
     weight: 7,
     available: (r) => r.vault > 100,
@@ -143,7 +143,7 @@ export const BARGAINS: readonly BargainDef[] = [
   {
     id: 'scratch_haunt',
     tier: 'normal',
-    line: "Free scratch cards! As many as your pockets hold. They came from a wedge we had to retire. It still moves around at night.",
+    line: 'Free scratch cards! They came from a wedge we had to retire.',
     deal: 'Fill your Scratch Card slots. Add a Haunted wedge.',
     weight: 7,
     available: (r) => r.scratch.length < 3,
@@ -155,7 +155,7 @@ export const BARGAINS: readonly BargainDef[] = [
   {
     id: 'remove_bankrupt_zero',
     tier: 'normal',
-    line: "I can take a Bankrupt off your wheel. Just like that. The inner ring will need something in return. Nothing. Literally, a nothing.",
+    line: 'I can take a Bankrupt off your wheel. The inner ring will need something in return.',
     deal: 'Remove a Bankrupt (becomes $50). Add a ×0 to the inner ring.',
     weight: 8,
     available: (r) => r.wheel.some((w) => w.kind === 'bankrupt'),
@@ -167,7 +167,7 @@ export const BARGAINS: readonly BargainDef[] = [
   {
     id: 'ring_three',
     tier: 'normal',
-    line: "A ×3 on the little ring. Very exciting for the viewers. They also enjoy a Bankrupt. They enjoy those most of all.",
+    line: 'Very exciting for the viewers. They also enjoy a Bankrupt.',
     deal: 'Add a ×3 to the inner ring. Add a Bankrupt.',
     weight: 8,
     apply: (ops) => {
@@ -178,7 +178,7 @@ export const BARGAINS: readonly BargainDef[] = [
   {
     id: 'sell_soul',
     tier: 'normal',
-    line: "Fifteen hundred dollars. Right now. The next payment goes up a bit, but that's next week's problem, and next week is a long way off for someone in your chair.",
+    line: 'Fifteen hundred dollars. Right now.',
     deal: '+$1500 in the Vault. This Debt +40%.',
     weight: 7,
     apply: (ops) => {
@@ -189,7 +189,7 @@ export const BARGAINS: readonly BargainDef[] = [
   {
     id: 'widen_jackpot',
     tier: 'normal',
-    line: "Your Jackpot is so thin. Practically a rumour. Three hundred dollars and our carpenter will fatten it right up.",
+    line: 'Your Jackpot is so thin. Three hundred dollars and our carpenter will fatten it right up.',
     deal: 'Every Jackpot is 6° wider. −$300 from the Vault.',
     weight: 7,
     available: (r) => r.vault >= 300 && r.wheel.some((w) => w.kind === 'jackpot'),
@@ -201,7 +201,7 @@ export const BARGAINS: readonly BargainDef[] = [
   {
     id: 'cursed_gift',
     tier: 'normal',
-    line: "A gift. No strings. Well — some strings. They're attached to the gift, not to you. Mostly.",
+    line: 'No strings. Well — some strings.',
     deal: 'Gain {artifact} (cursed) and +3 Tokens.',
     weight: 8,
     available: (r) => r.artifacts.length < 6,
@@ -214,7 +214,7 @@ export const BARGAINS: readonly BargainDef[] = [
   {
     id: 'shrink_bankrupts',
     tier: 'normal',
-    line: "I know a guy with a saw. Every Bankrupt, five degrees thinner. He charges in Tokens. Four of them. He likes the way they jingle.",
+    line: 'I know a guy with a saw. He charges in Tokens.',
     deal: 'Every Bankrupt is 5° narrower. −4 Tokens.',
     weight: 7,
     available: (r) => r.tokens >= 4 && r.wheel.some((w) => w.kind === 'bankrupt'),
@@ -226,7 +226,7 @@ export const BARGAINS: readonly BargainDef[] = [
   {
     id: 'overtime_tax',
     tier: 'normal',
-    line: "An Overtime wedge, installed tonight. The installers will leave a Tax wedge behind. They always leave something behind.",
+    line: 'An Overtime wedge, installed tonight. The installers will leave a Tax wedge behind.',
     deal: 'Install an Overtime wedge. Install a Tax wedge.',
     weight: 7,
     apply: (ops) => {
@@ -248,7 +248,7 @@ export const BARGAINS: readonly BargainDef[] = [
   {
     id: 'raise_all_cash',
     tier: 'normal',
-    line: "Twenty-five more dollars on every Cash wedge. Forever. For that kind of generosity I'll need one more black slice. Forever.",
+    line: "Twenty-five more dollars on every Cash wedge. For that kind of generosity I'll need one more black slice.",
     deal: '+$25 to every Cash wedge. Add a Bankrupt.',
     weight: 8,
     apply: (ops) => {
@@ -259,7 +259,7 @@ export const BARGAINS: readonly BargainDef[] = [
   {
     id: 'free_rerolls',
     tier: 'normal',
-    line: "The Prize Cabinet owes me a favour. Three of them. They cost you two hundred dollars — the favours, not the cabinet.",
+    line: 'The Prize Cabinet owes me a favour. They cost you two hundred dollars — the favours, not the cabinet.',
     deal: '3 free Prize Cabinet rerolls next time. −$200 from the Vault.',
     weight: 6,
     available: (r) => r.vault >= 200,
@@ -271,7 +271,7 @@ export const BARGAINS: readonly BargainDef[] = [
   {
     id: 'insurance_policy',
     tier: 'normal',
-    line: "Insurance! Every contestant should have it. Two policies, two hundred fifty dollars. The fine print is in a language we invented.",
+    line: 'Two policies, two hundred fifty dollars. The fine print is in a language we invented.',
     deal: 'Gain 2 Insurance cards (if room). −$250 from the Vault.',
     weight: 6,
     available: (r) => r.vault >= 250 && r.scratch.length < 3,
@@ -284,7 +284,7 @@ export const BARGAINS: readonly BargainDef[] = [
   {
     id: 'tokens_to_cash',
     tier: 'normal',
-    line: "Tokens are just plastic, friend. I'll buy every one off you at a hundred dollars apiece. Cash talks. Plastic just clacks.",
+    line: "Tokens are just plastic, friend. I'll buy every one off you at a hundred dollars apiece.",
     deal: 'Convert all Tokens into $100 each in the Vault.',
     weight: 6,
     available: (r) => r.tokens >= 3,
@@ -298,7 +298,7 @@ export const BARGAINS: readonly BargainDef[] = [
   {
     id: 'buy_spins',
     tier: 'normal',
-    line: "Two more spins next show. Three Tokens. That's the whole deal. I'm being nice tonight. Don't get used to it.",
+    line: "I'm being nice tonight. Don't get used to it.",
     deal: '+2 spins next Deadline. −3 Tokens.',
     weight: 7,
     available: (r) => r.tokens >= 3,
@@ -310,7 +310,7 @@ export const BARGAINS: readonly BargainDef[] = [
   {
     id: 'ring_purge',
     tier: 'normal',
-    line: "That little zero on the inner ring. I can make it disappear. Time disappears with it — three spins' worth.",
+    line: "I can make it disappear. Time disappears with it — three spins' worth.",
     deal: 'Remove a ×0 from the inner ring. −3 spins next Deadline.',
     weight: 6,
     available: (r) => r.ring.includes(0) && r.ring.length > 2,
@@ -323,7 +323,7 @@ export const BARGAINS: readonly BargainDef[] = [
   {
     id: 'thief_payday',
     tier: 'normal',
-    line: "Two new wedges: one that steals from you, and one that saves you from yourself. Balance. The Network loves balance.",
+    line: 'Two new wedges: one that steals from you, and one that saves you from yourself. The Network loves balance.',
     deal: 'Install a Thief and a Payday wedge (replacing Cash or Duds).',
     weight: 6,
     apply: (ops) => {
@@ -334,7 +334,7 @@ export const BARGAINS: readonly BargainDef[] = [
   {
     id: 'echo_contract',
     tier: 'normal',
-    line: "Repetition is comedy. ECHOs pay triple, for the rest of your contract. The Network will charge a modest syndication fee.",
+    line: 'ECHOs pay triple, for the rest of your contract. The Network will charge a modest syndication fee.',
     deal: 'ECHO pays ×3 base for the rest of the run. This Debt +20%.',
     weight: 6,
     available: (r) => !r.marks.echoTriple,
@@ -346,7 +346,7 @@ export const BARGAINS: readonly BargainDef[] = [
   {
     id: 'warm_start',
     tier: 'normal',
-    line: "Why start cold? Every Deadline, your Streak will begin at ×1.5. The Bankrupts will hear about this and get jealous. Three degrees jealous.",
+    line: 'Every Deadline, your Streak will begin at ×1.5. The Bankrupts will hear about this and get jealous.',
     deal: 'Streak starts each Deadline at ×1.5. Every Bankrupt is 3° wider.',
     weight: 6,
     available: (r) => !r.marks.warmStart,
@@ -358,7 +358,7 @@ export const BARGAINS: readonly BargainDef[] = [
   {
     id: 'tax_immunity',
     tier: 'normal',
-    line: "I know people at the Revenue. Two hundred dollars and your Vault becomes... invisible to them. Forever. Forever is a long time in here.",
+    line: 'I know people at the Revenue. Two hundred dollars and your Vault becomes... invisible to them.',
     deal: 'Tax wedges can never touch your Vault again. −$200.',
     weight: 5,
     available: (r) => r.vault >= 200 && !r.marks.taxImmune,
@@ -370,7 +370,7 @@ export const BARGAINS: readonly BargainDef[] = [
   {
     id: 'swap_artifact',
     tier: 'normal',
-    line: "Let me take one of your little treasures off your hands. Randomly. In exchange, a rare one. Rarely does anyone say no. Rarely does anyone get to.",
+    line: 'Let me take one of your little treasures off your hands. In exchange, a rare one.',
     deal: 'Lose a random artifact. Gain {artifact}.',
     weight: 6,
     available: (r) => r.artifacts.length > 0,
@@ -384,7 +384,7 @@ export const BARGAINS: readonly BargainDef[] = [
   {
     id: 'vault_key_debt',
     tier: 'normal',
-    line: "Two Vault Keys. Hang them on the safe. Nothing bad can happen twice. The Network will add a little something to the bill for the locksmith.",
+    line: 'Two Vault Keys. The Network will add a little something to the bill for the locksmith.',
     deal: 'Your next 2 Bankrupts are blocked. This Debt +10%.',
     weight: 7,
     apply: (ops) => {
@@ -395,7 +395,7 @@ export const BARGAINS: readonly BargainDef[] = [
   {
     id: 'charge_wedge',
     tier: 'normal',
-    line: "A Charge wedge, freshly wired. Nobody's been electrocuted in weeks. You'll just need to give up a respin. They're the same colour, nobody will notice.",
+    line: "A Charge wedge, freshly wired. Nobody's been electrocuted in weeks.",
     deal: 'A Respin becomes a Charge wedge, and a Dud becomes a Boost.',
     weight: 6,
     available: (r) => r.wheel.some((w) => w.kind === 'respin'),
@@ -410,7 +410,7 @@ export const BARGAINS: readonly BargainDef[] = [
   {
     id: 'deadair_refund',
     tier: 'deadAir',
-    line: "Ooh. OOH. That was a lot of money. Listen — the audience didn't see it. I can put half of it back in your Vault. The Network will want this payment a touch heavier.",
+    line: "Listen — the audience didn't see it. I can put half of it back in your Vault.",
     deal: 'Half the lost Tray (${amount}) goes to the Vault. This Debt +20%.',
     weight: 10,
     roll: (ops) => ({ amount: Math.floor((ops.run.marks.lastBankruptLoss ?? 0) / 2) }),
@@ -422,7 +422,7 @@ export const BARGAINS: readonly BargainDef[] = [
   {
     id: 'deadair_spins',
     tier: 'deadAir',
-    line: "Don't you dare leave the chair. Three more spins, right now, on the house. The house will also be adding a Bankrupt. The house is like that.",
+    line: 'Three more spins, right now, on the house. The house will also be adding a Bankrupt.',
     deal: '+3 spins now. Add a Bankrupt.',
     weight: 10,
     apply: (ops) => {
@@ -433,7 +433,7 @@ export const BARGAINS: readonly BargainDef[] = [
   {
     id: 'deadair_tokens',
     tier: 'deadAir',
-    line: "Money's gone, but memories are forever. I'll turn that lovely memory into Tokens. One for every hundred you lost. Keep your chin up. Keep your chin.",
+    line: "Money's gone, but memories are forever. I'll turn that lovely memory into Tokens.",
     deal: '+{tokens} Tokens. Your Streak starts at ×2 now.',
     weight: 10,
     roll: (ops) => ({ tokens: Math.max(2, Math.floor((ops.run.marks.lastBankruptLoss ?? 0) / 100)) }),
@@ -446,7 +446,7 @@ export const BARGAINS: readonly BargainDef[] = [
   {
     id: 'secret_seat',
     tier: 'secret',
-    line: "(a whisper) Don't say my name. They'll hear. I sat in that chair before you. I know where the Network keeps its ledger. I can tear out your next page — but they'll take your things. Everything on the shelf.",
+    line: "(a whisper) I sat in that chair before you. I can tear out your next page — but they'll take your things.",
     deal: 'Your next Debt is $0. Lose every artifact.',
     weight: 10,
     apply: (ops) => {
@@ -458,7 +458,7 @@ export const BARGAINS: readonly BargainDef[] = [
   {
     id: 'secret_trapdoor',
     tier: 'secret',
-    line: "(static) The trapdoor has a lever under the chair. Left of the bolt. I found it too late. Take it. And take my winnings — I won't need them where I am.",
+    line: "(static) Take it. And take my winnings — I won't need them where I am.",
     deal: 'Gain the Trapdoor Lever and +$666.',
     weight: 10,
     available: (r) => r.artifacts.length < 6 && !r.artifacts.some((a) => a.id === 'trapdoor_lever'),
@@ -470,7 +470,7 @@ export const BARGAINS: readonly BargainDef[] = [
   {
     id: 'secret_cut_feed',
     tier: 'secret',
-    line: "(breathing) Cut the feed. The black slices only work when the cameras are rolling. Turn them into dead air. The host will stop smiling. Let him.",
+    line: '(breathing) Cut the feed. The host will stop smiling.',
     deal: 'Every Bankrupt becomes a Dud, permanently. The Host goes silent.',
     weight: 10,
     available: (r) => r.wheel.some((w) => w.kind === 'bankrupt'),
@@ -482,7 +482,7 @@ export const BARGAINS: readonly BargainDef[] = [
   {
     id: 'secret_truth',
     tier: 'secret',
-    line: "(a long pause) You want to know what the Network is? Pick up the cards on the floor by the camera. Read them in order. Here — for your trouble.",
+    line: '(a long pause) You want to know what the Network is? Pick up the cards on the floor by the camera.',
     deal: '+10 Tokens. The truth (a lore note) is unlocked.',
     weight: 10,
     apply: (ops) => {
@@ -522,5 +522,5 @@ export const PRODUCER_INTROS: Record<BargainTier, readonly string[]> = {
     'Wow. Wow wow wow. Okay. Okay. I have an idea. Two ideas.',
     "That's going in the blooper reel. Unless... you and I come to an arrangement.",
   ],
-  secret: ['(the line clicks twice — this is not the Producer)'],
+  secret: ["Don't talk. Just listen. I'm not the Producer, and this line isn't here."],
 };

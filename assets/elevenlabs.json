@@ -1,0 +1,178 @@
+{
+  "note": "Audio generated with ElevenLabs for this project (flow 'DEAD AIR audio'). Sources in assets-src/elevenlabs, converted by `npm run assets` (needs ffmpeg). Voice-over clips: tools/vo.ts.",
+  "voices": [
+    {
+      "speaker": "host",
+      "name": "DEAD AIR Host",
+      "voiceId": "1ZXEoWxMa1iha6a57UoM",
+      "design": "Manic, relentlessly cheerful 1970s game-show host with something hollow underneath"
+    },
+    {
+      "speaker": "producer",
+      "name": "DEAD AIR Producer",
+      "voiceId": "ncChMB7ZB1vnZEjg7kvI",
+      "design": "Gravelly, smooth, quietly menacing TV executive on a late-night phone call"
+    },
+    {
+      "speaker": "secret",
+      "name": "DEAD AIR Other Line",
+      "voiceId": "lbIDPbGALZZqUPPfyITw",
+      "design": "A frightened woman whispering over a crossed phone line"
+    },
+    {
+      "speaker": "archive",
+      "name": "DEAD AIR Archivist",
+      "voiceId": "yHofioyxMKXVSF6qJKEZ",
+      "design": "Elderly, tired studio archivist reading memos into a tape recorder"
+    }
+  ],
+  "audio": [
+    {
+      "id": "el.bankrupt",
+      "file": "sfx_bankrupt.mp3",
+      "kind": "sfx",
+      "model": "eleven_text_to_sound_v2",
+      "prompt": "Game show bankrupt buzzer and descending muted trombone",
+      "replaces": "sfx.bankrupt"
+    },
+    {
+      "id": "el.groan",
+      "file": "sfx_groan.mp3",
+      "kind": "sfx",
+      "model": "eleven_text_to_sound_v2",
+      "prompt": "Studio audience groaning in disappointment",
+      "replaces": "sfx.crowd"
+    },
+    {
+      "id": "el.jackpot",
+      "file": "sfx_jackpot.mp3",
+      "kind": "sfx",
+      "model": "eleven_text_to_sound_v2",
+      "prompt": "Frantic ringing brass bells, register ding, coins",
+      "replaces": "sfx.jackpot_bells"
+    },
+    {
+      "id": "el.applause",
+      "file": "sfx_applause.mp3",
+      "kind": "sfx",
+      "model": "eleven_text_to_sound_v2",
+      "prompt": "Vintage studio audience applause on old tape"
+    },
+    {
+      "id": "el.gasp",
+      "file": "sfx_gasp.mp3",
+      "kind": "sfx",
+      "model": "eleven_text_to_sound_v2",
+      "prompt": "Studio audience gasping in shock"
+    },
+    {
+      "id": "el.laugh",
+      "file": "sfx_laugh.mp3",
+      "kind": "sfx",
+      "model": "eleven_text_to_sound_v2",
+      "prompt": "Warped 1970s laugh track"
+    },
+    {
+      "id": "el.sting",
+      "file": "sfx_sting.mp3",
+      "kind": "sfx",
+      "model": "eleven_text_to_sound_v2",
+      "prompt": "Dramatic brass and timpani sting"
+    },
+    {
+      "id": "el.trapdoor",
+      "file": "sfx_trapdoor.mp3",
+      "kind": "sfx",
+      "model": "eleven_text_to_sound_v2",
+      "prompt": "Steel trapdoor bolts, fall into a shaft"
+    },
+    {
+      "id": "el.static",
+      "file": "sfx_static.mp3",
+      "kind": "sfx",
+      "model": "eleven_text_to_sound_v2",
+      "prompt": "CRT channel-change static burst"
+    },
+    {
+      "id": "el.pickup",
+      "file": "sfx_pickup.mp3",
+      "kind": "sfx",
+      "model": "eleven_text_to_sound_v2",
+      "prompt": "Bakelite phone handset picked up, open line"
+    },
+    {
+      "id": "el.hangup",
+      "file": "sfx_hangup.mp3",
+      "kind": "sfx",
+      "model": "eleven_text_to_sound_v2",
+      "prompt": "Bakelite handset slammed onto its cradle"
+    },
+    {
+      "id": "el.fanfare",
+      "file": "sfx_fanfare.mp3",
+      "kind": "sfx",
+      "model": "eleven_text_to_sound_v2",
+      "prompt": "Out-of-tune 1970s winner fanfare"
+    },
+    {
+      "id": "el.signoff",
+      "file": "sfx_signoff.mp3",
+      "kind": "sfx",
+      "model": "eleven_text_to_sound_v2",
+      "prompt": "TV sign-off: CRT collapse, test tone, static"
+    },
+    {
+      "id": "el.rimshot",
+      "file": "sfx_rimshot.mp3",
+      "kind": "sfx",
+      "model": "eleven_text_to_sound_v2",
+      "prompt": "Rimshot with sad slide whistle"
+    },
+    {
+      "id": "el.register",
+      "file": "sfx_register.mp3",
+      "kind": "sfx",
+      "model": "eleven_text_to_sound_v2",
+      "prompt": "Mechanical cash register and drawer"
+    },
+    {
+      "id": "el.drumroll",
+      "file": "sfx_drumroll.mp3",
+      "kind": "loop",
+      "model": "eleven_text_to_sound_v2",
+      "prompt": "Snare drum roll (seamless loop)"
+    },
+    {
+      "id": "el.heartbeat",
+      "file": "sfx_heartbeat.mp3",
+      "kind": "loop",
+      "model": "eleven_text_to_sound_v2",
+      "prompt": "Heartbeat over a sub-bass drone (seamless loop)"
+    },
+    {
+      "id": "el.ambience",
+      "file": "sfx_ambience.mp3",
+      "kind": "loop",
+      "model": "eleven_text_to_sound_v2",
+      "prompt": "Abandoned TV studio room tone (seamless loop)"
+    },
+    {
+      "id": "el.music_main",
+      "file": "music_main.mp3",
+      "kind": "music",
+      "model": "eleven_music_v2_5",
+      "prompt": "Detuned 1970s game-show theme, organ, walking bass, brushes (instrumental)",
+      "replaces": "music.show_loop"
+    },
+    {
+      "id": "el.music_lounge",
+      "file": "music_lounge.mp3",
+      "kind": "music",
+      "model": "eleven_music_v2_5",
+      "prompt": "Warped music-box and Hammond intermission bossa (instrumental)",
+      "key": "A minor",
+      "shift": 0,
+      "cents": -3
+    }
+  ]
+}

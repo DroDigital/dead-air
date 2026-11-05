@@ -19,62 +19,62 @@
     {
       "id": "tex.carpet",
       "type": "texture",
-      "src": "textures/dirty_carpet.jpg",
+      "src": "art/texture-floor.png",
       "out": "textures/carpet.png",
-      "size": 64,
-      "fetch": {
-        "polyhaven": "dirty_carpet",
-        "kind": "texture"
-      },
-      "sourceUrl": "https://polyhaven.com/a/dirty_carpet",
-      "author": "Rohit Seervi (Poly Haven)",
-      "license": "CC0-1.0",
-      "modifications": "Diffuse map only; downscaled to 64×64; quantised to 15-bit colour."
+      "size": 256,
+      "fetch": null,
+      "sourceUrl": "Provided by the project owner (DEAD AIR art pack)",
+      "author": "Project owner",
+      "license": "OWNER",
+      "modifications": "Checkered studio floor: downscaled to 256×256; quantised to 15-bit colour; sampled nearest and lit by the PSX material."
     },
     {
       "id": "tex.curtain",
       "type": "texture",
-      "src": "textures/velour_velvet.jpg",
+      "src": "art/texture-curtain.png",
       "out": "textures/curtain.png",
-      "size": 64,
-      "fetch": {
-        "polyhaven": "velour_velvet",
-        "kind": "texture"
-      },
-      "sourceUrl": "https://polyhaven.com/a/velour_velvet",
-      "author": "colormass, Rico Cilliers (Poly Haven)",
-      "license": "CC0-1.0",
-      "modifications": "Diffuse map only; downscaled to 64×64; quantised to 15-bit colour; tinted burgundy at runtime."
+      "size": 256,
+      "fetch": null,
+      "sourceUrl": "Provided by the project owner (DEAD AIR art pack)",
+      "author": "Project owner",
+      "license": "OWNER",
+      "modifications": "Stage curtain: downscaled to 256×256; quantised to 15-bit colour; sampled nearest and lit by the PSX material."
     },
     {
       "id": "tex.wallpaper",
       "type": "texture",
-      "src": "textures/decrepit_wallpaper.jpg",
+      "src": "art/texture-wallpaper.png",
       "out": "textures/wallpaper.png",
-      "size": 128,
-      "fetch": {
-        "polyhaven": "decrepit_wallpaper",
-        "kind": "texture"
-      },
-      "sourceUrl": "https://polyhaven.com/a/decrepit_wallpaper",
-      "author": "Rob Tuytel (Poly Haven)",
-      "license": "CC0-1.0",
-      "modifications": "Diffuse map only; downscaled to 128×128; quantised to 15-bit colour."
+      "size": 256,
+      "fetch": null,
+      "sourceUrl": "Provided by the project owner (DEAD AIR art pack)",
+      "author": "Project owner",
+      "license": "OWNER",
+      "modifications": "TV-and-stars wallpaper: downscaled to 256×256; quantised to 15-bit colour; sampled nearest and lit by the PSX material."
+    },
+    {
+      "id": "tex.seats",
+      "type": "texture",
+      "src": "art/texture-audience-seats.png",
+      "out": "textures/seats.png",
+      "size": 256,
+      "fetch": null,
+      "sourceUrl": "Provided by the project owner (DEAD AIR art pack)",
+      "author": "Project owner",
+      "license": "OWNER",
+      "modifications": "Empty theatre seats: downscaled to 256×256; quantised to 15-bit colour; sampled nearest and lit by the PSX material."
     },
     {
       "id": "tex.metal",
       "type": "texture",
-      "src": "textures/rusty_metal_02.jpg",
+      "src": "art/texture-brass.png",
       "out": "textures/metal.png",
-      "size": 64,
-      "fetch": {
-        "polyhaven": "rusty_metal_02",
-        "kind": "texture"
-      },
-      "sourceUrl": "https://polyhaven.com/a/rusty_metal_02",
-      "author": "Rob Tuytel (Poly Haven)",
-      "license": "CC0-1.0",
-      "modifications": "Diffuse map only; downscaled to 64×64; quantised to 15-bit colour."
+      "size": 256,
+      "fetch": null,
+      "sourceUrl": "Provided by the project owner (DEAD AIR art pack)",
+      "author": "Project owner",
+      "license": "OWNER",
+      "modifications": "Brass trim: downscaled to 256×256; quantised to 15-bit colour; sampled nearest and lit by the PSX material."
     },
     {
       "id": "tex.leather",
@@ -94,32 +94,26 @@
     {
       "id": "tex.stage_wood",
       "type": "texture",
-      "src": "textures/old_wood_floor.jpg",
+      "src": "art/texture-wood.png",
       "out": "textures/stage_wood.png",
-      "size": 64,
-      "fetch": {
-        "polyhaven": "old_wood_floor",
-        "kind": "texture"
-      },
-      "sourceUrl": "https://polyhaven.com/a/old_wood_floor",
-      "author": "Guillaume Monsergent (Poly Haven)",
-      "license": "CC0-1.0",
-      "modifications": "Diffuse map only; downscaled to 64×64; quantised to 15-bit colour."
+      "size": 256,
+      "fetch": null,
+      "sourceUrl": "Provided by the project owner (DEAD AIR art pack)",
+      "author": "Project owner",
+      "license": "OWNER",
+      "modifications": "Stage boards: downscaled to 256×256; quantised to 15-bit colour; sampled nearest and lit by the PSX material."
     },
     {
       "id": "tex.cabinet_wood",
       "type": "texture",
-      "src": "textures/wood_cabinet_worn_long.jpg",
+      "src": "art/texture-wood.png",
       "out": "textures/cabinet_wood.png",
-      "size": 64,
-      "fetch": {
-        "polyhaven": "wood_cabinet_worn_long",
-        "kind": "texture"
-      },
-      "sourceUrl": "https://polyhaven.com/a/wood_cabinet_worn_long",
-      "author": "Dimitrios Savva, Rico Cilliers (Poly Haven)",
-      "license": "CC0-1.0",
-      "modifications": "Diffuse map only; downscaled to 64×64; quantised to 15-bit colour."
+      "size": 256,
+      "fetch": null,
+      "sourceUrl": "Provided by the project owner (DEAD AIR art pack)",
+      "author": "Project owner",
+      "license": "OWNER",
+      "modifications": "Cabinet wood: downscaled to 256×256; quantised to 15-bit colour; sampled nearest and lit by the PSX material."
     },
     {
       "id": "tex.plaster",
@@ -275,6 +269,19 @@
       "modifications": "None. Used for long-form text (lore, credits)."
     },
     {
+      "id": "font.display",
+      "type": "font",
+      "src": "fonts/Shrikhand-Regular.ttf",
+      "out": "fonts/Shrikhand-Regular.ttf",
+      "fetch": {
+        "url": "https://raw.githubusercontent.com/google/fonts/main/ofl/shrikhand/Shrikhand-Regular.ttf"
+      },
+      "sourceUrl": "https://fonts.google.com/specimen/Shrikhand",
+      "author": "Jonny Pinhorn",
+      "license": "OFL-1.1",
+      "modifications": "None. The \"GAME OVER\" title on the end-of-run screen."
+    },
+    {
       "id": "sfx.flapper",
       "type": "audio",
       "src": "audio/flapper.wav",
@@ -405,6 +412,72 @@
       "author": "artisticdude (OpenGameArt, \"RPG Sound Pack\")",
       "license": "CC0-1.0",
       "modifications": "Source file \"RPG Sound Pack/inventory/chainmail1.wav\" from the zip. Converted to mono 22.05 kHz PCM16 with a one-pole lowpass at 7 kHz and 10-bit crush. Plays when the Prize Cabinet crank turns."
+    },
+    {
+      "id": "sfx.swish",
+      "type": "audio",
+      "src": "audio/swish.wav",
+      "out": "audio/swish.wav",
+      "fetch": null,
+      "sourceUrl": "https://opengameart.org/content/swishes-sound-pack",
+      "author": "artisticdude (OpenGameArt, \"Swishes Sound Pack\")",
+      "license": "CC0-1.0",
+      "modifications": "Source file \"swishes/swish-7.wav\" from the zip. Converted to mono 22.05 kHz PCM16 with a one-pole lowpass at 7 kHz and 10-bit crush. The flick that sends the wheel spinning, and the camera's whip moves."
+    },
+    {
+      "id": "sfx.riser",
+      "type": "audio",
+      "src": "audio/riser.wav",
+      "out": "audio/riser.wav",
+      "fetch": null,
+      "sourceUrl": "https://opengameart.org/content/air-whoosh",
+      "author": "pyranostudios (OpenGameArt, \"Air Whoosh\")",
+      "license": "CC0-1.0",
+      "modifications": "Source file \"whoosh2_0.wav\", trimmed to its last 2.6 s (the build-up) with a 0.4 s fade-in. Converted to mono 22.05 kHz PCM16 with a one-pole lowpass at 7 kHz and 10-bit crush. Swells under the slow-motion finish of a dramatic spin."
+    },
+    {
+      "id": "sfx.impact",
+      "type": "audio",
+      "src": "audio/impact.wav",
+      "out": "audio/impact.wav",
+      "fetch": null,
+      "sourceUrl": "https://opengameart.org/content/75-cc0-breaking-falling-hit-sfx",
+      "author": "rubberduck (OpenGameArt, \"75 CC0 breaking / falling / hit sfx\")",
+      "license": "CC0-1.0",
+      "modifications": "Source file \"bfh1_hit_02.ogg\" from the zip. Converted to mono 22.05 kHz PCM16 with a one-pole lowpass at 7 kHz and 10-bit crush. The slam when a big result lands."
+    },
+    {
+      "id": "sfx.clunk",
+      "type": "audio",
+      "src": "audio/clunk.wav",
+      "out": "audio/clunk.wav",
+      "fetch": null,
+      "sourceUrl": "https://opengameart.org/content/75-cc0-breaking-falling-hit-sfx",
+      "author": "rubberduck (OpenGameArt, \"75 CC0 breaking / falling / hit sfx\")",
+      "license": "CC0-1.0",
+      "modifications": "Source file \"bfh1_metal_hit_05.ogg\" from the zip. Converted to mono 22.05 kHz PCM16 with a one-pole lowpass at 7 kHz and 10-bit crush. A hand grabbing the wheel."
+    },
+    {
+      "id": "sfx.boing",
+      "type": "audio",
+      "src": "audio/boing.wav",
+      "out": "audio/boing.wav",
+      "fetch": null,
+      "sourceUrl": "https://opengameart.org/content/boing",
+      "author": "Aeva (OpenGameArt, \"Boing\")",
+      "license": "CC0-1.0",
+      "modifications": "Source file \"boing.flac\", first 1.3 s with a 0.4 s fade-out. Converted to mono 22.05 kHz PCM16 with a one-pole lowpass at 7 kHz and 10-bit crush. The wheel springing back from a feeble flick."
+    },
+    {
+      "id": "sfx.ding",
+      "type": "audio",
+      "src": "audio/ding.wav",
+      "out": "audio/ding.wav",
+      "fetch": null,
+      "sourceUrl": "https://opengameart.org/content/4-metal-dingsrings",
+      "author": "starninjas (OpenGameArt, \"4 Metal Dings/Rings\")",
+      "license": "CC0-1.0",
+      "modifications": "Source file \"ding.4.ogg\" from the zip. Converted to mono 22.05 kHz PCM16 with a one-pole lowpass at 7 kHz and 10-bit crush. A flick in the sweet spot."
     }
   ]
 }

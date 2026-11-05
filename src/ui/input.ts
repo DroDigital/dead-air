@@ -1,5 +1,7 @@
+import { GamepadInput } from './gamepad';
+
 /**
- * Input: keyboard + mouse → abstract actions. Full keyboard play and full mouse play.
+ * Input: keyboard + mouse + gamepad → abstract actions. Full keyboard play and full mouse play.
  * Actions arriving while the presentation is busy are queued (max 2) instead of dropped,
  * except for fast-forward/pause which always go through.
  */
@@ -22,10 +24,29 @@ export class Input {
   mouse = { x: -1, y: -1, inside: false, down: false };
   private queue: Action[] = [];
   private spaceHeld = false;
+  private gamepad = new GamepadInput((action) => {
+    if (action.type === 'click') {
+      if (!this.mouse.inside) { this.mouse.x = this.cursorWidth / 2; this.mouse.y = this.cursorHeight / 2; }
+      this.mouse.inside = true;
+      this.onGamepadAction({ ...action, x: this.mouse.x, y: this.mouse.y });
+    } else this.onGamepadAction(action);
+  }, (x, y) => {
+    if (!this.mouse.inside) {
+      this.mouse.x = this.cursorWidth / 2;
+      this.mouse.y = this.cursorHeight / 2;
+    }
+    this.mouse.inside = true;
+    this.mouse.x = Math.max(0, Math.min(this.cursorWidth - 1, this.mouse.x + x * this.cursorSpeed));
+    this.mouse.y = Math.max(0, Math.min(this.cursorHeight - 1, this.mouse.y + y * this.cursorSpeed));
+  });
+  private cursorWidth = 320;
+  private cursorHeight = 180;
+  private cursorSpeed = 0;
   enabled = true;
   /** Map CSS px → internal px (provided by the app). */
   toInternal: (x: number, y: number) => { x: number; y: number } | null = () => null;
   onAction: (a: Action) => void = () => {};
+  onGamepadAction: (a: Action) => void = (a) => this.push(a);
   isBusy: () => boolean = () => false;
 
   constructor(el: HTMLElement) {
@@ -114,6 +135,14 @@ export class Input {
     if (this.queue.length < 2) this.queue.push(a);
   }
 
+  /** Poll once per animation frame. Cursor coordinates are in the game's internal pixels. */
+  pollGamepad(dt: number, width: number, height: number): void {
+    this.cursorWidth = width;
+    this.cursorHeight = height;
+    this.cursorSpeed = width * Math.min(dt, 0.05) * 0.8;
+    this.gamepad.update(typeof navigator.getGamepads === 'function' ? Array.from(navigator.getGamepads()) : [], dt);
+  }
+
   /** Called every frame: replay queued actions once the presentation is idle. */
   flush(): void {
     if (this.isBusy() || !this.queue.length) return;
@@ -126,6 +155,6 @@ export class Input {
   }
 
   get leverHeld(): boolean {
-    return this.spaceHeld || this.mouse.down;
+    return this.spaceHeld || this.mouse.down || this.gamepad.leverHeld;
   }
 }

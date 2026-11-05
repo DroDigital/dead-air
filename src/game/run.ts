@@ -10,6 +10,7 @@ import { SCRATCH_CARDS, scratchDef } from '../content/scratchCards';
 import { WEDGES } from '../content/wedges';
 import { startingWheel } from '../content/wheels';
 import { EventBus } from '../core/events';
+import { CHALLENGES, type ChallengeDef, type ChallengeEvent } from '../content/challenges';
 import { makeStreams, restoreStreams, streamStates, type RngStreams } from '../core/rng';
 import { BALANCE, baseDebt, round50 } from './balance';
 import type {
@@ -69,6 +70,7 @@ export interface GameEvents extends Record<string, unknown> {
   streak: { value: number };
   phase: { from: RunPhase; to: RunPhase };
   deadlineStart: { deadline: number; debt: number; mutator: string | null };
+  challenge: { id: string };
   deadlineEnd: DeadlineEndResult;
   deposit: DepositResult;
   artifactGained: { id: string; slot: number };
@@ -657,6 +659,10 @@ export class Game implements PayoutHost {
     run.boost = 0;
     run.overrides = [];
     run.marks.depositedThisDeadline = 0;
+    // The Sponsor's Challenge for this Deadline (events stream, so it is part of the replay).
+    run.marks.chal = this.rng.events.int(CHALLENGES.length) + 1;
+    run.marks.chalProg = 0;
+    run.marks.chalDone = 0;
     run.phone = null;
     run.shop = null;
     this.triggerSink = [];
@@ -708,10 +714,15 @@ export class Game implements PayoutHost {
   // =====================================================================================
   // Spinning
   // =====================================================================================
-  spin(power: number, opts: { peek?: boolean } = {}): SpinOutcome {
+  /**
+   * Spin with a lever power 0..1. `startAngle` is where a player who grabbed the wheel by hand
+   * let go of it: the spin starts from there instead of where it last stopped.
+   */
+  spin(power: number, opts: { peek?: boolean; startAngle?: number } = {}): SpinOutcome {
     this.assertPhase('AwaitAction');
     const run = this.run;
     if (run.spinsLeft <= 0) throw new Error('No spins left');
+    if (opts.startAngle !== undefined && Number.isFinite(opts.startAngle)) run.wheelAngle = mod360(opts.startAngle);
     this.triggerSink = [];
     this.notes = [];
     const layout = this.layout();
@@ -870,6 +881,7 @@ export class Game implements PayoutHost {
       spinNo: ps.spinNo,
     });
 
+    this.challengeEvent({ type: 'spin', kind: seg.kind, cash: payout.cash, combos: payout.combos, streak: run.streak, tray: run.tray, sweet: !!ps.sweet });
     if (payout.deadAir) this.openPhone('deadAir', 'AwaitAction');
     this.prepareNextSpin();
 
@@ -972,6 +984,7 @@ export class Game implements PayoutHost {
     const amount = run.tray;
     this.addTray(-amount, 'deposit');
     this.addVault(amount - lost + ctx.bonusVault, 'deposit');
+    if (!auto) this.challengeEvent({ type: 'deposit', amount });
     if (!auto) {
       run.marks.depositedThisDeadline = 1;
       run.stats.deposits += 1;
@@ -986,6 +999,62 @@ export class Game implements PayoutHost {
     this.bus.emit('deposit', res);
     if (!auto) this.changed('deposit');
     return res;
+  }
+
+  /** Double or Nothing is offered once per Deadline when the Tray holds at least BALANCE.gambleMin. */
+  canGamble(): boolean {
+    const r = this.run;
+    return r.phase === 'AwaitAction' && r.tray >= BALANCE.gambleMin && r.marks.gambledAt !== r.deadline;
+  }
+
+  /**
+   * Stake the whole Tray on an even-odds flip (the events stream, so replays stay deterministic).
+   * Win: the Tray doubles and the Streak stands. Lose: the Tray empties and the Streak resets.
+   * Expected value is exactly zero; it trades certainty for variance.
+   */
+  gamble(): { won: boolean; stake: number; tray: number } {
+    this.assertPhase('AwaitAction');
+    if (!this.canGamble()) throw new Error('Double or Nothing is not available');
+    const run = this.run;
+    const stake = run.tray;
+    run.marks.gambledAt = run.deadline;
+    const won = this.rng.events.chance(0.5);
+    if (won) this.addTray(stake, 'gamble');
+    else {
+      this.addTray(-stake, 'gamble');
+      run.streak = this.streakBase();
+      run.cashRun = 0;
+      this.bus.emit('streak', { value: run.streak });
+    }
+    this.changed('gamble');
+    return { won, stake, tray: run.tray };
+  }
+
+  /** This Deadline's Sponsor's Challenge, if any. */
+  challenge(): { def: ChallengeDef; target: number; progress: number; done: boolean } | null {
+    const i = this.run.marks.chal;
+    if (!i) return null;
+    const def = CHALLENGES[i - 1];
+    if (!def) return null;
+    return { def, target: def.target(this.run), progress: this.run.marks.chalProg ?? 0, done: !!this.run.marks.chalDone };
+  }
+
+  private challengeEvent(e: ChallengeEvent): void {
+    const c = this.challenge();
+    if (!c || c.done) return;
+    if (e.type === 'deposit' && c.def.resetOnDeposit) {
+      this.run.marks.chalProg = 0;
+      return;
+    }
+    const v = c.def.progress(e, this.run);
+    const prog = c.def.mode === 'count' ? c.progress + v : Math.max(c.progress, v);
+    this.run.marks.chalProg = prog;
+    if (prog >= c.target) {
+      this.run.marks.chalDone = 1;
+      this.addTokens(c.def.reward, 'challenge');
+      this.note(`SPONSOR'S CHALLENGE: +${c.def.reward} TOKEN${c.def.reward > 1 ? 'S' : ''}`);
+      this.bus.emit('challenge', { id: c.def.id });
+    }
   }
 
   canUseScratch(i: number): boolean {
