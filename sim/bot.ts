@@ -6,6 +6,7 @@ import { artifactDef } from '../src/content/artifacts';
 import { bargainDef } from '../src/content/bargains';
 import { scratchDef } from '../src/content/scratchCards';
 import { WEDGES } from '../src/content/wedges';
+import { Rng } from '../src/core/rng';
 import { BALANCE } from '../src/game/balance';
 import type { Game } from '../src/game/run';
 import type { PackageId, Segment } from '../src/game/types';
@@ -83,6 +84,7 @@ const ARTIFACT_SCORE: Record<string, number> = {
   neighbors_envy: 8,
   iron_nerve: 6,
   hot_hand: 7,
+  glass_eye: 3,
   gilded_clapper: 6,
   loaded_flapper: 7,
   metronome: 8,
@@ -153,8 +155,11 @@ function wedgeWorth(g: Game, s: Segment): number {
 // The bot
 // ---------------------------------------------------------------------------------------
 export class Bot {
+  private rng: Rng;
   private ridden = 0;
-  constructor(readonly policy: Policy) {}
+  constructor(readonly policy: Policy, seed: string) {
+    this.rng = new Rng(`bot:${seed}`);
+  }
 
   shouldDeposit(g: Game): boolean {
     const r = g.run;
@@ -205,7 +210,7 @@ export class Bot {
           if (!g.canUseScratch(i)) continue;
           const d = scratchDef(id);
           const useful =
-            id === 'insurance' ? r.tray > 200 : id === 'hot_streak' || id === 'freeze' || id === 'polish' || id === 'lucky_coin' || id === 'rebate' || id === 'static_burst' ? true : id === 'safe_deposit' ? r.streak > 1.5 : false;
+            id === 'insurance' ? r.tray > 200 : id === 'hot_streak' || id === 'freeze' || id === 'peek' || id === 'polish' || id === 'lucky_coin' || id === 'rebate' || id === 'static_burst' ? true : id === 'safe_deposit' ? r.streak > 1.5 : id === 'lock' ? (r.history[r.history.length - 1]?.cash ?? 0) > 150 : false;
           if (useful && d) g.useScratch(i);
         }
         if (this.shouldDeposit(g)) {
@@ -214,7 +219,22 @@ export class Bot {
           return true;
         }
         if (r.spinsLeft <= 0) return true;
-        g.spin();
+        // Simulate varying release timing with a separate, seeded player-input stream.
+        let power = this.rng.float();
+        const peek = g.canPeek();
+        if (peek) {
+          // A player can watch the preview as the meter moves and release on a useful wedge.
+          const layout = g.layout();
+          let best = -Infinity;
+          for (const candidate of [power, 0.2, 0.4, 0.6, 0.8, 1]) {
+            const value = wedgeWorth(g, layout.segments[g.previewLanding(candidate).segIdx]);
+            if (value > best) {
+              best = value;
+              power = candidate;
+            }
+          }
+        }
+        g.spin(power, { peek });
         this.ridden++;
         if (g.run.streak <= g.streakBase()) this.ridden = 0;
         return true;

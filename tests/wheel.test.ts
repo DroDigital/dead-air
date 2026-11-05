@@ -11,6 +11,7 @@ import {
   segmentAt,
   simulateRingOnly,
   simulateSpin,
+  meterValue,
 } from '../src/game/wheel';
 
 function wedges(kinds: WedgeKind[], widths?: number[]): Wedge[] {
@@ -192,5 +193,14 @@ describe('simulateSpin', () => {
     expect(a.innerIndex).toBeGreaterThanOrEqual(0);
     expect(a.innerIndex).toBeLessThan(8);
     expect(ringSegmentAt(8, a.finalRingAngle)).toBe(a.innerIndex);
+  });
+});
+
+
+describe('lever power meter', () => {
+  it('oscillates from zero to full power and back', () => {
+    expect(meterValue(0)).toBeCloseTo(0);
+    expect(meterValue(0.75)).toBeCloseTo(1);
+    expect(meterValue(1.5)).toBeCloseTo(0);
   });
 });

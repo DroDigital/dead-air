@@ -75,7 +75,7 @@ git push origin v0.1.0
 
 You stay seated and look between four stations (**arrow keys / WASD**, mouse wheel, or the on-screen arrows):
 
-- **CENTER — the wheel.** Press **SPACE** (or click the red lever) to spin. Or **grab the wheel with the mouse**: drag it round (the pegs click past the glove) and flick it clockwise to let go. A feeble or backwards flick springs back without spending the spin. Every spin's power is random, so where the wheel lands is down to chance.
+- **CENTER — the wheel.** Hold **SPACE** (or hold the red lever) and watch the power meter; release to spin at the indicated power. Or **grab the wheel with the mouse**: drag it round (the pegs click past the glove), flick it clockwise and let go. Flick speed controls power; a feeble or backwards flick springs back without spending the spin. With the Glass Eye or a Peek card, press **E** while charging to preview the landing.
 - **DOWN — Tray & Vault.** Winnings land in the glass **Tray** (at risk). Every spin you don't deposit grows your **Streak** (+0.25, cash only). **ENTER** / the red **DEPOSIT** button sweeps the Tray into the **Vault** (safe) and resets the Streak. **1–3** scratch a card.
 - **Sponsor's Challenge.** Each Deadline opens with one goal (score a combo, ride the Streak to ×2, hold a big Tray, ride four spins without depositing, land a prize). It shows top left and pays 1–2 Tokens.
 - **D — Double or Nothing.** Once per Deadline, with $300+ in the Tray: stake all of it on an even-odds flip. Win and it doubles (the Streak stands); lose and it's gone (the Streak resets).
@@ -84,7 +84,7 @@ You stay seated and look between four stations (**arrow keys / WASD**, mouse whe
 
 **F** toggles fast mode, **ESC** pauses. Everything is also clickable.
 
-A standard gamepad is supported: use the **D-pad / left stick** to look and navigate choices, **A / Cross** to confirm or deposit, **B / Circle** to go back or sell a selected artifact, and press **X / Square** to spin. **Y / Triangle** offers Double or Nothing, **RB / R1** toggles fast mode, and **Start / Options** pauses. Move the scene cursor with the **right stick** and press **RT / R2** to click cards, artifacts, shop items, and services; click an artifact and then another slot to swap them. In menus, use the D-pad / left stick and A / Cross, and use left/right to adjust settings. Connect a controller and press a button if the browser has not detected it yet.
+A standard gamepad is supported: use the **D-pad / left stick** to look and navigate choices, **A / Cross** to confirm or deposit, **B / Circle** to go back or sell a selected artifact, and hold **X / Square** to charge the lever (release to spin). **Y / Triangle** offers Double or Nothing, **LB / L1** peeks while charging, **RB / R1** toggles fast mode, and **Start / Options** pauses. Move the scene cursor with the **right stick** and press **RT / R2** to click cards, artifacts, shop items, and services; click an artifact and then another slot to swap them. In menus, use the D-pad / left stick and A / Cross, and use left/right to adjust settings. Connect a controller and press a button if the browser has not detected it yet.
 
 All four Stakes are available when starting a run. Choose a higher Stake for more Debt, extra Bankrupt wedges, and higher shop prices; the setup screen lists the exact changes.
 

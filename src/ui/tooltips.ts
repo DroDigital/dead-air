@@ -70,7 +70,7 @@ export function tooltipFor(hit: PickHit, g: Game | null): string | null {
   }
   if (id === 'phone') return r.phase === 'PhoneCall' ? 'THE PHONE IS RINGING\n[ENTER] to answer' : 'A ROTARY PHONE\nIt only rings when the Producer wants something.';
   if (id === 'host') return 'YOUR HOST\nAlways smiling. Always.';
-  if (id === 'lever') return `THE LEVER [SPACE]\nPull it to spin. Where the wheel lands is down to chance.\nSPINS LEFT ${r.spinsLeft}`;
+  if (id === 'lever') return `THE LEVER [HOLD SPACE]\nRelease to spin at the power shown on the meter.${g.canPeek() ? '\n[E] while charging: PREVIEW' : ''}\nSPINS LEFT ${r.spinsLeft}`;
   if (id === 'crank') return r.shop ? `THE CRANK [R]\nRotate new stock into view.\nCOST ${r.shop.freeRerolls > 0 ? 'FREE' : `${r.shop.rerollCost} TOK`}` : 'THE CRANK\nThe cabinet is closed.';
   if (id === 'services' && hit.uv) {
     const b: ServiceButton = SERVICE_BUTTONS[Math.min(5, (Math.min(2, Math.floor((1 - hit.uv.y) * 3)) * 2 + (hit.uv.x < 0.5 ? 0 : 1)))];

@@ -518,3 +518,9 @@ export function simulateRingOnly(ringLen: number, startAngle: number, rng: Rng):
   samples.push(alpha);
   return { innerIndex: ringSegmentAt(ringLen, alpha), finalRingAngle: alpha, trace: new Float32Array(samples), duration: t };
 }
+
+/** The lever meter value at time t (triangle wave 0..1). */
+export function meterValue(t: number, period = BALANCE.meterPeriod): number {
+  const ph = (t / period) % 1;
+  return ph < 0.5 ? ph * 2 : 2 - ph * 2;
+}

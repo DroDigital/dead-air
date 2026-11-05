@@ -48,6 +48,9 @@ export const BALANCE = {
   neighborsThreshold: 2, // degrees [BRIEF]
 
 
+  // ---- Lever --------------------------------------------------------------------------
+  meterPeriod: 1.5,
+
   // ---- Shop ---------------------------------------------------------------------------
   /** Added to every artifact's listed cost in the Prize Cabinet. */
   artifactPriceAdd: 3,
