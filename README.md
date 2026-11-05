@@ -30,6 +30,7 @@ Open the printed URL. Other scripts:
 | `npm run desktop:dev` | Desktop launcher pointed at a running `npm run dev` (hot reload, DevTools) |
 | `npm run dist:mac` / `dist:win` / `dist:linux` | Package the desktop app into `release/` (see **Desktop builds**) |
 | `npx tsx tools/desktop-icon.ts` | Redraw the app icon (`desktop/icon.png`) |
+| `npx tsx tools/video.ts` | Encode the intro cutscene and the loading banner with the VHS treatment into `public/assets/video/` (originals in `assets-src/video/`) |
 | `node tools/itch-kit/build.mjs` | Compose the itch.io page art in `itch/` from the art pack (cover, banner, logos, headers, cast GIFs, the edge-haunt background); see `itch/README.md` |
 | `node tools/itch-kit/capture.mjs` | Capture the itch.io screenshots and gameplay GIFs from the running preview build, on a frame-stepped clock |
 | `npx tsx tools/vo.ts script \| pending \| split <batch> <file> \| cut <speaker> <old> <new> [spans] \| index` | Voice-over script, batch splitting, shortening a line to some of its sentences without re-recording, and the runtime clip index (see the file header) |

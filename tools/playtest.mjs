@@ -181,7 +181,7 @@ if (opt.unlock) {
   const meta = { v: 1, savedAt: Date.now(), data: { v: 1, ratings: 600, totalRatings: 600, runs: 12, wins: 1, bestDeadline: 5, bestStakeWon: -1, seenArtifacts: [], unlocked: [], secretFound: false, truthFound: false, lifetime: { bankrupts: 4, jackpots: 1, phoneCalls: 3, deadAir: 0, maxStreak: 3, fullShelf: 0, spins: 90 }, lastSeed: '' } };
   await page.addInitScript((m) => { try { if (!localStorage.getItem('deadair.meta')) localStorage.setItem('deadair.meta', JSON.stringify(m)); } catch { /* storage blocked */ } }, meta);
 }
-await page.goto(opt.url);
+await page.goto(opt.url.includes('?') ? `${opt.url}&skipintro` : `${opt.url}?skipintro`);
 await page.waitForFunction(() => window.deadAir && window.deadAir.stage && window.deadAir.fsm.state === 'Menu', null, { timeout: 90000 });
 await page.evaluate(HOOKS);
 

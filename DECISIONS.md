@@ -102,6 +102,14 @@ The only library over ~100 kB gz is three.js. GSAP measures ~28 kB gz. Built app
 - **itch.io gets the unpacked app**, not the installer, so the itch app can install, launch and patch it with butler's diffs.
 - **The app icon is the host's TV head** from the art pack, clipped to a round window on the wheel's sunburst and set in an 824 px rounded tile (macOS keeps icon artwork inside that safe area). The head art is 290 px, so it is upscaled once. The window's rim covers the clip edge, which hides the bow tie and the strokes under the cabinet. `tools/desktop-icon.ts` regenerates `desktop/icon.png` from `public/assets/art/host/head.png`.
 
+## Intro and loading
+
+- **The loading banner is the owner's "please stand by" video, scrubbed to the real loading progress.** Its own tuning bar runs from 0.2 s to 5.1 s, so the loader seeks to the point that matches the work done (`src/ui/bootTimeline.ts`). The bar climbs at most 0.42 a second, so a fast load still plays the banner through and the bar never runs ahead of the work. Where the platform cannot seek the video (the desktop shell's media protocol may not serve byte ranges), the banner plays through instead.
+- **Both videos carry the VHS treatment in the asset build** (`tools/video.ts`): colour fringe, 240-line scanlines, grain, a rolling tracking bar, vignette and worn-tape warmth. It is baked in, so every platform shows the same tape. The intro keeps its soundtrack.
+- **Press to start.** Browsers only let a video sound after a user gesture, so the intro waits behind a "press any key" prompt. That press also unlocks the audio mixer. The menu's music waits for the intro to end, and the intro takes the place of the host's greeting.
+- **The intro's camera pushes in on the host's last raise** (13.6 s in, as the curtain is revealed): an ease to 1.16 times with a 2.2 px blur over 0.7 s, toward the raised hand. It is a CSS transform on the playing video, so it can be tuned without re-encoding.
+- **`?skipintro`** skips the loader's wait and the intro. The browser checks (`tools/scenarios.mjs`, `tools/shot.mjs`, `tools/playtest.mjs`) use it.
+
 ## Phone dialogue length
 
 - Every caller line on a phone card is at most two sentences (a test enforces it). The lines were shortened by keeping two of their original sentences, so the existing voice takes were cut rather than re-recorded (`tools/vo.ts cut`). Sentence timings for the cuts came from a forced alignment of each take against its script (pocketsphinx), because the silence-based aligner misplaces boundaries around very short sentences ("Cash. Today.").

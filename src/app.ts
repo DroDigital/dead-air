@@ -29,6 +29,7 @@ import { angleForSegment, inSweetSpot, meterValue, mod360 } from './game/wheel';
 import { CabinetView, type ServiceButton } from './render/scene/cabinet';
 import { buildProp } from './render/scene/props';
 import { Stage } from './render/stage';
+import { BootScreens } from './ui/bootScreens';
 import { Hud, type ChoicePanel } from './ui/hud';
 import { Input, type Action } from './ui/input';
 import { Menus } from './ui/menus';
@@ -71,7 +72,9 @@ export class App {
   private metaSlot = new SaveSlot<MetaState>(SAVE_KEYS.meta, META_VERSION, META_MIGRATIONS, this.storage);
   private settingsSlot = new SaveSlot<Settings>(SAVE_KEYS.settings, SETTINGS_VERSION, SETTINGS_MIGRATIONS, this.storage);
   private busy = 0;
-  private loading = 0;
+  private bootScreens: BootScreens | null = null;
+  /** True until the intro has played or been skipped: the menu's sound waits for it. */
+  private introPending = false;
   private time = 0;
   private hitstop = 0;
   private charge: { t: number; peek: boolean; lastTick: number } | null = null;
@@ -142,24 +145,18 @@ export class App {
         audioStarted = true;
         window.removeEventListener('pointerdown', firstGesture);
         window.removeEventListener('keydown', firstGesture);
-        if (!this.game) {
-          this.music.setTrack('menu');
-          this.music.start();
-        }
-        this.music.kick();
-        this.music.startAmbience();
-        this.mixer.setVolumes(this.settings);
-        // The broadcast greets whoever touched it first.
-        if (!this.game) {
-          const t = HOST_LINES.title[Math.floor(Math.random() * HOST_LINES.title.length)];
-          setTimeout(() => !this.game && this.vo.play('host', t, { wear: 0.25, glitch: 0.1 }), 600);
-        }
+        // While the intro plays, its soundtrack is the only sound; the menu's music waits for it.
+        if (!this.introPending) this.startMenuAudio(true);
       }).catch(() => { /* A later user gesture can retry audio. */ });
     };
     window.addEventListener('pointerdown', firstGesture);
     window.addEventListener('keydown', firstGesture);
     this.input.onGamepadAction = (a) => {
       firstGesture();
+      if (this.introPending) {
+        this.bootScreens?.press();
+        return;
+      }
       if (this.menus.open) {
         if (a.type === 'pause' && this.menus.page === 'pause') this.resume();
         else this.menus.action(a);
@@ -167,23 +164,14 @@ export class App {
     };
 
     void art.preload(undefined, (id) => id === 'screen.standby');
-    // Diegetic loading screen: a 2D pixel canvas (studio lights powering on one by one).
-    const lc = document.createElement('canvas');
-    lc.id = 'loading';
-    lc.width = 320;
-    lc.height = 180;
-    document.body.appendChild(lc);
-    const lctx = lc.getContext('2d')!;
-    let loadingDone = false;
-    const loop = (t: number) => {
-      if (loadingDone) return;
-      this.hud.drawLoading(lctx, 320, 180, 1, this.loading, t / 1000);
-      requestAnimationFrame(loop);
-    };
-    requestAnimationFrame(loop);
+    // The boot: the VHS loading banner runs to the real progress, then (unless skipped) the intro.
+    const skipIntro = new URLSearchParams(location.search).has('skipintro');
+    this.introPending = !skipIntro;
+    const screens = new BootScreens(() => this.settings.masterVolume);
+    this.bootScreens = screens;
     await Promise.all([
       this.assets.preload((p) => {
-        this.loading = p;
+        screens.progress(p);
         this.sfx.play('powerup', { gain: 0.15, pitch: 0.8 + p * 0.6 });
       }),
       art.preload(),
@@ -191,19 +179,37 @@ export class App {
     await this.sfx.loadFiles();
     void this.music.loadTracks();
     this.vo.preload(Object.values(HOST_LINES).flat().map((text) => ({ speaker: 'host' as const, text })));
-    this.loading = 1;
-    await wait(0.3);
-    loadingDone = true;
-    lc.parentElement?.removeChild(lc);
+    screens.progress(1);
     this.buildStage();
     this.wireInput();
     window.addEventListener('resize', () => this.stage.resize());
     this.applySettings(this.settings);
     requestAnimationFrame((t) => this.frame(t));
+    await screens.whenReady(skipIntro);
+    if (skipIntro) screens.close();
+    else await screens.playIntro();
+    this.introPending = false;
+    this.bootScreens = null;
+    if (!skipIntro && this.mixer.running) this.startMenuAudio(false);
     await this.powerOn();
     this.fsm.go('Menu');
     this.menus.show('title');
     if (new URLSearchParams(location.search).has('debug')) this.debug = true;
+  }
+
+  /** The menu's music and ambience. On a first touch the host greets the player, unless the intro already did. */
+  private startMenuAudio(greet: boolean): void {
+    if (!this.game) {
+      this.music.setTrack('menu');
+      this.music.start();
+    }
+    this.music.kick();
+    this.music.startAmbience();
+    this.mixer.setVolumes(this.settings);
+    if (greet && !this.game) {
+      const t = HOST_LINES.title[Math.floor(Math.random() * HOST_LINES.title.length)];
+      setTimeout(() => !this.game && this.vo.play('host', t, { wear: 0.25, glitch: 0.1 }), 600);
+    }
   }
 
   private buildStage(): void {

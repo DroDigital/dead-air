@@ -14,7 +14,7 @@ page.on('console', (m) => {
   if (!m.text().includes('useProgram')) logs.push(`[${m.type()}] ${m.text()}`);
 });
 page.on('pageerror', (e) => logs.push(`[pageerror] ${e.message}\n${e.stack}`));
-await page.goto(url);
+await page.goto(url.includes('?') ? `${url}&skipintro` : `${url}?skipintro`);
 const snap = async (name) => page.screenshot({ path: `${out}/${name}.png` });
 const sleep = (ms) => page.waitForTimeout(ms);
 const state = () => page.evaluate(() => ({ phase: window.deadAir.game?.run.phase ?? null, choice: !!window.deadAir.hud.choice, fsm: window.deadAir.fsm.state, busy: window.deadAir.busy }));
