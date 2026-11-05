@@ -24,7 +24,7 @@ const browser = await chromium.launch({ args: ['--use-gl=angle', '--use-angle=sw
 const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
 page.on('pageerror', (e) => pageErrors.push(e.message));
 page.on('dialog', (d) => d.accept());
-await page.goto(url);
+await page.goto(url.includes('?') ? `${url}&skipintro` : `${url}?skipintro`);
 await page.waitForFunction(() => window.deadAir && window.deadAir.stage && window.deadAir.fsm.state === 'Menu', null, { timeout: 90000 });
 
 const idle = (ms = 15000) =>

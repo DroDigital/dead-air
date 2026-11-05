@@ -21,16 +21,42 @@
         cursor: none;
         image-rendering: pixelated;
       }
-      #loading {
+      /* Boot: the VHS loading banner (scrubbed to the real progress), then the VHS intro cutscene. */
+      #boot {
         position: fixed;
         inset: 0;
-        width: 100vw;
-        height: 56.25vw;
-        max-height: 100vh;
-        max-width: 177.78vh;
-        margin: auto;
-        image-rendering: pixelated;
-        z-index: 5;
+        z-index: 20;
+        background: #000;
+        transition: opacity 0.45s ease;
+      }
+      #boot.out {
+        opacity: 0;
+        pointer-events: none;
+      }
+      #boot .boot-video {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+      }
+      #boot .boot-prompt {
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 14%;
+        text-align: center;
+        font-family: 'DeadAirPixel', 'Courier New', monospace;
+        font-size: min(3vw, 5vh);
+        letter-spacing: 0.12em;
+        color: #fbe3c2;
+        text-shadow: 0.1em 0.1em 0 #1a0a04;
+        animation: boot-blink 1.1s steps(2, start) infinite;
+      }
+      @keyframes boot-blink {
+        to {
+          visibility: hidden;
+        }
       }
       #menus {
         position: fixed;
