@@ -1,5 +1,5 @@
 /**
- * The lever on the chair arm, and the little display under it that counts the spins left.
+ * The lever on the chair arm, with its oscillating power meter.
  */
 import * as THREE from 'three';
 import { drawText } from '../../ui/bitfont';
@@ -32,15 +32,30 @@ export class LeverView {
     dm.rotation.set(-0.15, 0.35, 0);
     g.add(dm);
     pickable(dm, 'lever');
-    this.drawDisplay('');
+    this.drawGauge(0, false, false);
   }
 
-  /** The display under the lever: the spins left, or a dash when the lever is not live. */
-  drawDisplay(label: string): void {
+  drawGauge(power: number, charging: boolean, peek: boolean, label?: string): void {
     this.display.draw((ctx, w, h) => {
       ctx.fillStyle = '#100a06';
       ctx.fillRect(0, 0, w, h);
-      drawText(ctx, label, w / 2, h - 6, { align: 'center', color: '#c8b080' });
+      const cx = w / 2, cy = h - 6, r = 26;
+      ctx.fillStyle = '#c8b080';
+      for (let i = 0; i <= 20; i++) {
+        const a = Math.PI + (i / 20) * Math.PI;
+        ctx.fillRect(Math.round(cx + Math.cos(a) * r), Math.round(cy + Math.sin(a) * r), 1, 1);
+      }
+      const a = Math.PI + power * Math.PI;
+      ctx.strokeStyle = charging ? '#ff3020' : '#806050';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.lineTo(Math.round(cx + Math.cos(a) * (r - 2)), Math.round(cy + Math.sin(a) * (r - 2)));
+      ctx.stroke();
+      ctx.fillStyle = '#d0a030';
+      ctx.fillRect(cx - 1, cy - 1, 3, 3);
+      drawText(ctx, label ?? (charging ? 'RELEASE!' : 'HOLD'), cx, h - 6, { align: 'center', color: charging ? '#ffd040' : '#806850' });
+      if (peek) drawText(ctx, 'EYE', 4, 2, { color: '#80c0ff' });
     });
   }
 

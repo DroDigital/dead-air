@@ -49,11 +49,12 @@ import {
   noPhysicsMods,
   simulateRingOnly,
   simulateSpin,
+  type PhysicsMods,
   type SpinSim,
   type WidthMods,
 } from './wheel';
 
-export const RUN_VERSION = 2;
+export const RUN_VERSION = 3;
 
 // ---------------------------------------------------------------------------------------
 // Events for presentation
@@ -91,6 +92,8 @@ export interface SpinOutcome {
   spinNo: number;
   power: number;
   free: boolean;
+  locked: boolean;
+  peeked: boolean;
   sim: SpinSim;
   layout: Layout;
   ring: number[];
@@ -210,6 +213,8 @@ export class Game implements PayoutHost {
         vaultKey: 0,
         insurance: 0,
         doubler: 0,
+        lock: false,
+        peek: 0,
         freeze: false,
         nudge: false,
         staticBurst: false,
@@ -515,9 +520,57 @@ export class Game implements PayoutHost {
 
   /** The physics a spin runs with. Artifacts (Loaded Flapper) reshape it through `onSpinCharge`. */
   chargeContext(layout = this.layout()): ChargeCtx {
-    const ctx: ChargeCtx = { physics: noPhysicsMods(layout), segments: layout.segments };
+    const ctx: ChargeCtx = { physics: noPhysicsMods(layout), segments: layout.segments, preview: this.run.flags.peek > 0 };
     this.runHook('onSpinCharge', ctx);
     return ctx;
+  }
+
+  canPeek(): boolean {
+    return this.run.phase === 'AwaitAction' && this.chargeContext().preview;
+  }
+
+  /** Exact landing for a power value, without consuming randomness. */
+  previewLanding(power: number): { segIdx: number; innerIndex: number } {
+    const layout = this.layout();
+    const lockTarget = this.lockTargetIndex(layout);
+    const ring = this.effectiveRing();
+    const ctx = this.chargeContext(layout);
+    const mods = ctx.physics;
+    const rng = this.rng.wheel.clone();
+    if (lockTarget !== null) {
+      const res = this.searchLock(layout, ring.length, power, mods, lockTarget, rng);
+      if (res) return { segIdx: res.outerIndex, innerIndex: res.innerIndex };
+    }
+    const sim = simulateSpin(
+      { layout, ringLen: ring.length, power, startAngle: this.run.wheelAngle, ringStartAngle: this.run.ringAngle, mods, noTrace: true },
+      rng,
+    );
+    return { segIdx: sim.outerIndex, innerIndex: sim.innerIndex };
+  }
+
+  private lockTargetIndex(layout: Layout): number | null {
+    if (!this.run.flags.lock) return null;
+    const last = this.run.history[this.run.history.length - 1];
+    if (!last) return null;
+    const i = layout.segments.findIndex((s) => s.uid === last.uid && s.idx === last.segIdx);
+    if (i >= 0) return i;
+    const j = layout.segments.findIndex((s) => s.uid === last.uid);
+    return j >= 0 ? j : null;
+  }
+
+  private searchLock(layout: Layout, ringLen: number, power: number, mods: PhysicsMods, target: number, rng: RngStreams['wheel']): SpinSim | null {
+    for (let trial = 0; trial < 400; trial++) {
+      const before = rng.getState();
+      const sim = simulateSpin(
+        { layout, ringLen, power, startAngle: this.run.wheelAngle, ringStartAngle: this.run.ringAngle, mods, noTrace: true },
+        rng,
+      );
+      if (sim.outerIndex === target) {
+        rng.setState(before);
+        return simulateSpin({ layout, ringLen, power, startAngle: this.run.wheelAngle, ringStartAngle: this.run.ringAngle, mods }, rng);
+      }
+    }
+    return null;
   }
 
   // =====================================================================================
@@ -635,12 +688,8 @@ export class Game implements PayoutHost {
   // =====================================================================================
   // Spinning
   // =====================================================================================
-  /**
-   * One spin. Its power is drawn from the wheel's random stream, so where the wheel lands is down to chance.
-   * `startAngle` is where a player who grabbed the wheel by hand let go of it: the spin starts from there
-   * instead of where it last stopped.
-   */
-  spin(opts: { startAngle?: number } = {}): SpinOutcome {
+  /** Spin with player-controlled power. Hand spins can supply their release angle. */
+  spin(power: number, opts: { peek?: boolean; startAngle?: number } = {}): SpinOutcome {
     this.assertPhase('AwaitAction');
     const run = this.run;
     if (run.spinsLeft <= 0) throw new Error('No spins left');
@@ -649,8 +698,17 @@ export class Game implements PayoutHost {
     this.notes = [];
     const layout = this.layout();
     const ring = this.effectiveRing();
-    const mods = this.chargeContext(layout).physics;
-    const power = this.rng.wheel.float();
+    const ctx = this.chargeContext(layout);
+    const mods = ctx.physics;
+    let peeked = false;
+    if (opts.peek && ctx.preview) {
+      peeked = true;
+      if (run.flags.peek > 0) run.flags.peek -= 1;
+      else {
+        const eye = this.active().find((a) => a.def.id === 'glass_eye' && !a.inst.state.used);
+        if (eye) eye.inst.state.used = 1;
+      }
+    }
 
     const free = run.flags.freeze;
     if (free) run.flags.freeze = false;
@@ -659,10 +717,20 @@ export class Game implements PayoutHost {
     run.stats.spins += 1;
     const spinNo = run.stats.spins;
 
-    const sim = simulateSpin(
-      { layout, ringLen: ring.length, power, startAngle: run.wheelAngle, ringStartAngle: run.ringAngle, mods },
-      this.rng.wheel,
-    );
+    let sim: SpinSim | null = null;
+    let locked = false;
+    const lockTarget = this.lockTargetIndex(layout);
+    if (lockTarget !== null) {
+      sim = this.searchLock(layout, ring.length, power, mods, lockTarget, this.rng.wheel);
+      locked = !!sim;
+    }
+    run.flags.lock = false;
+    if (!sim) {
+      sim = simulateSpin(
+        { layout, ringLen: ring.length, power, startAngle: run.wheelAngle, ringStartAngle: run.ringAngle, mods },
+        this.rng.wheel,
+      );
+    }
     run.wheelAngle = mod360(sim.finalAngle);
     run.ringAngle = mod360(sim.finalRingAngle);
     run.flags.staticBurst = false;
@@ -676,7 +744,7 @@ export class Game implements PayoutHost {
       spinNo,
       free,
     };
-    const outcome: SpinOutcome = { spinNo, power, free, sim, layout, ring, resolution: null };
+    const outcome: SpinOutcome = { spinNo, power, free, locked, peeked, sim, layout, ring, resolution: null };
     if (run.flags.nudge) {
       run.flags.nudge = false;
       run.pendingSpin = ps;

@@ -179,6 +179,8 @@ export interface RunFlags {
   vaultKey: number;
   insurance: number;
   doubler: number;
+  lock: boolean;
+  peek: number;
   freeze: boolean;
   nudge: boolean;
   staticBurst: boolean;

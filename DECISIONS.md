@@ -27,7 +27,7 @@ The only library over ~100 kB gz is three.js. GSAP measures ~28 kB gz. Built app
 - **Boost** "+×1 on the next spin" is added to the inner-ring multiplier (step 2), so a Boost on a ×0 ring still pays ×1. It is consumed by the next spin whatever it lands on.
 - **Respin** = +1 spin (the spin it cost is given back).
 - **Jackpot counts as Cash** (gets ring, streak, artifact cash modifiers).
-- **NEIGHBORS** is evaluated in step 1 (both wedges contribute 50% of their base) and announced in step 5. Half-prizes: Tokens halve (rounded up), Tax halves, a neighbouring **Bankrupt loses half the Tray**, binary prizes (Respin, Artifact…) are awarded whole. Measured: with uniform releases the wheel stops within 2° of a boundary 26.4% of the time, matching the geometry (24 boundaries × 4° of 360° = 26.7%). The balance bot's sweet-spot releases pushed that to ~32%, because the sweet-spot bias favoured high-value wedges, which sit next to their neighbours. The sweet spot is gone now, so spins are random. The brief's 2° is kept; `neighborsThreshold` in `balance.ts` is the knob.
+- **NEIGHBORS** is evaluated in step 1 (both wedges contribute 50% of their base) and announced in step 5. Half-prizes: Tokens halve (rounded up), Tax halves, a neighbouring **Bankrupt loses half the Tray**, binary prizes (Respin, Artifact…) are awarded whole. Measured: with uniform releases the wheel stops within 2° of a boundary 26.4% of the time, matching the geometry (24 boundaries × 4° of 360° = 26.7%). The balance bot's sweet-spot releases pushed that to ~32%, because the sweet-spot bias favoured high-value wedges, which sit next to their neighbours. The sweet-spot bias has since been removed; power is controlled by the player. The brief's 2° is kept; `neighborsThreshold` in `balance.ts` is the knob.
 - **ECHO** compares the *landed* wedge type (Mystery twice = ECHO). Bankrupt/Dud/Splitter never ECHO. Cash ECHO multiplies cash; a repeatable prize ECHO awards the prize again. History resets each Deadline.
 - **HAT TRICK** fires on every 3rd consecutive cash landing (3, 6, 9…); a Deposit resets the count along with the Streak.
 - **DEAD AIR** requires an unblocked full Bankrupt with Tray > Debt; the Producer call happens right after the spin, then play resumes.
@@ -39,10 +39,10 @@ The only library over ~100 kB gz is three.js. GSAP measures ~28 kB gz. Built app
 - **Cursed Cash**: installing it also converts a low wedge into a Tax.
 - **Thief** converts 20% of the Tray into Tokens at the $50 rate (min 1).
 - **Static** decides the 5th-spin Jackpot *before* the spin (visible, striped) rather than mid-spin, so physics and visuals agree.
-- **Lock and Peek were removed** with the sweet spot. Lock rigged the next landing to the last wedge; Peek and Glass Eye previewed the landing for the power the player was choosing. Every spin's power is now drawn from the wheel's random stream, so nothing the player does changes where the wheel lands. Older saves drop the four removed items in a migration (run version 2).
+- **Lock** is implemented physically: the game searches the wheel RNG stream for a jitter that lands on the target (≤ 400 deterministic trials) and replays that trace. Same seed + same inputs → same result. **Glass Eye / Peek** show a live landing preview while charging (press **E**); the preview is the deterministic result for the current meter value.
 - **Nudge** pauses resolution after the stop and offers −1 / stay / +1 (a nudge lands mid-wedge, so no NEIGHBORS).
 - **Stopwatch and SURE GRIP were removed** with the sweet spot: the Stopwatch widened the green band, and SURE GRIP counted releases inside it.
-- **The sweet spot and the lever meter were removed.** Pulling the lever spins at once. A spin's power is drawn at random, and the wheel's physics decide the rest. Artifacts such as Loaded Flapper still reshape the physics.
+- **The lever meter controls power.** Hold the lever and release at the desired point in its sweep. There is no sweet-spot band or associated bias; artifacts such as Loaded Flapper still reshape the physics.
 - **Loaded Flapper** makes Bankrupt pegs *easier to slip past* and lets the wheel glide through Bankrupt wedges — the artifact's intent ("drag past them") is to avoid landing there.
 - **Surplus conversion.** After paying, the player picks how many $50 → Token conversions to make; whatever stays earns 10% interest, capped at $30 + $20 × Deadline (tuned). Interest is paid once, when you settle, on the surplus you keep. It does not compound every Deadline; that keeps the Vault from growing without limit.
 - **Phone timing.** Guaranteed after Deadlines 3 and 6, otherwise a per-Deadline chance; DEAD AIR always calls.
@@ -88,7 +88,7 @@ The only library over ~100 kB gz is three.js. GSAP measures ~28 kB gz. Built app
 
 ## Grabbing the wheel, and the slow-motion finishes
 
-- A hand spin uses the same physics as the lever. A flick faster than 140°/s starts the spin. Its speed no longer sets the power, which is random, and the spin starts from wherever the player let go (`startAngle` in `Game.spin`). Runs stay deterministic for the same inputs.
+- A hand spin uses the same physics as the lever. The flick’s angular speed over the last 0.12 s maps to power (140°/s is the least that spins, 1000°/s is full power), and the spin starts from wherever the player let go (`startAngle` in `Game.spin`). Runs stay deterministic for the same inputs.
 - A feeble or backwards flick springs back to where the wheel stopped, so the wheel can't be parked by hand between spins.
 - Mouse only: the gamepad cursor and keyboard keep the lever.
 - Which spins get the slow-motion finish is decided when the spin starts (the outcome is already known), so the close-up begins in time rather than reacting late. Fast mode skips it, and Reduced Flashing drops the flash frames and softens the shock.

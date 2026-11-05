@@ -350,6 +350,24 @@ const A: ArtifactDef[] = [
     },
   },
   {
+    id: 'glass_eye',
+    name: 'Glass Eye',
+    rarity: 'uncommon',
+    cost: 7,
+    text: 'Once per Deadline, preview where the wheel will land before you release the lever.',
+    flavor: 'It sees the future. It is not impressed.',
+    prop: 'eye',
+    color: 0xdfe8f0,
+    hooks: {
+      onDeadlineStart(c) {
+        c.inst.state.used = 0;
+      },
+      onSpinCharge(c, e) {
+        if (!c.inst.state.used) e.preview = true;
+      },
+    },
+  },
+  {
     id: 'gilded_clapper',
     name: 'Gilded Clapper',
     rarity: 'uncommon',

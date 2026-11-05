@@ -44,6 +44,18 @@ export const SCRATCH_CARDS: readonly ScratchDef[] = [
     },
   },
   {
+    id: 'lock',
+    name: 'Lock',
+    text: 'Your next spin lands on the same wedge as your last one.',
+    when: 'spin',
+    color: 0xd0a040,
+    usable: (r) => awaiting(r) && r.history.length > 0 && !r.flags.lock,
+    use: (ops) => {
+      ops.run.flags.lock = true;
+      ops.note('LOCKED');
+    },
+  },
+  {
     id: 'hot_streak',
     name: 'Hot Streak',
     text: 'Streak +×1.',
@@ -74,6 +86,18 @@ export const SCRATCH_CARDS: readonly ScratchDef[] = [
     use: (ops) => {
       ops.run.flags.freeze = true;
       ops.note('FROZEN');
+    },
+  },
+  {
+    id: 'peek',
+    name: 'Peek',
+    text: 'Preview where your next spin will land while charging.',
+    when: 'spin',
+    color: 0xf0f0f0,
+    usable: awaiting,
+    use: (ops) => {
+      ops.run.flags.peek += 1;
+      ops.note('PEEK READY');
     },
   },
   {

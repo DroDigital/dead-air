@@ -134,26 +134,20 @@ export const RUN_MIGRATIONS: Migrations = {
     out.v = 1;
     return out;
   },
-  // v1 → v2: Lock, Peek, Glass Eye and the Stopwatch went with the sweet spot. A saved run that still holds
-  // them loses those cards and artifacts, and the flags they set.
-  1: (d) => {
-    const out: Record<string, unknown> = { ...d };
-    if (out.flags && typeof out.flags === 'object') {
-      const flags: Record<string, unknown> = { ...(out.flags as Record<string, unknown>) };
-      delete flags.lock;
-      delete flags.peek;
-      out.flags = flags;
-    }
-    if (Array.isArray(out.scratch)) out.scratch = (out.scratch as unknown[]).filter((id) => id !== 'lock' && id !== 'peek');
-    if (Array.isArray(out.artifacts)) {
-      out.artifacts = (out.artifacts as unknown[]).filter((a) => {
-        const id = (a as { id?: unknown } | null)?.id;
-        return id !== 'glass_eye' && id !== 'stopwatch';
-      });
-    }
-    out.v = 2;
-    return out;
-  },
+  // Preserve restored cards, artifact and flags in older saves; only Stopwatch depended on the removed sweet spot.
+  1: (d) => ({
+    ...d,
+    artifacts: Array.isArray(d.artifacts)
+      ? (d.artifacts as unknown[]).filter((a) => (a as { id?: unknown } | null)?.id !== 'stopwatch')
+      : d.artifacts,
+    v: 2,
+  }),
+  // v2 saves do not have these flags. Earlier saves retain their existing values.
+  2: (d) => ({
+    ...d,
+    flags: { lock: false, peek: 0, ...(d.flags && typeof d.flags === 'object' ? d.flags : {}) },
+    v: 3,
+  }),
 };
 
 /** Meta-save migrations. v0 → v1: lifetime stats block added. */

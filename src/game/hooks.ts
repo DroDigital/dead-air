@@ -64,6 +64,8 @@ export interface HookCtx {
 export interface ChargeCtx {
   physics: PhysicsMods;
   segments: Segment[];
+  /** Glass Eye or Peek permits a live landing preview. */
+  preview: boolean;
 }
 
 export interface PayoutApi {

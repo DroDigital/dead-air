@@ -92,7 +92,7 @@ These were in `tools/playtest.mjs` and fixed while the playtest was being built:
 
 ## Checked and explained (not defects)
 
-- **NEIGHBORS fires on about 32% of spins.** With uniform releases it's 26.4%, which matches the geometry: 24 boundaries × 4° of 360° = 26.7%. The extra ~5% in bot play came from sweet-spot releases, which biased stops toward high-value wedges. Those releases are gone now. The brief's 2° is kept.
+- **NEIGHBORS fires on about 32% of spins.** With uniform releases it's 26.4%, which matches the geometry: 24 boundaries × 4° of 360° = 26.7%. The extra ~5% in bot play came from sweet-spot releases, which biased stops toward high-value wedges. The sweet-spot bias has since been removed; the player still controls power. The brief's 2° is kept.
 - **Where the wheel stops inside a wedge is not uniform.** It is more often in the middle of a wedge, where the flapper rests between two pegs. Landing probability per wedge is still proportional to its width (`tests/wheel.test.ts`).
 - **lil-gui isn't in the production bundle.** Grep of `dist/` finds no tuning-panel strings.
 - **Bundle sizes**, measured with esbuild: three.js ~190 kB gzip with its full namespace, GSAP ~28 kB. The built app is ~276 kB gzip.
