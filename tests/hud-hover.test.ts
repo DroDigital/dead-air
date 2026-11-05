@@ -16,7 +16,10 @@ function drawChoice(hud: Hud, mouse: { x: number; y: number; inside: boolean }):
   return fills;
 }
 
-const freshChoice = () => ({ title: 'CHOICE', selected: 0, options: [{ label: 'ONE' }, { label: 'TWO' }] });
+const accent = '#123456';
+const freshChoice = () => ({ title: 'CHOICE', selected: 0, accent, options: [{ label: 'ONE' }, { label: 'TWO' }] });
+const colorOf = (fills: { box: Box; color: string }[], b: Box) =>
+  fills.find((f) => f.box.x === b.x && f.box.y === b.y && f.box.w === b.w && f.box.h === b.h)?.color;
 
 it('highlights the keyboard selection until the pointer moves', () => {
   const hud = new Hud();
@@ -24,7 +27,9 @@ it('highlights the keyboard selection until the pointer moves', () => {
   hud.choice = freshChoice();
   const fills = drawChoice(hud, { x: -10, y: -10, inside: false });
   const cards = (hud as unknown as { optionRects: Box[] }).optionRects;
-  expect(fills.find((f) => f.box.x === cards[0].x && f.box.y === cards[0].y && f.box.w === cards[0].w)?.color).toBe('#3a2410');
+  expect(colorOf(fills, cards[0])).toBe(accent);
+  expect(colorOf(fills, cards[1])).toBeDefined();
+  expect(colorOf(fills, cards[1])).not.toBe(accent);
 });
 
 it('the pointer takes the highlight once it moves over a card', () => {
@@ -35,7 +40,7 @@ it('the pointer takes the highlight once it moves over a card', () => {
   const cards = (hud as unknown as { optionRects: Box[] }).optionRects;
   const second = cards[1];
   const fills = drawChoice(hud, { x: second.x + 2, y: second.y + 2, inside: true });
-  const colorOf = (b: Box) => fills.find((f) => f.box.x === b.x && f.box.y === b.y && f.box.w === b.w)?.color;
-  expect(colorOf(second)).toBe('#3a2410');
-  expect(colorOf(cards[0])).toBe('#20160c');
+  expect(colorOf(fills, second)).toBe(accent);
+  expect(colorOf(fills, cards[0])).toBeDefined();
+  expect(colorOf(fills, cards[0])).not.toBe(accent);
 });
