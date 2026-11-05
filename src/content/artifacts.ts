@@ -51,7 +51,7 @@ const A: ArtifactDef[] = [
     name: 'Stopwatch',
     rarity: 'common',
     cost: 4,
-    text: 'The lever sweet spot is much wider.',
+    text: 'Widens the green band on the lever meter. Release in it to favor valuable wedges.',
     flavor: 'Stopped at 7:42. Every clock in here did.',
     prop: 'watch',
     color: 0xc9c9c9,

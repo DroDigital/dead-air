@@ -89,7 +89,7 @@ export interface StakeDef {
 
 export const STAKES: readonly StakeDef[] = [
   { id: 0, name: 'Prime Time', text: 'The standard broadcast.', unlockAt: 0 },
-  { id: 1, name: 'Late Night', text: 'Debt +15%.', unlockAt: 80 },
-  { id: 2, name: 'Graveyard Shift', text: 'Debt +30%. One extra Bankrupt.', unlockAt: 200 },
-  { id: 3, name: 'Dead Air', text: 'Debt +30%. One extra Bankrupt. The Prize Cabinet charges +1 Token for everything.', unlockAt: 360 },
+  { id: 1, name: 'Late Night', text: 'Debt +15%.', unlockAt: 0 },
+  { id: 2, name: 'Graveyard Shift', text: 'Debt +30%. One extra Bankrupt.', unlockAt: 0 },
+  { id: 3, name: 'Dead Air', text: 'Debt +30%. One extra Bankrupt. The Prize Cabinet charges +1 Token for everything.', unlockAt: 0 },
 ];

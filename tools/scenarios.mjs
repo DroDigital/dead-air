@@ -185,7 +185,9 @@ await page.evaluate(() => {
   window.deadAir.sync(false);
 });
 await page.keyboard.press('2');
-await page.waitForTimeout(1200);
+// The package intro may still own the input after a fixed delay, especially when
+// software rendering at 2× resolution. Wait until the run can accept a spin.
+await page.waitForFunction(() => window.deadAir.game?.run.phase === 'AwaitAction' && window.deadAir.fsm.state === 'AwaitAction' && window.deadAir.busy === 0 && !window.deadAir.stage.wheel.busy, null, { timeout: 60000 });
 await page.evaluate(() => { window.deadAir.game.run.spinsLeft = 1; });
 await page.keyboard.down(' ');
 await page.waitForTimeout(300);
