@@ -146,3 +146,11 @@ export const META_MIGRATIONS: Migrations = {
     secretFound: d.secretFound ?? false,
   }),
 };
+
+/**
+ * Settings migrations. v1 → v2: the default internal resolution became 640×360. v1 saves stored
+ * 320×180, because the old default was written on first launch, so they all move to 640×360 once.
+ */
+export const SETTINGS_MIGRATIONS: Migrations = {
+  1: (d) => ({ ...d, resolutionScale: 2, v: 2 }),
+};

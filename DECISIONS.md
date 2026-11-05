@@ -104,3 +104,9 @@ The only library over ~100 kB gz is three.js. GSAP measures ~28 kB gz. Built app
 ## Phone dialogue length
 
 - Every caller line on a phone card is at most two sentences (a test enforces it). The lines were shortened by keeping two of their original sentences, so the existing voice takes were cut rather than re-recorded (`tools/vo.ts cut`). Sentence timings for the cuts came from a forced alignment of each take against its script (pocketsphinx), because the silence-based aligner misplaces boundaries around very short sentences ("Cash. Today.").
+
+## Resolution and HUD text
+
+- **The default internal resolution is 640×360.** The HUD reads cleanly at 1280×720, and the window stays a whole-number 2× on the common screen sizes. Saves from the old default (320×180, written on first launch) move to 640×360 once, through the settings v1 → v2 migration. Other settings are kept.
+- **HUD text is drawn at its native 5×7 size at every resolution** (`TS` in `src/ui/hud.ts`). It used to scale with the layout, so at 640×360 it crowded the bottom bar and captions. Boxes and spacing still scale with the resolution; text widths, line steps and wrap widths use `TS`.
+- **The HUD overlay texture is rebuilt when the resolution changes.** A three.js texture keeps the GPU size it was first made at, so at 640×360 every upload failed and the overlay disappeared.

@@ -126,6 +126,17 @@ void main() {
 }
 `;
 
+/** Overlay texture for the HUD canvas: nearest-filtered, colour passed through untouched. */
+function makeUiTex(canvas: HTMLCanvasElement): THREE.CanvasTexture {
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.magFilter = THREE.NearestFilter;
+  tex.minFilter = THREE.NearestFilter;
+  tex.generateMipmaps = false;
+  tex.colorSpace = THREE.NoColorSpace;
+  tex.flipY = true;
+  return tex;
+}
+
 export class PostFx {
   readonly rtScene: THREE.WebGLRenderTarget;
   readonly rtLow: THREE.WebGLRenderTarget;
@@ -172,12 +183,7 @@ export class PostFx {
     this.uiCanvas.height = INTERNAL_H;
     this.ui = this.uiCanvas.getContext('2d')!;
     this.ui.imageSmoothingEnabled = false;
-    this.uiTex = new THREE.CanvasTexture(this.uiCanvas);
-    this.uiTex.magFilter = THREE.NearestFilter;
-    this.uiTex.minFilter = THREE.NearestFilter;
-    this.uiTex.generateMipmaps = false;
-    this.uiTex.colorSpace = THREE.NoColorSpace;
-    this.uiTex.flipY = true;
+    this.uiTex = makeUiTex(this.uiCanvas);
 
     this.ditherMat = new THREE.ShaderMaterial({
       uniforms: {
@@ -230,6 +236,11 @@ export class PostFx {
     this.uiCanvas.width = w;
     this.uiCanvas.height = h;
     this.ui.imageSmoothingEnabled = false;
+    // A texture keeps the GPU size it was first made at, so a resized canvas needs a new texture.
+    // Without this every upload fails and the HUD overlay disappears at 640×360.
+    this.uiTex.dispose();
+    this.uiTex = makeUiTex(this.uiCanvas);
+    this.ditherMat.uniforms.tUi.value = this.uiTex;
     (this.ditherMat.uniforms.uRes.value as THREE.Vector2).set(w, h);
     (this.crtMat.uniforms.uRes.value as THREE.Vector2).set(w, h);
   }

@@ -5,6 +5,13 @@
 import { art } from '../assets/art';
 import { drawText, LINE_H, textWidth, wrapText } from './bitfont';
 
+/**
+ * HUD text is drawn at its native 5×7 pixel size (one overlay pixel per glyph pixel) at every
+ * resolution, so it reads smaller and clutters less. Boxes and spacing still scale with k; text
+ * widths, line steps and wrap widths use TS.
+ */
+const TS = 1;
+
 export interface ChoiceOption {
   label: string;
   detail?: string;
@@ -158,6 +165,7 @@ export class Hud {
     const r = this.roll;
     const H = 12 * k;
     const y = h - H;
+    const ty = y + Math.round((H - 7 * TS) / 2);
     const d = this.danger;
     const red = Math.round(30 + 40 * d * (0.6 + 0.4 * Math.sin(time * 6)));
     ctx.fillStyle = d > 0 ? 'rgba(' + red + ',4,2,0.88)' : 'rgba(10,4,2,0.86)';
@@ -183,41 +191,41 @@ export class Hud {
     const on = Math.floor(time * 1.5) % 2 === 0;
     ctx.fillStyle = on ? '#ffffff' : '#ff8070';
     ctx.fillRect(x0 + 3 * k, y + 5 * k, 3 * k, 3 * k);
-    drawText(ctx, 'LIVE', x0 + 18 * k, y + 3 * k, { align: 'center', scale: k, color: '#ffffff' });
+    drawText(ctx, 'LIVE', x0 + 18 * k, ty, { align: 'center', scale: TS, color: '#ffffff' });
     // Deadline.
     const dl = 'D' + c.deadline;
-    x0 = seg((textWidth(dl) + 8) * k, null);
-    drawText(ctx, dl, x0 + 4 * k, y + 3 * k, { scale: k, color: '#ffd040' });
+    x0 = seg(textWidth(dl, TS) + 8 * k, null);
+    drawText(ctx, dl, x0 + 4 * k, ty, { scale: TS, color: '#ffd040' });
     // Spins as pips.
     const pips = Math.min(14, Math.max(c.spinsMax, c.spins));
-    const pl = textWidth('SPINS') + 6;
-    x0 = seg((pips * 4 + pl + 3) * k, null);
-    drawText(ctx, 'SPINS', x0 + 3 * k, y + 3 * k, { scale: k, color: '#a08060' });
+    const pl = textWidth('SPINS', TS) + 6 * k;
+    x0 = seg(pips * 4 * k + pl + 3 * k, null);
+    drawText(ctx, 'SPINS', x0 + 3 * k, ty, { scale: TS, color: '#a08060' });
     for (let i = 0; i < pips; i++) {
       const left = i < c.spins;
       const last = left && c.spins === 1;
       ctx.fillStyle = left ? (last && Math.floor(time * 4) % 2 ? '#ff4030' : '#ffd040') : '#3a2414';
-      ctx.fillRect(x0 + (pl + i * 4) * k, y + 4 * k, 3 * k, 5 * k);
+      ctx.fillRect(x0 + pl + i * 4 * k, y + 4 * k, 3 * k, 5 * k);
     }
     // Tray x Streak: the number rolls; the streak heats from pale to red.
     const tray = 'TRAY $' + Math.round(r.tray);
     const st = '\u00d7' + c.streak.toFixed(2);
-    x0 = seg((textWidth(tray) + textWidth(st) + 14) * k, null);
+    x0 = seg(textWidth(tray, TS) + textWidth(st, TS) + 14 * k, null);
     const tf = r.trayFlash > 0 && Math.floor(r.trayFlash * 10) % 2 === 0;
-    drawText(ctx, tray, x0 + 4 * k, y + 3 * k, { scale: k, color: tf ? (r.trayUp ? '#a0ffa0' : '#ff6050') : '#f0e0b0' });
+    drawText(ctx, tray, x0 + 4 * k, ty, { scale: TS, color: tf ? (r.trayUp ? '#a0ffa0' : '#ff6050') : '#f0e0b0' });
     const heat = Math.min(1, (c.streak - 1) / 2);
     const sc = heat <= 0 ? '#c0b090' : heat < 0.5 ? '#ffd060' : heat < 0.85 ? '#ff9030' : Math.floor(time * 6) % 2 ? '#ff4020' : '#ffd060';
-    drawText(ctx, st, x0 + (8 + textWidth(tray)) * k, y + 3 * k, { scale: k, color: sc });
+    drawText(ctx, st, x0 + 8 * k + textWidth(tray, TS), ty, { scale: TS, color: sc });
     // Vault vs Debt with a progress bar; the Tray shows as a ghost on top.
     const vt = 'VAULT $' + Math.round(r.vault) + '/' + c.debt;
-    const vw = Math.max(textWidth(vt) + 8, w / k - x / k - 2);
-    x0 = seg(vw * k, null);
+    const vw = Math.max(textWidth(vt, TS) + 8 * k, w - x - 2 * k);
+    x0 = seg(vw, null);
     const vf = r.vaultFlash > 0 && Math.floor(r.vaultFlash * 10) % 2 === 0;
     const covered = r.vault >= c.debt;
-    drawText(ctx, vt, x0 + 4 * k, y + 3 * k, { scale: k, color: vf ? '#ffffff' : covered ? '#90ff90' : '#f0e0b0' });
+    drawText(ctx, vt, x0 + 4 * k, ty, { scale: TS, color: vf ? '#ffffff' : covered ? '#90ff90' : '#f0e0b0' });
     const frac = Math.max(0, Math.min(1, r.vault / Math.max(1, c.debt)));
     const bx = x0 + 4 * k;
-    const bw = (vw - 8) * k;
+    const bw = vw - 8 * k;
     ctx.fillStyle = '#2a1a10';
     ctx.fillRect(bx, y + 10 * k, bw, k);
     ctx.fillStyle = covered ? '#60ff60' : frac > 0.66 ? '#ffd040' : '#ff7040';
@@ -283,11 +291,12 @@ export class Hud {
       ctx.fillRect(0, y, w, 11 * k);
       ctx.fillStyle = '#c02818';
       ctx.fillRect(0, y, 30 * k, 11 * k);
-      drawText(ctx, 'LIVE', 15 * k, y + 2 * k, { align: 'center', scale: k, color: Math.floor(time * 1.5) % 2 ? '#ffffff' : '#ffd0c0' });
-      drawText(ctx, this.ticker, 34 * k, y + 2 * k, { scale: k, color: '#f0e0b0' });
-      if (this.tickerRight) drawText(ctx, this.tickerRight, w - 3 * k, y + 2 * k, { align: 'right', scale: k, color: '#a0e0a0' });
+      const tickerY = y + Math.round((11 * k - 7 * TS) / 2);
+      drawText(ctx, 'LIVE', 15 * k, tickerY, { align: 'center', scale: TS, color: Math.floor(time * 1.5) % 2 ? '#ffffff' : '#ffd0c0' });
+      drawText(ctx, this.ticker, 34 * k, tickerY, { scale: TS, color: '#f0e0b0' });
+      if (this.tickerRight) drawText(ctx, this.tickerRight, w - 3 * k, tickerY, { align: 'right', scale: TS, color: '#a0e0a0' });
     }
-    if (this.hint && !this.choice) drawText(ctx, this.hint, w / 2, h - (this.chyron ? 23 : 21) * k, { align: 'center', scale: k, color: 'rgba(255,240,200,0.8)', shadow: '#000' });
+    if (this.hint && !this.choice) drawText(ctx, this.hint, w / 2, h - (this.chyron ? 23 : 21) * k, { align: 'center', scale: TS, color: 'rgba(255,240,200,0.8)', shadow: '#000' });
 
     // ---- Banner (Deadline intro, SWEEPS, combos) ----
     if (this.banner) {
@@ -325,41 +334,41 @@ export class Hud {
       }
       if (slide > 0.9) {
         const pop = b.t < 0.32 ? -Math.round(Math.sin((b.t / 0.32) * Math.PI) * 2) * k : 0;
-        drawText(ctx, b.text, w / 2, y + 4 * k + pop, { align: 'center', scale: 2 * k, color: b.color, shadow: '#000' });
-        drawText(ctx, b.sub, w / 2, y + 18 * k, { align: 'center', scale: k, color: '#f0e0c0' });
+        drawText(ctx, b.text, w / 2, y + 4 * k + pop, { align: 'center', scale: 2 * TS, color: b.color, shadow: '#000' });
+        drawText(ctx, b.sub, w / 2, y + 18 * k, { align: 'center', scale: TS, color: '#f0e0c0' });
       }
     }
 
     // ---- Payout line ----
     if (this.payout && !this.choice) {
-      const lines = wrapText(this.payout.text, 50);
+      const lines = wrapText(this.payout.text, (50 * k) / TS);
       const y0 = 3 * k;
       ctx.fillStyle = 'rgba(10,4,2,0.8)';
-      ctx.fillRect(0, y0, w, (lines.length * LINE_H + 3) * k);
-      lines.forEach((l, i) => drawText(ctx, l, w / 2, y0 + (2 + i * LINE_H) * k, { align: 'center', scale: k, color: this.payout!.color }));
+      ctx.fillRect(0, y0, w, lines.length * LINE_H * TS + 3 * k);
+      lines.forEach((l, i) => drawText(ctx, l, w / 2, y0 + 2 * k + i * LINE_H * TS, { align: 'center', scale: TS, color: this.payout!.color }));
     }
 
     // ---- Toasts ----
     this.toasts.forEach((t, i) => {
-      const y = (this.payout ? 26 : 14) * k + i * 10 * k - Math.min(1, t.t) * 2 * k;
+      const y = (this.payout ? 26 : 14) * k + i * (7 * TS + 3 * k) - Math.min(1, t.t) * 2 * k;
       if (t.t > 1.8 && Math.floor(t.t * 10) % 2) return;
-      drawText(ctx, t.text, w / 2, y, { align: 'center', scale: k, color: t.color, shadow: '#000' });
+      drawText(ctx, t.text, w / 2, y, { align: 'center', scale: TS, color: t.color, shadow: '#000' });
     });
 
     // ---- Captions ----
     const cap = this.captions[0];
     if (cap && !this.choice) {
-      const lines = wrapText(cap.text, 46);
+      const lines = wrapText(cap.text, (46 * k) / TS);
       const shown = Math.ceil(cap.t * 40);
       let left = shown;
-      const by = h - (this.ticker ? 14 : 4) * k - lines.length * LINE_H * k - 9 * k;
+      const by = h - (this.ticker ? 14 : 4) * k - lines.length * LINE_H * TS - 9 * k;
       ctx.fillStyle = 'rgba(0,0,0,0.65)';
-      ctx.fillRect(14 * k, by - 2 * k, w - 28 * k, (lines.length * LINE_H + 12) * k);
-      drawText(ctx, cap.speaker, 18 * k, by, { scale: k, color: cap.color });
+      ctx.fillRect(14 * k, by - 2 * k, w - 28 * k, lines.length * LINE_H * TS + 8 * k + 4 * TS);
+      drawText(ctx, cap.speaker, 18 * k, by, { scale: TS, color: cap.color });
       lines.forEach((l, i) => {
         const vis = l.slice(0, Math.max(0, left));
         left -= l.length;
-        drawText(ctx, vis, 18 * k, by + (10 + i * LINE_H) * k, { scale: k, color: '#ffffff' });
+        drawText(ctx, vis, 18 * k, by + 8 * TS + 2 * k + i * LINE_H * TS, { scale: TS, color: '#ffffff' });
       });
     }
 
@@ -386,9 +395,9 @@ export class Hud {
 
     // ---- Tooltip ----
     if (this.tooltip && mouse.inside && !this.choice) {
-      const lines = this.tooltip.split('\n').flatMap((l) => wrapText(l, 34));
-      const tw = Math.max(...lines.map((l) => textWidth(l, k))) + 6 * k;
-      const th = lines.length * LINE_H * k + 4 * k;
+      const lines = this.tooltip.split('\n').flatMap((l) => wrapText(l, (34 * k) / TS));
+      const tw = Math.max(...lines.map((l) => textWidth(l, TS))) + 6 * k;
+      const th = lines.length * LINE_H * TS + 4 * k;
       let x = mouse.x + 8 * k,
         y = mouse.y + 8 * k;
       if (x + tw > w) x = mouse.x - tw - 4 * k;
@@ -397,17 +406,17 @@ export class Hud {
       ctx.fillRect(x, y, tw, th);
       ctx.fillStyle = '#c89830';
       ctx.fillRect(x, y, tw, k);
-      lines.forEach((l, i) => drawText(ctx, l, x + 3 * k, y + 3 * k + i * LINE_H * k, { scale: k, color: i === 0 ? '#ffd870' : '#e8e0d0' }));
+      lines.forEach((l, i) => drawText(ctx, l, x + 3 * k, y + 3 * k + i * LINE_H * TS, { scale: TS, color: i === 0 ? '#ffd870' : '#e8e0d0' }));
     }
 
     if (this.challenge && !this.choice) {
       const c = this.challenge;
       const y0 = (this.payout ? 26 : 3) * k;
-      drawText(ctx, `SPONSOR: ${c.name}`, 3 * k, y0, { scale: k, color: c.done ? '#80ff80' : '#ffc040', shadow: '#000' });
-      drawText(ctx, c.done ? 'DONE' : `${c.text} ${c.prog}`, 3 * k, y0 + 9 * k, { scale: k, color: c.done ? '#60c060' : 'rgba(255,230,180,0.8)', shadow: '#000' });
+      drawText(ctx, `SPONSOR: ${c.name}`, 3 * k, y0, { scale: TS, color: c.done ? '#80ff80' : '#ffc040', shadow: '#000' });
+      drawText(ctx, c.done ? 'DONE' : `${c.text} ${c.prog}`, 3 * k, y0 + LINE_H * TS, { scale: TS, color: c.done ? '#60c060' : 'rgba(255,230,180,0.8)', shadow: '#000' });
     }
-    if (this.corner && !this.choice) drawText(ctx, this.corner, w - 3 * k, (this.payout ? 26 : 3) * k, { align: 'right', scale: k, color: '#ffc040', shadow: '#000' });
-    if (this.fastMode && !this.choice) drawText(ctx, 'FAST >>', 3 * k, (this.payout ? 26 : 3) * k, { scale: k, color: '#80ff80', shadow: '#000' });
+    if (this.corner && !this.choice) drawText(ctx, this.corner, w - 3 * k, (this.payout ? 26 : 3) * k, { align: 'right', scale: TS, color: '#ffc040', shadow: '#000' });
+    if (this.fastMode && !this.choice) drawText(ctx, 'FAST >>', 3 * k, (this.payout ? 26 : 3) * k, { scale: TS, color: '#80ff80', shadow: '#000' });
 
     // ---- Letterbox (over the HUD: it's a cinematic moment) ----
     this.letterbox += (this.letterboxTarget - this.letterbox) * 0.18;
@@ -437,7 +446,7 @@ export class Hud {
     const c = this.choice!;
     const accent = c.accent ?? '#ffd040';
     const layout = c.layout ?? (c.options.length <= 3 && c.options.every((o) => (o.detail ?? '').length < 200) ? 'cards' : 'list');
-    const lines = (c.lines ?? []).flatMap((l) => wrapText(l, 48));
+    const lines = (c.lines ?? []).flatMap((l) => wrapText(l, (48 * k) / TS));
     const pad = 6 * k;
     ctx.fillStyle = 'rgba(8,4,2,0.94)';
     const top = 10 * k;
@@ -445,11 +454,11 @@ export class Hud {
     ctx.fillRect(8 * k, top, w - 16 * k, panelH);
     ctx.fillStyle = accent;
     ctx.fillRect(8 * k, top, w - 16 * k, k);
-    drawText(ctx, c.title, w / 2, top + 4 * k, { align: 'center', scale: k, color: accent, shadow: '#000' });
+    drawText(ctx, c.title, w / 2, top + 4 * k, { align: 'center', scale: TS, color: accent, shadow: '#000' });
     let y = top + 15 * k;
     for (const l of lines) {
-      drawText(ctx, l, w / 2, y, { align: 'center', scale: k, color: '#e8dcc0' });
-      y += LINE_H * k;
+      drawText(ctx, l, w / 2, y, { align: 'center', scale: TS, color: '#e8dcc0' });
+      y += LINE_H * TS;
     }
     y += 3 * k;
     const n = c.options.length;
@@ -477,7 +486,7 @@ export class Hud {
         ctx.fillStyle = sel ? accent : '#5a4020';
         ctx.fillRect(x, y, cw, k);
         ctx.fillRect(x, y + ch - k, cw, k);
-        drawText(ctx, `${i + 1}`, x + 3 * k, y + 3 * k, { scale: k, color: '#806040' });
+        drawText(ctx, `${i + 1}`, x + 3 * k, y + 3 * k, { scale: TS, color: '#806040' });
         // Icon: bobs a little on the highlighted card.
         const ic = o.icon ? art.img(o.icon) : null;
         let ty = 7;
@@ -489,13 +498,13 @@ export class Hud {
           ctx.globalAlpha = 1;
           ty = 5 + is / k;
         }
-        const labLines = wrapText(o.label, Math.floor(cw / (6 * k)) - 1);
-        labLines.forEach((l, j) => drawText(ctx, l, x + cw / 2, y + (ty + j * LINE_H) * k, { align: 'center', scale: k, color: o.disabled ? '#605040' : (o.color ?? '#ffffff') }));
-        const det = wrapText(o.detail ?? '', Math.floor(cw / (6 * k)) - 1);
-        const room = Math.max(0, Math.floor((ch / k - ty - labLines.length * LINE_H - 2) / LINE_H));
+        const labLines = wrapText(o.label, Math.floor(cw / (6 * TS)) - 1);
+        labLines.forEach((l, j) => drawText(ctx, l, x + cw / 2, y + ty * k + j * LINE_H * TS, { align: 'center', scale: TS, color: o.disabled ? '#605040' : (o.color ?? '#ffffff') }));
+        const det = wrapText(o.detail ?? '', Math.floor(cw / (6 * TS)) - 1);
+        const room = Math.max(0, Math.floor((ch - ty * k - labLines.length * LINE_H * TS - 2 * k) / (LINE_H * TS)));
         const detShown = det.slice(0, room);
         if (det.length > room && room > 0) detShown[room - 1] = detShown[room - 1].replace(/.$/, '') + '…';
-        detShown.forEach((l, j) => drawText(ctx, l, x + 3 * k, y + (ty + (labLines.length + j) * LINE_H) * k, { scale: k, color: o.disabled ? '#504030' : '#c8bca0' }));
+        detShown.forEach((l, j) => drawText(ctx, l, x + 3 * k, y + ty * k + (labLines.length + j) * LINE_H * TS, { scale: TS, color: o.disabled ? '#504030' : '#c8bca0' }));
       }
     } else {
       const rowH = 11 * k;
@@ -506,12 +515,13 @@ export class Hud {
         const sel = i === c.selected || i === hoverIdx;
         ctx.fillStyle = sel ? '#3a2410' : '#1a120a';
         ctx.fillRect(r.x, r.y, r.w, r.h);
-        drawText(ctx, `${i + 1} ${o.label}`, r.x + 3 * k, r.y + 2 * k, { scale: k, color: o.disabled ? '#605040' : (o.color ?? '#ffffff') });
-        if (o.detail) drawText(ctx, o.detail, r.x + r.w - 3 * k, r.y + 2 * k, { align: 'right', scale: k, color: '#c8bca0' });
+        const rowTy = r.y + Math.round((r.h - 7 * TS) / 2);
+        drawText(ctx, `${i + 1} ${o.label}`, r.x + 3 * k, rowTy, { scale: TS, color: o.disabled ? '#605040' : (o.color ?? '#ffffff') });
+        if (o.detail) drawText(ctx, o.detail, r.x + r.w - 3 * k, rowTy, { align: 'right', scale: TS, color: '#c8bca0' });
         y += rowH;
       }
     }
-    if (c.footer) drawText(ctx, c.footer, w / 2, top + panelH - 9 * k, { align: 'center', scale: k, color: '#a09070' });
+    if (c.footer) drawText(ctx, c.footer, w / 2, top + panelH - 9 * k, { align: 'center', scale: TS, color: '#a09070' });
   }
 
   /** Draw an art-pack sprite smoothly (it's a painted image, not pixel art). */
