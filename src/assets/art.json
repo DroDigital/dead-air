@@ -1,0 +1,672 @@
+{
+ "wedge.cash": {
+  "url": "assets/art/wedge/cash.png",
+  "w": 128,
+  "h": 112
+ },
+ "wedge.respin": {
+  "url": "assets/art/wedge/respin.png",
+  "w": 111,
+  "h": 128
+ },
+ "wedge.token": {
+  "url": "assets/art/wedge/token.png",
+  "w": 123,
+  "h": 128
+ },
+ "wedge.boost": {
+  "url": "assets/art/wedge/boost.png",
+  "w": 119,
+  "h": 128
+ },
+ "wedge.artifact": {
+  "url": "assets/art/wedge/artifact.png",
+  "w": 128,
+  "h": 113
+ },
+ "wedge.bankrupt": {
+  "url": "assets/art/wedge/bankrupt.png",
+  "w": 128,
+  "h": 114
+ },
+ "wedge.jackpot": {
+  "url": "assets/art/wedge/jackpot.png",
+  "w": 128,
+  "h": 120
+ },
+ "wedge.mystery": {
+  "url": "assets/art/wedge/mystery.png",
+  "w": 128,
+  "h": 121
+ },
+ "wedge.dud": {
+  "url": "assets/art/wedge/dud.png",
+  "w": 128,
+  "h": 119
+ },
+ "wedge.tax": {
+  "url": "assets/art/wedge/tax.png",
+  "w": 127,
+  "h": 128
+ },
+ "wedge.splitter": {
+  "url": "assets/art/wedge/splitter.png",
+  "w": 128,
+  "h": 125
+ },
+ "wedge.wild": {
+  "url": "assets/art/wedge/wild.png",
+  "w": 113,
+  "h": 128
+ },
+ "wedge.haunted": {
+  "url": "assets/art/wedge/haunted.png",
+  "w": 121,
+  "h": 128
+ },
+ "wedge.cursedCash": {
+  "url": "assets/art/wedge/cursedCash.png",
+  "w": 128,
+  "h": 107
+ },
+ "wedge.interest": {
+  "url": "assets/art/wedge/interest.png",
+  "w": 115,
+  "h": 128
+ },
+ "wedge.thief": {
+  "url": "assets/art/wedge/thief.png",
+  "w": 128,
+  "h": 127
+ },
+ "wedge.vaultKey": {
+  "url": "assets/art/wedge/vaultKey.png",
+  "w": 121,
+  "h": 128
+ },
+ "wedge.overtime": {
+  "url": "assets/art/wedge/overtime.png",
+  "w": 128,
+  "h": 116
+ },
+ "wedge.charge": {
+  "url": "assets/art/wedge/charge.png",
+  "w": 104,
+  "h": 128
+ },
+ "wedge.ringJump": {
+  "url": "assets/art/wedge/ringJump.png",
+  "w": 122,
+  "h": 128
+ },
+ "wedge.doubler": {
+  "url": "assets/art/wedge/doubler.png",
+  "w": 128,
+  "h": 119
+ },
+ "wedge.scratch": {
+  "url": "assets/art/wedge/scratch.png",
+  "w": 128,
+  "h": 116
+ },
+ "wedge.payday": {
+  "url": "assets/art/wedge/payday.png",
+  "w": 128,
+  "h": 125
+ },
+ "artifact.lucky_penny": {
+  "url": "assets/art/artifact/lucky_penny.png",
+  "w": 125,
+  "h": 128
+ },
+ "artifact.piggy_bank": {
+  "url": "assets/art/artifact/piggy_bank.png",
+  "w": 128,
+  "h": 97
+ },
+ "artifact.stopwatch": {
+  "url": "assets/art/artifact/stopwatch.png",
+  "w": 102,
+  "h": 128
+ },
+ "artifact.tooth_fairy": {
+  "url": "assets/art/artifact/tooth_fairy.png",
+  "w": 128,
+  "h": 111
+ },
+ "artifact.house_edge": {
+  "url": "assets/art/artifact/house_edge.png",
+  "w": 119,
+  "h": 128
+ },
+ "artifact.rubber_band": {
+  "url": "assets/art/artifact/rubber_band.png",
+  "w": 128,
+  "h": 121
+ },
+ "artifact.coffee_ring": {
+  "url": "assets/art/artifact/coffee_ring.png",
+  "w": 128,
+  "h": 112
+ },
+ "artifact.pocket_lint": {
+  "url": "assets/art/artifact/pocket_lint.png",
+  "w": 128,
+  "h": 109
+ },
+ "artifact.bent_nail": {
+  "url": "assets/art/artifact/bent_nail.png",
+  "w": 94,
+  "h": 128
+ },
+ "artifact.cue_card": {
+  "url": "assets/art/artifact/cue_card.png",
+  "w": 128,
+  "h": 106
+ },
+ "artifact.tip_jar": {
+  "url": "assets/art/artifact/tip_jar.png",
+  "w": 125,
+  "h": 128
+ },
+ "artifact.spare_bulb": {
+  "url": "assets/art/artifact/spare_bulb.png",
+  "w": 115,
+  "h": 128
+ },
+ "artifact.lucky_sock": {
+  "url": "assets/art/artifact/lucky_sock.png",
+  "w": 108,
+  "h": 128
+ },
+ "artifact.lint_roller": {
+  "url": "assets/art/artifact/lint_roller.png",
+  "w": 128,
+  "h": 123
+ },
+ "artifact.hollow_tooth": {
+  "url": "assets/art/artifact/hollow_tooth.png",
+  "w": 123,
+  "h": 128
+ },
+ "artifact.snake_eyes": {
+  "url": "assets/art/artifact/snake_eyes.png",
+  "w": 128,
+  "h": 120
+ },
+ "artifact.neighbors_envy": {
+  "url": "assets/art/artifact/neighbors_envy.png",
+  "w": 128,
+  "h": 115
+ },
+ "artifact.iron_nerve": {
+  "url": "assets/art/artifact/iron_nerve.png",
+  "w": 128,
+  "h": 127
+ },
+ "artifact.hot_hand": {
+  "url": "assets/art/artifact/hot_hand.png",
+  "w": 121,
+  "h": 128
+ },
+ "artifact.glass_eye": {
+  "url": "assets/art/artifact/glass_eye.png",
+  "w": 128,
+  "h": 92
+ },
+ "artifact.gilded_clapper": {
+  "url": "assets/art/artifact/gilded_clapper.png",
+  "w": 127,
+  "h": 128
+ },
+ "artifact.loaded_flapper": {
+  "url": "assets/art/artifact/loaded_flapper.png",
+  "w": 111,
+  "h": 128
+ },
+ "artifact.metronome": {
+  "url": "assets/art/artifact/metronome.png",
+  "w": 107,
+  "h": 128
+ },
+ "artifact.applause_sign": {
+  "url": "assets/art/artifact/applause_sign.png",
+  "w": 128,
+  "h": 120
+ },
+ "artifact.tv_dinner": {
+  "url": "assets/art/artifact/tv_dinner.png",
+  "w": 128,
+  "h": 100
+ },
+ "artifact.velvet_rope": {
+  "url": "assets/art/artifact/velvet_rope.png",
+  "w": 128,
+  "h": 109
+ },
+ "artifact.horseshoe_magnet": {
+  "url": "assets/art/artifact/horseshoe_magnet.png",
+  "w": 110,
+  "h": 128
+ },
+ "artifact.receipt": {
+  "url": "assets/art/artifact/receipt.png",
+  "w": 102,
+  "h": 128
+ },
+ "artifact.ventriloquist": {
+  "url": "assets/art/artifact/ventriloquist.png",
+  "w": 116,
+  "h": 128
+ },
+ "artifact.pawn_ticket": {
+  "url": "assets/art/artifact/pawn_ticket.png",
+  "w": 128,
+  "h": 125
+ },
+ "artifact.understudy": {
+  "url": "assets/art/artifact/understudy.png",
+  "w": 128,
+  "h": 119
+ },
+ "artifact.static": {
+  "url": "assets/art/artifact/static.png",
+  "w": 127,
+  "h": 128
+ },
+ "artifact.cracked_mirror": {
+  "url": "assets/art/artifact/cracked_mirror.png",
+  "w": 115,
+  "h": 128
+ },
+ "artifact.second_ring": {
+  "url": "assets/art/artifact/second_ring.png",
+  "w": 128,
+  "h": 104
+ },
+ "artifact.golden_mic": {
+  "url": "assets/art/artifact/golden_mic.png",
+  "w": 89,
+  "h": 128
+ },
+ "artifact.trapdoor_lever": {
+  "url": "assets/art/artifact/trapdoor_lever.png",
+  "w": 122,
+  "h": 128
+ },
+ "artifact.laugh_track": {
+  "url": "assets/art/artifact/laugh_track.png",
+  "w": 128,
+  "h": 112
+ },
+ "artifact.producers_pen": {
+  "url": "assets/art/artifact/producers_pen.png",
+  "w": 115,
+  "h": 128
+ },
+ "artifact.crystal_tube": {
+  "url": "assets/art/artifact/crystal_tube.png",
+  "w": 77,
+  "h": 128
+ },
+ "artifact.rabbit_ears": {
+  "url": "assets/art/artifact/rabbit_ears.png",
+  "w": 122,
+  "h": 128
+ },
+ "artifact.missing_letter": {
+  "url": "assets/art/artifact/missing_letter.png",
+  "w": 128,
+  "h": 120
+ },
+ "artifact.rabbits_foot": {
+  "url": "assets/art/artifact/rabbits_foot.png",
+  "w": 115,
+  "h": 128
+ },
+ "artifact.collectors_card": {
+  "url": "assets/art/artifact/collectors_card.png",
+  "w": 108,
+  "h": 128
+ },
+ "artifact.monkey_paw": {
+  "url": "assets/art/artifact/monkey_paw.png",
+  "w": 128,
+  "h": 128
+ },
+ "artifact.black_cat": {
+  "url": "assets/art/artifact/black_cat.png",
+  "w": 128,
+  "h": 126
+ },
+ "artifact.ouija_board": {
+  "url": "assets/art/artifact/ouija_board.png",
+  "w": 114,
+  "h": 128
+ },
+ "artifact.mannequin_hand": {
+  "url": "assets/art/artifact/mannequin_hand.png",
+  "w": 85,
+  "h": 128
+ },
+ "artifact.cracked_vhs": {
+  "url": "assets/art/artifact/cracked_vhs.png",
+  "w": 128,
+  "h": 109
+ },
+ "artifact.dead_mans_watch": {
+  "url": "assets/art/artifact/dead_mans_watch.png",
+  "w": 120,
+  "h": 128
+ },
+ "artifact.severance_check": {
+  "url": "assets/art/artifact/severance_check.png",
+  "w": 128,
+  "h": 97
+ },
+ "scratch.nudge": {
+  "url": "assets/art/scratch/nudge.png",
+  "w": 160,
+  "h": 129
+ },
+ "scratch.insurance": {
+  "url": "assets/art/scratch/insurance.png",
+  "w": 160,
+  "h": 129
+ },
+ "scratch.lock": {
+  "url": "assets/art/scratch/lock.png",
+  "w": 160,
+  "h": 129
+ },
+ "scratch.hot_streak": {
+  "url": "assets/art/scratch/hot_streak.png",
+  "w": 160,
+  "h": 129
+ },
+ "scratch.reroll_shop": {
+  "url": "assets/art/scratch/reroll_shop.png",
+  "w": 160,
+  "h": 129
+ },
+ "scratch.freeze": {
+  "url": "assets/art/scratch/freeze.png",
+  "w": 160,
+  "h": 129
+ },
+ "scratch.peek": {
+  "url": "assets/art/scratch/peek.png",
+  "w": 160,
+  "h": 129
+ },
+ "scratch.polish": {
+  "url": "assets/art/scratch/polish.png",
+  "w": 160,
+  "h": 129
+ },
+ "scratch.lucky_coin": {
+  "url": "assets/art/scratch/lucky_coin.png",
+  "w": 160,
+  "h": 130
+ },
+ "scratch.safe_deposit": {
+  "url": "assets/art/scratch/safe_deposit.png",
+  "w": 160,
+  "h": 129
+ },
+ "scratch.static_burst": {
+  "url": "assets/art/scratch/static_burst.png",
+  "w": 160,
+  "h": 129
+ },
+ "scratch.rebate": {
+  "url": "assets/art/scratch/rebate.png",
+  "w": 160,
+  "h": 129
+ },
+ "host.faces": {
+  "url": "assets/art/host/faces.png",
+  "w": 512,
+  "h": 512
+ },
+ "host.head": {
+  "url": "assets/art/host/head.png",
+  "w": 290,
+  "h": 300
+ },
+ "host.torso": {
+  "url": "assets/art/host/torso.png",
+  "w": 198,
+  "h": 256
+ },
+ "host.bowtie": {
+  "url": "assets/art/host/bowtie.png",
+  "w": 192,
+  "h": 115
+ },
+ "host.glove": {
+  "url": "assets/art/host/glove.png",
+  "w": 160,
+  "h": 144
+ },
+ "host.shoe": {
+  "url": "assets/art/host/shoe.png",
+  "w": 160,
+  "h": 93
+ },
+ "caller.producer": {
+  "url": "assets/art/caller/producer.png",
+  "w": 264,
+  "h": 320
+ },
+ "caller.secret": {
+  "url": "assets/art/caller/secret.png",
+  "w": 195,
+  "h": 320
+ },
+ "ui.capLeft": {
+  "url": "assets/art/ui/capLeft.png",
+  "w": 192,
+  "h": 115
+ },
+ "ui.barMid": {
+  "url": "assets/art/ui/barMid.png",
+  "w": 192,
+  "h": 34
+ },
+ "ui.capRight": {
+  "url": "assets/art/ui/capRight.png",
+  "w": 192,
+  "h": 114
+ },
+ "ui.bulbRedOn": {
+  "url": "assets/art/ui/bulbRedOn.png",
+  "w": 146,
+  "h": 192
+ },
+ "ui.bulbRedOff": {
+  "url": "assets/art/ui/bulbRedOff.png",
+  "w": 141,
+  "h": 187
+ },
+ "ui.bulbOn": {
+  "url": "assets/art/ui/bulbOn.png",
+  "w": 126,
+  "h": 160
+ },
+ "ui.bulbOff": {
+  "url": "assets/art/ui/bulbOff.png",
+  "w": 95,
+  "h": 136
+ },
+ "ui.coin": {
+  "url": "assets/art/ui/coin.png",
+  "w": 183,
+  "h": 188
+ },
+ "ui.safe": {
+  "url": "assets/art/ui/safe.png",
+  "w": 192,
+  "h": 191
+ },
+ "ui.tray": {
+  "url": "assets/art/ui/tray.png",
+  "w": 192,
+  "h": 131
+ },
+ "ui.flameRing": {
+  "url": "assets/art/ui/flameRing.png",
+  "w": 174,
+  "h": 192
+ },
+ "ui.handLeft": {
+  "url": "assets/art/ui/handLeft.png",
+  "w": 192,
+  "h": 118
+ },
+ "ui.handRight": {
+  "url": "assets/art/ui/handRight.png",
+  "w": 192,
+  "h": 112
+ },
+ "ui.handUp": {
+  "url": "assets/art/ui/handUp.png",
+  "w": 122,
+  "h": 192
+ },
+ "ui.handDown": {
+  "url": "assets/art/ui/handDown.png",
+  "w": 130,
+  "h": 192
+ },
+ "ui.handPoint": {
+  "url": "assets/art/ui/handPoint.png",
+  "w": 161,
+  "h": 183
+ },
+ "ui.handOpen": {
+  "url": "assets/art/ui/handOpen.png",
+  "w": 178,
+  "h": 175
+ },
+ "ui.filmFrame": {
+  "url": "assets/art/ui/filmFrame.png",
+  "w": 192,
+  "h": 88
+ },
+ "ui.ticket": {
+  "url": "assets/art/ui/ticket.png",
+  "w": 192,
+  "h": 95
+ },
+ "ui.phone": {
+  "url": "assets/art/ui/phone.png",
+  "w": 192,
+  "h": 136
+ },
+ "panel.panelBig": {
+  "url": "assets/art/panel/panelBig.png",
+  "w": 282,
+  "h": 384
+ },
+ "panel.pillCream": {
+  "url": "assets/art/panel/pillCream.png",
+  "w": 384,
+  "h": 120
+ },
+ "panel.pillGold": {
+  "url": "assets/art/panel/pillGold.png",
+  "w": 384,
+  "h": 127
+ },
+ "panel.pillGoldFlat": {
+  "url": "assets/art/panel/pillGoldFlat.png",
+  "w": 384,
+  "h": 91
+ },
+ "panel.bubble": {
+  "url": "assets/art/panel/bubble.png",
+  "w": 384,
+  "h": 268
+ },
+ "panel.ribbonSmall": {
+  "url": "assets/art/panel/ribbonSmall.png",
+  "w": 384,
+  "h": 115
+ },
+ "panel.cardCream": {
+  "url": "assets/art/panel/cardCream.png",
+  "w": 252,
+  "h": 340
+ },
+ "panel.cardAged": {
+  "url": "assets/art/panel/cardAged.png",
+  "w": 250,
+  "h": 338
+ },
+ "panel.note": {
+  "url": "assets/art/panel/note.png",
+  "w": 343,
+  "h": 253
+ },
+ "panel.ribbonBig": {
+  "url": "assets/art/panel/ribbonBig.png",
+  "w": 384,
+  "h": 99
+ },
+ "panel.plate": {
+  "url": "assets/art/panel/plate.png",
+  "w": 384,
+  "h": 142
+ },
+ "panel.circle": {
+  "url": "assets/art/panel/circle.png",
+  "w": 121,
+  "h": 119
+ },
+ "panel.check": {
+  "url": "assets/art/panel/check.png",
+  "w": 122,
+  "h": 120
+ },
+ "title.lettered": {
+  "url": "assets/art/title/lettered.png",
+  "w": 768,
+  "h": 315
+ },
+ "title.plate": {
+  "url": "assets/art/title/plate.png",
+  "w": 768,
+  "h": 506
+ },
+ "screen.title": {
+  "url": "assets/art/screens/title.jpg",
+  "w": 1280,
+  "h": 853
+ },
+ "screen.win": {
+  "url": "assets/art/screens/win.jpg",
+  "w": 1280,
+  "h": 853
+ },
+ "screen.lose": {
+  "url": "assets/art/screens/lose.jpg",
+  "w": 1280,
+  "h": 853
+ },
+ "screen.standby": {
+  "url": "assets/art/screens/standby.jpg",
+  "w": 1280,
+  "h": 853
+ },
+ "gameover.background": {
+  "url": "assets/art/gameover/background.jpg",
+  "w": 1536,
+  "h": 1024
+ },
+ "gameover.wave": {
+  "url": "assets/art/gameover/wave.jpg",
+  "w": 872,
+  "h": 194
+ }
+}

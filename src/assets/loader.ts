@@ -233,7 +233,7 @@ export class Assets {
             conformToPsx(g.scene);
             this.models.set(id, flattenModel(g.scene));
           } else if (e?.type === 'font') {
-            const name = id === 'font.pixel' ? 'DeadAirPixel' : 'DeadAirTerminal';
+            const name = id === 'font.pixel' ? 'DeadAirPixel' : id === 'font.display' ? 'DeadAirDisplay' : 'DeadAirTerminal';
             const ff = new FontFace(name, `url(${e.url})`);
             await ff.load();
             document.fonts.add(ff);

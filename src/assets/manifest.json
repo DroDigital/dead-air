@@ -17,6 +17,10 @@
       "type": "texture",
       "url": "assets/textures/wallpaper.png"
     },
+    "tex.seats": {
+      "type": "texture",
+      "url": "assets/textures/seats.png"
+    },
     "tex.metal": {
       "type": "texture",
       "url": "assets/textures/metal.png"
@@ -73,6 +77,10 @@
       "type": "font",
       "url": "assets/fonts/VT323-Regular.ttf"
     },
+    "font.display": {
+      "type": "font",
+      "url": "assets/fonts/Shrikhand-Regular.ttf"
+    },
     "sfx.flapper": {
       "type": "audio",
       "url": "assets/audio/flapper.wav"
@@ -104,6 +112,30 @@
     "sfx.crank": {
       "type": "audio",
       "url": "assets/audio/crank.wav"
+    },
+    "sfx.swish": {
+      "type": "audio",
+      "url": "assets/audio/swish.wav"
+    },
+    "sfx.riser": {
+      "type": "audio",
+      "url": "assets/audio/riser.wav"
+    },
+    "sfx.impact": {
+      "type": "audio",
+      "url": "assets/audio/impact.wav"
+    },
+    "sfx.clunk": {
+      "type": "audio",
+      "url": "assets/audio/clunk.wav"
+    },
+    "sfx.boing": {
+      "type": "audio",
+      "url": "assets/audio/boing.wav"
+    },
+    "sfx.ding": {
+      "type": "audio",
+      "url": "assets/audio/ding.wav"
     }
   }
 }

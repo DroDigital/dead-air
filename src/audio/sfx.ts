@@ -73,7 +73,12 @@ type SfxId =
   | 'heartbeat'
   | 'roomtone'
   | 'tension'
-  | 'gameoverCue';
+  | 'gameoverCue'
+  | 'riser'
+  | 'impact'
+  | 'clunk'
+  | 'boing'
+  | 'ding';
 
 /** ElevenLabs recordings (assets/elevenlabs.json) take precedence over CC0 files and synthesis. */
 const EL_IDS: Partial<Record<SfxId, string>> = {
@@ -113,6 +118,12 @@ const FILE_IDS: Partial<Record<SfxId, string>> = {
   button: 'sfx.button',
   scratch: 'sfx.scratch',
   crank: 'sfx.crank',
+  whoosh: 'sfx.swish',
+  riser: 'sfx.riser',
+  impact: 'sfx.impact',
+  clunk: 'sfx.clunk',
+  boing: 'sfx.boing',
+  ding: 'sfx.ding',
 };
 
 export class Sfx {
@@ -224,6 +235,15 @@ export class Sfx {
       });
       return s;
     });
+    // Juice (procedural stand-ins for the CC0 recordings).
+    B('riser', 2.6, (t, _i, _n, st) => {
+      st.a += ((rnd(st) * 2 - 1) - st.a) * (0.02 + 0.3 * (t / 2.6));
+      return st.a * Math.pow(t / 2.6, 2) * 1.2;
+    }, 10, 6000);
+    B('impact', 0.7, (t, _i, _n, st) => Math.sin(2 * Math.PI * (70 - 30 * t) * t) * env(t, 0.002, 0.18) * 0.9 + (rnd(st) * 2 - 1) * env(t, 0.001, 0.03) * 0.5, 10, 3000);
+    B('clunk', 0.3, (t, _i, _n, st) => (Math.sin(2 * Math.PI * 320 * t) * 0.5 + (rnd(st) * 2 - 1) * 0.5) * env(t, 0.001, 0.05) * 0.7);
+    B('boing', 1, (t) => Math.sin(2 * Math.PI * (180 + 120 * Math.sin(t * 30) * Math.exp(-t * 3)) * t) * env(t, 0.005, 0.35) * 0.5);
+    B('ding', 0.8, (t) => (Math.sin(2 * Math.PI * 1760 * t) + 0.4 * Math.sin(2 * Math.PI * 3520 * t)) * env(t, 0.002, 0.3) * 0.35);
     B('drumroll', 1, (t, _i, _n, st) => (rnd(st) * 2 - 1) * (0.4 + 0.6 * Math.abs(Math.sin(t * 90))) * 0.35, 9, 6000);
     B('heartbeat', 1, (t) => Math.sin(2 * Math.PI * 50 * t) * (env(t, 0.005, 0.08) + (t > 0.25 ? env(t - 0.25, 0.005, 0.1) * 0.7 : 0)) * 0.8);
     B('roomtone', 2, (_t, _i, _n, st) => {

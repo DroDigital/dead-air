@@ -18,6 +18,7 @@ import { existsSync } from 'node:fs';
 import { mkdir, readFile, writeFile, copyFile, stat } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { buildArt } from './art';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const SRC = join(ROOT, 'assets-src');
@@ -38,7 +39,8 @@ interface Entry {
   modifications: string;
 }
 
-const ALLOWED_LICENSES = ['CC0-1.0', 'CC-BY-4.0', 'CC-BY-3.0', 'OFL-1.1'];
+/** OWNER: art made for and provided by the project owner. */
+const ALLOWED_LICENSES = ['CC0-1.0', 'CC-BY-4.0', 'CC-BY-3.0', 'OFL-1.1', 'OWNER'];
 
 async function exists(p: string): Promise<boolean> {
   try {
@@ -353,6 +355,12 @@ async function main(): Promise<void> {
   for (const v of el.voices) lines.push(`| ${v.name} | ${v.speaker} | ${v.design} |`);
   lines.push('', '| Id | Kind | Model | Prompt |', '|---|---|---|---|');
   for (const a of el.audio) if (elIndex[a.id]) lines.push(`| \`${a.id}\` | ${a.kind} | ${a.model} | ${a.prompt} |`);
+  // The owner's 2D art pack (tools/art.ts slices it into sprites).
+  const sprites = await buildArt();
+  if (sprites) {
+    console.log(`✓ art pack: ${sprites} sprites`);
+    lines.push('', '## Art', '', 'The 2D art pack (the Host, his faces, the callers, wedge, artifact and scratch-card icons, the menu and HUD kits, the title plate, the full-screen cards and the studio textures) was provided for this project by the project owner. Sources in `assets-src/art`; `tools/art.ts` slices them into the sprites in `public/assets/art`.', '');
+  }
   lines.push('', '## Libraries', '', '- three.js (MIT), GSAP (Standard "No Charge" licence), gltf-transform (MIT), sharp (Apache-2.0), meshoptimizer (MIT), Vite (MIT), Vitest (MIT).', '');
   await writeFile(join(ROOT, 'CREDITS.md'), lines.join('\n'));
   const todoDoc = [

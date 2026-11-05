@@ -21,9 +21,9 @@ Open the printed URL. Other scripts:
 | Command | What it does |
 |---|---|
 | `npm run build` | Typecheck (strict) + production build to `dist/` |
-| `npm test` | 168 Vitest tests: rules, wheel physics, determinism, saves and migrations, content, text coverage, regressions, simulator smoke tests |
+| `npm test` | 199 Vitest tests: rules, wheel physics, determinism, saves and migrations, content, text coverage, regressions, simulator smoke tests |
 | `npm run sim -- --runs 5000 --seed 1` | Headless balance simulator (all bot policies, multi-threaded) |
-| `npm run assets` | Convert `/assets-src` → `/public/assets` (PS1 conformance), regenerate the runtime index, CREDITS.md, ASSETS_TODO.md |
+| `npm run assets` | Convert `/assets-src` → `/public/assets` (PS1 conformance), slice the 2D art pack into sprites (`tools/art.ts`), regenerate the runtime indexes, CREDITS.md, ASSETS_TODO.md |
 | `npm run assets -- --fetch` | Download any missing CC0/OFL sources first, then convert |
 | `npm run playtest -- --minutes 6` | Automated playtest through the real UI in headless Chromium (keyboard, mouse, menus). Checks game invariants and on-screen text after every step. Flags: `--boost --jump8 --doom --reload --unlock`. Needs `npm run preview` running (port 4173, or `--url`) and Playwright with a Chromium build: `npm i --no-save playwright && npx playwright install chromium`. |
 | `npm run desktop` | Build, then run the game in the desktop launcher (Electron) |
@@ -33,7 +33,7 @@ Open the printed URL. Other scripts:
 | `node tools/itch-kit/build.mjs` | Regenerate the itch.io page art in `itch/` (cover, banner, logos, GIFs, the edge-haunt background); see `itch/README.md` |
 | `npx tsx tools/vo.ts script \| pending \| split <batch> <file> \| cut <speaker> <old> <new> [spans] \| index` | Voice-over script, batch splitting, shortening a line to some of its sentences without re-recording, and the runtime clip index (see the file header) |
 | `npx tsx tools/music-key.ts [--write]` | Estimate each music track's key and tuning and choose the shared key; `--write` stores the shifts the asset pipeline applies |
-| `node tools/scenarios.mjs` | 11 scripted checks for paths random play rarely reaches (Prize Room, every setting, quitting mid-spin, continue, abandon, Endless). Same setup as the playtest. |
+| `node tools/scenarios.mjs` | 12 scripted checks for paths random play rarely reaches (Prize Room, every setting, grabbing and flicking the wheel, quitting mid-spin, continue, abandon, Endless). Same setup as the playtest. |
 
 Dev extras: `?gui` (lil-gui tuning panel, dev builds only), `?debug` (draw-call/triangle readout).
 
@@ -71,7 +71,7 @@ git push origin v0.1.0
 
 You stay seated and look between four stations (**arrow keys / WASD**, mouse wheel, or the on-screen arrows):
 
-- **CENTER — the wheel.** Hold **SPACE** (or hold the red lever) to charge, release to spin. The gauge needle sweeps; releasing in the **green band** biases the wheel toward high-value wedges. With the Glass Eye or a Peek card, press **E** while charging to see where it will land.
+- **CENTER — the wheel.** Hold **SPACE** (or hold the red lever) to charge, release to spin. Or **grab the wheel with the mouse**: drag it round (the pegs click past the glove), flick it clockwise and let go. The flick's speed is the power, read live on the lever's gauge, so the sweet spot can be hit by hand; a feeble or backwards flick springs back without spending the spin. The gauge needle sweeps; releasing in the **green band** biases the wheel toward high-value wedges. With the Glass Eye or a Peek card, press **E** while charging to see where it will land.
 - **DOWN — Tray & Vault.** Winnings land in the glass **Tray** (at risk). Every spin you don't deposit grows your **Streak** (+0.25, cash only). **ENTER** / the red **DEPOSIT** button sweeps the Tray into the **Vault** (safe) and resets the Streak. **1–3** scratch a card.
 - **Sponsor's Challenge.** Each Deadline opens with one goal (score a combo, ride the Streak to ×2, hold a big Tray, ride four spins without depositing, three sweet-spot releases, land a prize). It shows top left and pays 1–2 Tokens.
 - **D — Double or Nothing.** Once per Deadline, with $300+ in the Tray: stake all of it on an even-odds flip. Win and it doubles (the Streak stands); lose and it's gone (the Streak resets).
@@ -85,6 +85,25 @@ A standard gamepad is supported: use the **D-pad / left stick** to look and navi
 **A run:** 8 Deadlines (Debt = round50(450 × 1.7^(d−1))), Sweeps at 4 and 8. Pick a Broadcast Package (Short 6 spins +4 Tokens / Standard 8 +2 / Marathon 11 +0 and a temporary Bankrupt). When spins run out the Tray auto-deposits and the Vault pays. Surplus can become Tokens ($50 each) or earn interest. Then the Prize Cabinet opens, and the phone may ring.
 
 **Combos:** ECHO (same type twice, ×2), HAT TRICK (3 cash in a row, +3 Tokens), NEIGHBORS (within 2° of a boundary, both wedges at 50%), DEAD AIR (Bankrupt with Tray > Debt — the Producer calls).
+
+## Art
+
+The project owner's 2D art pack (`assets-src/art`, layouts in `docs/art-prompts.md`) is sliced by `tools/art.ts` into sprites under `public/assets/art`:
+
+- **The host** is a rigged cut-out of the model sheet: TV head, tailcoat, bow tie, gloves and shoes as sprites, rubber-hose arms and legs, springy antennae. Six poses on springs that overshoot and settle, hops, squash and stretch, and gestures timed to his voice. The TV shows the 16 faces from the face sheet, swapped by expression and lip-synced (M/E/O/A mouths, idle line boil, blinks, glances, glitch frames on late Deadlines). Redrawn at 12 fps onto a billboard in the studio.
+- **Menus** use the panel kit (paper panels, pill buttons, ribbons, plaques, checkboxes), with the title backdrop and lettered plate, and the win card behind a won run's summary. The loading screen is the "please stand by" card.
+- **Game over:** the trapdoor scene under a flickering lamp (the whole stage dims with it), the host's glove waving from below, then GAME OVER drops in (Shrikhand, OFL) and the run's card rises. A click skips to the card.
+- **Icons:** the Prop Room and prize picks show the drawn artifact icons, the landed wedge's icon pops up when the wheel stops, and the phone panel shows the Producer or the Other Line.
+- **The wheel:** a printed-card face with paper grain, ink-and-gold dividers and an oxblood rim, each wedge's drawn icon, a cream inner ring with a scalloped gold edge, a grinning brass sun for a hub, and a cartoon glove for the pointer. Every label is fitted to its wedge: the native-size pixel font is only placed where the wedge is wider than a glyph, long values shorten (`1.5K`, `+2T`), and a wedge too narrow for text shows its icon (tests in `tests/wheelFit.test.ts`).
+- **Studio textures:** wallpaper, curtain, floor, wood, brass, and raked audience seating.
+
+## Juice
+
+- **Slow-motion finishes:** a spin that will land on a Jackpot, a Bankrupt, a big win, or stop within 3° of a Jackpot or Bankrupt next door drops to a third speed for its last stretch. The camera pushes in onto the pointer with a dutch tilt, letterbox bars close in, the mix muffles under a heartbeat and a rising whoosh, then it cuts back to speed with an impact, a flash frame and a camera punch. Big wins and Jackpots then whip-pan to the host's reaction.
+- **Wind-ups:** a lever spin rocks the wheel back against its brake while the camera draws breath, then releases with a whoosh; a hand spin goes straight from the flick.
+- **On screen:** cartoon speed lines round the wheel while it's really going, and a glove cursor that opens over the wheel and closes when you grab it.
+- **The twisted wheel:** ink bleeds down the dividers and stain rings creep in as the Deadlines pass, Bankrupt wedges grin faintly with an eye in the rim, and the hub sun's eyes follow your hand, roll while it spins, gloat after a Bankrupt and, late in the show, weep ink.
+- **New CC0 sounds** (OpenGameArt): the flick and whip-pan swish, the slow-motion riser, the landing impact, the grab clunk, the spring-back boing and the sweet-spot ding (see CREDITS.md).
 
 ## Sound
 
@@ -106,7 +125,7 @@ src/
   ui/                      input, HUD/chyrons, tooltips, DOM menus, bitmap font
 desktop/                   desktop launcher: Electron main process, preload bridge, app icon
 sim/                       bot policies + simulator
-tools/                     asset pipeline (assets.ts), browser harnesses (playtest.mjs, scenarios.mjs, shared Playwright loader browser.mjs), screenshot helper (shot.mjs)
+tools/                     asset pipeline (assets.ts, art.ts), browser harnesses (playtest.mjs, scenarios.mjs, shared Playwright loader browser.mjs), screenshot helper (shot.mjs)
 itch/                      itch.io page kit: cover, banner, logos, GIFs, edge-haunt background, description, setup guide
 electron-builder.yml       desktop packaging (macOS / Windows / Linux targets)
 .github/workflows/         release.yml: build all platforms, GitHub Release, itch.io push

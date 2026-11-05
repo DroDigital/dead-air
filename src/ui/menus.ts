@@ -28,7 +28,7 @@ export interface MenuCallbacks {
   onSettings(s: Settings): void;
   onEndlessContinue(): void;
   onRetire(): void;
-  onUiSound(kind: 'move' | 'select' | 'back'): void;
+  onUiSound(kind: 'move' | 'select' | 'back' | 'slam'): void;
   /** A lore note was opened (the archivist reads it aloud) or closed. */
   onLoreNote?(text: string | null): void;
   /** Whether a note has a recorded reading. */
@@ -36,12 +36,17 @@ export interface MenuCallbacks {
   getMeta(): MetaState;
   getSettings(): Settings;
   hasSave(): boolean;
-  artifactIcon(id: string): string | null;
+  /** Icon URL; `drawnOnly` skips the rendered-prop fallback (used for silhouettes). */
+  artifactIcon(id: string, drawnOnly?: boolean): string | null;
 }
 
 type Page = 'title' | 'new' | 'settings' | 'collection' | 'credits' | 'pause' | 'abandon' | 'summary' | null;
 
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
+
+/** Game-over timing (keep in step with the CSS in index.html): GAME OVER lands, then the card rises. */
+const GAMEOVER_TITLE_LANDS_MS = 2250;
+const GAMEOVER_CARD_MS = 3100;
 
 export class Menus {
   private root: HTMLDivElement;
@@ -173,7 +178,7 @@ export class Menus {
     const meta = this.cb.getMeta();
     if (p === 'title') {
       html = `<div class="panel title">
-        <div class="logo">DEAD<span>AIR</span></div>
+        <div class="logo"><img src="assets/art/title/lettered.png" alt="DEAD AIR" onerror="this.parentElement.innerHTML='DEAD<span>AIR</span>'"></div>
         <div class="tag">a prize-wheel gambling roguelite</div>
         <div class="col">
           ${this.cb.hasSave() ? this.btn('CONTINUE BROADCAST', () => this.cb.onContinue()) : ''}
@@ -259,9 +264,10 @@ export class Menus {
       const cards = ARTIFACTS.map((a) => {
         const locked = LOCKED_ARTIFACTS.includes(a.id) && !isUnlocked(meta, `artifact:${a.id}`);
         const known = seen.has(a.id);
-        const icon = known ? this.cb.artifactIcon(a.id) : null;
+        // Unseen props show as a silhouette when the drawn icon exists.
+        const icon = known || !locked ? this.cb.artifactIcon(a.id, !known) : null;
         return `<div class="prop ${known ? 'known' : ''} ${locked ? 'locked' : ''} r-${a.rarity}">
-          <div class="icon">${icon ? `<img src="${icon}" alt="">` : locked ? 'LOCK' : '?'}</div>
+          <div class="icon">${icon ? `<img src="${icon}" alt=""${known ? '' : ' class="unseen"'}>` : locked ? 'LOCK' : '?'}</div>
           <div class="pn">${known ? esc(a.name) : locked ? 'LOCKED' : '???'}</div>
           <div class="pt">${known ? esc(a.text) : locked ? `Unlocks at ${UNLOCKS.find((u) => u.id === `artifact:${a.id}`)?.at ?? '?'} Ratings` : 'Not yet found.'}</div>
         </div>`;
@@ -315,7 +321,14 @@ export class Menus {
       </div>`;
     } else if (p === 'summary' && this.summary) {
       const s = this.summary;
-      html = `<div class="panel">
+      this.root.classList.add(s.won ? 'won' : 'lost');
+      // Lost: the trapdoor scene plays (the host's glove waving from below), GAME OVER drops in,
+      // then the run's card rises. The CSS times it; the slam is timed to match.
+      if (!s.won) {
+        const page = this.page;
+        setTimeout(() => this.page === page && this.summary === s && this.cb.onUiSound('slam'), GAMEOVER_TITLE_LANDS_MS);
+      }
+      html = `${s.won ? '' : '<div class="gostage" aria-hidden="true"><div class="gowave"></div><div class="golight"></div></div><div class="gotitle-wrap"><div class="gotitle"><span class="back">GAME OVER</span><span class="front">GAME OVER</span></div></div>'}<div class="panel">
         <h2 class="${s.won ? 'win' : 'lose'}">${s.won ? 'PAID IN FULL' : "THAT'S OUR SHOW"}</h2>
         <p>${s.won ? 'All eight Deadlines paid. The Network is… pleased.' : `The floor opened at Deadline ${s.deadline}.`}</p>
         <table class="ratings">${s.ratings.lines.map((l) => `<tr><td>${esc(l.label)}</td><td>+${l.value}</td></tr>`).join('')}<tr class="tot"><td>RATINGS</td><td>${s.ratings.total}</td></tr></table>
@@ -334,6 +347,20 @@ export class Menus {
         this.cb.onLoreNote?.(d.open ? LORE[Number(d.dataset.lore)].text : null);
       }),
     );
-    setTimeout(() => this.root.querySelector<HTMLElement>('button, input, select')?.focus(), 0);
+    // On the game-over screen the buttons only take focus once the card has risen; a click skips
+    // straight to the card.
+    const gameOver = p === 'summary' && !!this.summary && !this.summary.won;
+    const focusFirst = () => this.root.querySelector<HTMLElement>('button, input, select')?.focus();
+    setTimeout(focusFirst, gameOver ? GAMEOVER_CARD_MS : 0);
+    if (gameOver)
+      this.root.addEventListener(
+        'pointerdown',
+        () => {
+          if (this.root.classList.contains('goskip')) return;
+          this.root.classList.add('goskip');
+          setTimeout(focusFirst, 50);
+        },
+        { once: true },
+      );
   }
 }
