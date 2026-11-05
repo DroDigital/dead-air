@@ -658,5 +658,15 @@
   "url": "assets/art/screens/standby.jpg",
   "w": 1280,
   "h": 853
+ },
+ "gameover.background": {
+  "url": "assets/art/gameover/background.jpg",
+  "w": 1536,
+  "h": 1024
+ },
+ "gameover.wave": {
+  "url": "assets/art/gameover/wave.jpg",
+  "w": 872,
+  "h": 194
  }
 }

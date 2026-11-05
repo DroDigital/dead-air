@@ -122,7 +122,7 @@ export class App {
       onSettings: (s) => this.applySettings(s),
       onEndlessContinue: () => this.endlessContinue(),
       onRetire: () => this.retire(),
-      onUiSound: (k) => this.sfx.play(k === 'select' ? 'button' : 'blip', { gain: 0.5 }),
+      onUiSound: (k) => (k === 'slam' ? (this.sfx.play('impact', { gain: 0.9 }), this.sfx.play('thunk', { gain: 0.5, pitch: 0.7 })) : this.sfx.play(k === 'select' ? 'button' : 'blip', { gain: 0.5 })),
       onLoreNote: (text) => {
         if (!text) return this.vo.stop();
         this.sfx.play('static', { gain: 0.25, pitch: 0.7 });

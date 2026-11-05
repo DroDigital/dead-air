@@ -9,6 +9,7 @@
  *   callers.png             the Producer and the voice on the other line
  *   ui-hud.png / ui-panels  named sprites (boxes measured on the sheet, trimmed to the ink)
  *   screen-*.png, title-*   menus and end-of-run screens
+ *   gameover/               the game-over backdrop and the glove waving from its trapdoor (4 crops)
  *
  * The host's parts are cut out of the opaque model sheet; src/render/scene/host.ts
  * rigs them. Run by `npm run assets` (or `npx tsx tools/art.ts` on its own).
@@ -202,6 +203,30 @@ async function screen(sharp: Sharp, file: string, id: string, width: number): Pr
   index[`screen.${id}`] = { url: `assets/art/screens/${id}.jpg`, w: r.info.width, h: r.info.height };
 }
 
+/** Where the waving glove sits on the game-over backdrop (the four wave crops are cut from here). */
+export const GAMEOVER_WAVE_BOX: Box = [688, 716, 218, 194];
+
+/**
+ * The game-over scene: the empty-trapdoor backdrop as a full-size JPEG, and the glove waving
+ * from the trapdoor as a 4-cell strip of crops taken from the same box of each animation frame,
+ * so it lines up with the backdrop exactly (positioned in % of the 1536×1024 art).
+ */
+async function gameOver(sharp: Sharp): Promise<void> {
+  const dir = join(SRC, 'gameover');
+  if (!existsSync(join(dir, 'background.png'))) return;
+  await mkdir(join(OUT, 'gameover'), { recursive: true });
+  const bg = await sharp(join(dir, 'background.png')).flatten({ background: '#120806' }).jpeg({ quality: 86, mozjpeg: true }).toBuffer({ resolveWithObject: true });
+  await writeFile(join(OUT, 'gameover', 'background.jpg'), bg.data);
+  index['gameover.background'] = { url: 'assets/art/gameover/background.jpg', w: bg.info.width, h: bg.info.height };
+  const [, , w, h] = GAMEOVER_WAVE_BOX;
+  const strip = await sharp({ create: { width: w * 4, height: h, channels: 3, background: '#000' } })
+    .composite([1, 2, 3, 4].map((i) => ({ input: join(dir, `wave-0${i}.png`), left: (i - 1) * w, top: 0 })))
+    .jpeg({ quality: 90, mozjpeg: true })
+    .toBuffer({ resolveWithObject: true });
+  await writeFile(join(OUT, 'gameover', 'wave.jpg'), strip.data);
+  index['gameover.wave'] = { url: 'assets/art/gameover/wave.jpg', w: strip.info.width, h: strip.info.height };
+}
+
 export async function buildArt(): Promise<number> {
   if (!existsSync(join(SRC, 'icons-wedges.png'))) return 0;
   const sharp = (await import('sharp')).default;
@@ -233,6 +258,7 @@ export async function buildArt(): Promise<number> {
   await screen(sharp, 'screen-win.png', 'win', 1280);
   await screen(sharp, 'screen-lose.png', 'lose', 1280);
   await screen(sharp, 'screen-standby.png', 'standby', 1280);
+  await gameOver(sharp);
   await mkdir(join(ROOT, 'src', 'assets'), { recursive: true });
   await writeFile(join(ROOT, 'src', 'assets', 'art.json'), JSON.stringify(index, null, 1) + '\n');
   return Object.keys(index).length;

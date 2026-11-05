@@ -269,6 +269,19 @@
       "modifications": "None. Used for long-form text (lore, credits)."
     },
     {
+      "id": "font.display",
+      "type": "font",
+      "src": "fonts/Shrikhand-Regular.ttf",
+      "out": "fonts/Shrikhand-Regular.ttf",
+      "fetch": {
+        "url": "https://raw.githubusercontent.com/google/fonts/main/ofl/shrikhand/Shrikhand-Regular.ttf"
+      },
+      "sourceUrl": "https://fonts.google.com/specimen/Shrikhand",
+      "author": "Jonny Pinhorn",
+      "license": "OFL-1.1",
+      "modifications": "None. The \"GAME OVER\" title on the end-of-run screen."
+    },
+    {
       "id": "sfx.flapper",
       "type": "audio",
       "src": "audio/flapper.wav",

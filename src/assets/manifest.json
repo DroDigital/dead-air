@@ -77,6 +77,10 @@
       "type": "font",
       "url": "assets/fonts/VT323-Regular.ttf"
     },
+    "font.display": {
+      "type": "font",
+      "url": "assets/fonts/Shrikhand-Regular.ttf"
+    },
     "sfx.flapper": {
       "type": "audio",
       "url": "assets/audio/flapper.wav"

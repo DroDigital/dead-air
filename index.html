@@ -55,8 +55,202 @@
       #menus.page-summary.won {
         background: linear-gradient(rgba(10, 4, 2, 0.15), rgba(10, 4, 2, 0.55)), url(assets/art/screens/win.jpg) center / cover, #120806;
       }
+      /* Game over: the trapdoor scene (cover-fitted, 3:2 art), the glove waving, GAME OVER, the card. */
       #menus.page-summary.lost {
-        background: linear-gradient(rgba(10, 4, 2, 0.2), rgba(10, 4, 2, 0.6)), url(assets/art/screens/lose.jpg) center / cover, #120806;
+        background: #0a0503;
+        overflow: hidden;
+        padding-top: 25vh;
+      }
+      #menus .gostage {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        width: max(100vw, 150vh);
+        aspect-ratio: 3 / 2;
+        background: url(assets/art/gameover/background.jpg) center / 100% 100% no-repeat;
+        animation: gostage-in 0.8s ease-out both;
+      }
+      @keyframes gostage-in {
+        from {
+          filter: brightness(0);
+        }
+      }
+      /* The glove (4 drawings, there and back) over the trapdoor: GAMEOVER_WAVE_BOX in % of 1536×1024. */
+      #menus .gostage .gowave {
+        position: absolute;
+        left: 44.792%;
+        top: 69.922%;
+        width: 14.193%;
+        height: 18.945%;
+        background: url(assets/art/gameover/wave.jpg) 0 0 / 400% 100% no-repeat;
+        animation: gowave 0.84s steps(1) infinite;
+      }
+      @keyframes gowave {
+        0% {
+          background-position-x: 0%;
+        }
+        16.66% {
+          background-position-x: 33.333%;
+        }
+        33.33% {
+          background-position-x: 66.667%;
+        }
+        50% {
+          background-position-x: 100%;
+        }
+        66.66% {
+          background-position-x: 66.667%;
+        }
+        83.33% {
+          background-position-x: 33.333%;
+        }
+      }
+      /* The lamp flickers: the whole scene dims with it (multiply), and its halo drops out in step. */
+      #menus .gostage .golight,
+      #menus .gostage .golight::after {
+        position: absolute;
+        inset: 0;
+      }
+      #menus .gostage .golight {
+        background: #000;
+        mix-blend-mode: multiply;
+        opacity: 0;
+        animation: golight-dim 4.7s steps(1) infinite;
+      }
+      #menus .gostage .golight::after {
+        content: '';
+        background: radial-gradient(ellipse 14% 12% at 50.2% 9%, rgba(255, 214, 150, 0.45), transparent 70%);
+        mix-blend-mode: screen;
+        animation: golight-halo 4.7s steps(1) infinite;
+      }
+      @keyframes golight-dim {
+        0% { opacity: 0; }
+        11% { opacity: 0.28; }
+        12.5% { opacity: 0.05; }
+        13.5% { opacity: 0.35; }
+        15% { opacity: 0; }
+        46% { opacity: 0.18; }
+        47% { opacity: 0; }
+        78% { opacity: 0.42; }
+        79.5% { opacity: 0.12; }
+        81% { opacity: 0.3; }
+        82.5% { opacity: 0; }
+      }
+      @keyframes golight-halo {
+        0% { opacity: 1; }
+        11% { opacity: 0.3; }
+        12.5% { opacity: 0.9; }
+        13.5% { opacity: 0.2; }
+        15% { opacity: 1; }
+        46% { opacity: 0.5; }
+        47% { opacity: 1; }
+        78% { opacity: 0.1; }
+        79.5% { opacity: 0.7; }
+        81% { opacity: 0.25; }
+        82.5% { opacity: 1; }
+      }
+      /* A click skips the intro: GAME OVER and the card are there at once. */
+      #menus.goskip .gotitle,
+      #menus.goskip .gotitle-wrap,
+      #menus.goskip.page-summary.lost .panel {
+        animation-delay: 0s !important;
+        animation-duration: 0.01s !important;
+      }
+      /* GAME OVER: drops in after the wave (1.9 s), squashes on landing, then rises to make room. */
+      #menus .gotitle-wrap {
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 30vh;
+        display: flex;
+        justify-content: center;
+        pointer-events: none;
+        animation: gotitle-up 0.55s cubic-bezier(0.5, 0, 0.3, 1) 3s both;
+      }
+      @keyframes gotitle-up {
+        to {
+          transform: translateY(-24vh) scale(0.62);
+        }
+      }
+      #menus .gotitle {
+        position: relative;
+        font-family: 'DeadAirDisplay', 'Georgia', serif;
+        font-size: min(13vw, 22vh);
+        line-height: 1;
+        letter-spacing: 0.02em;
+        transform-origin: 50% 100%;
+        animation:
+          gotitle-in 0.6s cubic-bezier(0.25, 1.5, 0.45, 1) 1.9s both,
+          gotitle-wobble 2.6s ease-in-out 3.6s infinite;
+      }
+      #menus .gotitle span {
+        display: block;
+        white-space: nowrap;
+        paint-order: stroke fill;
+      }
+      #menus .gotitle .back {
+        color: #1a0a04;
+        -webkit-text-stroke: 0.15em #1a0a04;
+        text-shadow:
+          0.05em 0.05em 0 #c8452c,
+          0.09em 0.09em 0 #1a0a04;
+      }
+      #menus .gotitle .front {
+        position: absolute;
+        inset: 0;
+        color: #fbe3c2;
+        -webkit-text-stroke: 0.04em #e0a62a;
+      }
+      @keyframes gotitle-in {
+        0% {
+          opacity: 0;
+          transform: translateY(-60vh) rotate(-6deg) scale(1.1, 0.9);
+        }
+        60% {
+          opacity: 1;
+          transform: translateY(0) rotate(1deg) scale(1.15, 0.8);
+        }
+        80% {
+          transform: translateY(-2vh) rotate(-0.5deg) scale(0.95, 1.06);
+        }
+        100% {
+          opacity: 1;
+          transform: none;
+        }
+      }
+      @keyframes gotitle-wobble {
+        50% {
+          transform: rotate(-1.2deg) translateY(-0.6vh);
+        }
+      }
+      /* The run's card rises once GAME OVER has made room; hidden (unclickable) until then. */
+      #menus.page-summary.lost .panel {
+        position: relative;
+        max-height: 46vh;
+        animation: gocard-in 0.5s cubic-bezier(0.2, 1.3, 0.4, 1) 3.1s both;
+      }
+      @keyframes gocard-in {
+        from {
+          opacity: 0;
+          visibility: hidden;
+          transform: translateY(8vh) scale(0.94);
+        }
+        to {
+          opacity: 1;
+          visibility: visible;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        #menus .gostage .golight,
+        #menus .gostage .golight::after {
+          animation: none;
+        }
+        #menus .gotitle,
+        #menus .gotitle-wrap,
+        #menus.page-summary.lost .panel {
+          animation-duration: 0.01s;
+        }
       }
       /* Paper panels from the panel kit: decoration in the corners, a plain middle that stretches. */
       #menus .panel {
