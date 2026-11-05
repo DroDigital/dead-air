@@ -28,7 +28,8 @@ await page.goto(url);
 await page.waitForFunction(() => window.deadAir && window.deadAir.stage && window.deadAir.fsm.state === 'Menu', null, { timeout: 90000 });
 
 const idle = (ms = 15000) =>
-  page.waitForFunction(() => window.deadAir.busy === 0 && !window.deadAir.stage.wheel.busy && !window.deadAir.charge, null, { timeout: ms }).then(() => true, () => false);
+  // Settled: nothing presenting, the wheel still, and no cinematic camera shot still easing back.
+  page.waitForFunction(() => window.deadAir.busy === 0 && !window.deadAir.stage.wheel.busy && !window.deadAir.charge && !window.deadAir.stage.rig.inShot, null, { timeout: ms }).then(() => true, () => false);
 const menuPage = () => page.evaluate(() => window.deadAir.menus.page);
 const clickMenu = (label) => page.locator('#menus button', { hasText: label }).first().click({ timeout: 5000 });
 
