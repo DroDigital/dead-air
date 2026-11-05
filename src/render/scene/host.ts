@@ -176,6 +176,11 @@ export class HostView {
     this.draw(0);
   }
 
+  /** World position of his TV head (for reaction shots). */
+  headWorld(): THREE.Vector3 {
+    return this.group.localToWorld(new THREE.Vector3(0, 1.75, 0));
+  }
+
   say(expression: HostFace, talkSeconds: number): void {
     this.expression = expression;
     this.talking = talkSeconds;

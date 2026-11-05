@@ -7,7 +7,6 @@
  *   icons-scratch.png       4×3 grid, SCRATCH_CARDS order
  *   host-faces.png          4×4 grid → one 512² atlas (128 px faces) for the host's CRT
  *   callers.png             the Producer and the voice on the other line
- *   wheel-frame.jpg         the ornamental ring around the prize wheel (cut out of its white paper)
  *   ui-hud.png / ui-panels  named sprites (boxes measured on the sheet, trimmed to the ink)
  *   screen-*.png, title-*   menus and end-of-run screens
  *
@@ -225,8 +224,6 @@ export async function buildArt(): Promise<number> {
   await cutout(sharp, 'host-model-sheet.png', 'bowtie', [540, 700, 420, 300], 192);
   await cutout(sharp, 'host-model-sheet.png', 'glove', [110, 700, 330, 300], 160);
   await cutout(sharp, 'host-model-sheet.png', 'shoe', [1060, 720, 380, 260], 160);
-  // The wheel's ornamental frame (bulbs are lit by the 3D marquee on top of the painted ones).
-  if (existsSync(join(SRC, 'wheel-frame.jpg'))) await cutout(sharp, 'wheel-frame.jpg', 'frame', [0, 0, 1024, 1024], 1024, 40, { dir: 'wheel', seedCenter: true });
   await boxes(sharp, 'callers.png', { producer: [0, 0, 860, 1024], secret: [880, 40, 640, 984] }, 'caller', 320);
   await boxes(sharp, 'ui-hud.png', HUD, 'ui', 192);
   await boxes(sharp, 'ui-panels.png', PANELS, 'panel', 384);

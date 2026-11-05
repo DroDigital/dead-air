@@ -108,6 +108,30 @@
     "sfx.crank": {
       "type": "audio",
       "url": "assets/audio/crank.wav"
+    },
+    "sfx.swish": {
+      "type": "audio",
+      "url": "assets/audio/swish.wav"
+    },
+    "sfx.riser": {
+      "type": "audio",
+      "url": "assets/audio/riser.wav"
+    },
+    "sfx.impact": {
+      "type": "audio",
+      "url": "assets/audio/impact.wav"
+    },
+    "sfx.clunk": {
+      "type": "audio",
+      "url": "assets/audio/clunk.wav"
+    },
+    "sfx.boing": {
+      "type": "audio",
+      "url": "assets/audio/boing.wav"
+    },
+    "sfx.ding": {
+      "type": "audio",
+      "url": "assets/audio/ding.wav"
     }
   }
 }

@@ -63,6 +63,23 @@ export class Hud {
   banner: { text: string; sub: string; color: string; t: number; life: number } | null = null;
   fastMode = false;
   showCursor = true;
+  /** Cursor art: an open glove over something grabbable, a closed one while dragging. */
+  cursor: 'open' | 'grab' | null = null;
+  /** Cartoon speed lines round the wheel (internal px centre/radius, 0..1 amount). */
+  speedLines: { x: number; y: number; r: number; amt: number; rot: number } | null = null;
+  /** Cinematic letterbox bars, 0..1 (eased toward `letterboxTarget`). */
+  letterbox = 0;
+  letterboxTarget = 0;
+  /** A one- or two-frame impact flash (white, or black for the bad ones). */
+  private impactT = 0;
+  private impactColor = '#fff';
+  reducedFlashing = false;
+
+  impact(color = '#fff', frames = 2): void {
+    if (this.reducedFlashing) return;
+    this.impactT = frames;
+    this.impactColor = color;
+  }
   hint = '';
   corner = '';
   /** The payout breakdown line (broadcast graphic), e.g. "$100 → ×2 → ×1.75 = $350". */
@@ -213,6 +230,31 @@ export class Hud {
   }
 
   draw(ctx: CanvasRenderingContext2D, w: number, h: number, k: number, mouse: { x: number; y: number; inside: boolean }, time: number): void {
+    // ---- Juice: speed lines round a spinning wheel, letterbox bars, impact frames ----
+    const sl = this.speedLines;
+    if (sl && sl.amt > 0.05 && !this.choice) {
+      const n = 22;
+      ctx.save();
+      ctx.strokeStyle = `rgba(255,244,214,${0.5 * Math.min(1, sl.amt)})`;
+      ctx.lineWidth = k;
+      for (let i = 0; i < n; i++) {
+        // Arcs swept just outside the rim, hand-drawn style: short, broken, uneven.
+        const a = sl.rot + (i / n) * Math.PI * 2;
+        const r = sl.r * (1.04 + ((i * 37) % 7) * 0.012);
+        const len = (0.12 + 0.18 * sl.amt) * (0.6 + ((i * 53) % 5) * 0.1);
+        ctx.beginPath();
+        ctx.arc(sl.x, sl.y, r, a, a + len);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+    if (this.impactT > 0) {
+      this.impactT--;
+      ctx.fillStyle = this.impactColor;
+      ctx.globalAlpha = 0.55;
+      ctx.fillRect(0, 0, w, h);
+      ctx.globalAlpha = 1;
+    }
     // ---- Nav arrows (mouse play) ----
     this.arrowRects = [];
     if (!this.choice) {
@@ -367,12 +409,27 @@ export class Hud {
     if (this.corner && !this.choice) drawText(ctx, this.corner, w - 3 * k, (this.payout ? 26 : 3) * k, { align: 'right', scale: k, color: '#ffc040', shadow: '#000' });
     if (this.fastMode && !this.choice) drawText(ctx, 'FAST >>', 3 * k, (this.payout ? 26 : 3) * k, { scale: k, color: '#80ff80', shadow: '#000' });
 
+    // ---- Letterbox (over the HUD: it's a cinematic moment) ----
+    this.letterbox += (this.letterboxTarget - this.letterbox) * 0.18;
+    if (this.letterbox > 0.01) {
+      const bh = Math.round(h * 0.13 * this.letterbox);
+      ctx.fillStyle = '#000';
+      ctx.fillRect(0, 0, w, bh);
+      ctx.fillRect(0, h - bh, w, bh);
+    }
+
     // ---- Cursor ----
     if (this.showCursor && mouse.inside) {
-      ctx.fillStyle = '#000';
-      ctx.fillRect(mouse.x - k, mouse.y - k, 3 * k, 3 * k);
-      ctx.fillStyle = '#fff';
-      ctx.fillRect(mouse.x, mouse.y, k, k);
+      const glove = this.cursor ? art.img(this.cursor === 'grab' ? 'ui.handDown' : 'ui.handOpen') : null;
+      if (glove) {
+        const gs = (this.cursor === 'grab' ? 14 : 16) * k;
+        this.sprite(ctx, glove, mouse.x - gs / 2, mouse.y - gs / 2, gs, gs * (glove.height / glove.width));
+      } else {
+        ctx.fillStyle = '#000';
+        ctx.fillRect(mouse.x - k, mouse.y - k, 3 * k, 3 * k);
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(mouse.x, mouse.y, k, k);
+      }
     }
   }
 

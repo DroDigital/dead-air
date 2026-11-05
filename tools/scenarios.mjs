@@ -96,6 +96,40 @@ const NAMES = { cash: 'CASH', jackpot: 'JACKPOT', bankrupt: 'BANKRUPT', dud: 'DU
 const want = NAMES[hover.expectedKind] ?? hover.expectedKind;
 check('tooltip on the wheel names the wedge under the pointer', !!tip && tipName.startsWith(want), `tooltip "${tipName}", wedge under flapper: ${want}`);
 
+// ---- 4b. Grab the wheel with the mouse and flick it clockwise: it spins -----------------
+await idle(20000);
+const geo = await page.evaluate(() => {
+  const a = window.deadAir;
+  const r = a.canvas.getBoundingClientRect();
+  const vp = a.stage.post.viewport(r.width, r.height);
+  const c = a.toScreen(a.stage.wheel.centerWorld());
+  const e = a.toScreen(a.stage.wheel.rimWorld());
+  return { cx: r.left + vp.x + c.x * vp.k, cy: r.top + vp.y + c.y * vp.k, rad: Math.hypot(e.x - c.x, e.y - c.y) * vp.k * 0.7, spins: a.game.run.stats.spins, phase: a.game.run.phase };
+});
+const at = (deg) => [geo.cx + Math.cos((deg * Math.PI) / 180) * geo.rad, geo.cy + Math.sin((deg * Math.PI) / 180) * geo.rad];
+// A feeble drag springs back without spending a spin.
+await page.mouse.move(...at(200));
+await page.mouse.down();
+await page.waitForTimeout(150);
+await page.mouse.move(...at(206), { steps: 4 });
+await page.waitForTimeout(250);
+await page.mouse.up();
+await page.waitForTimeout(800);
+const afterFeeble = await page.evaluate(() => window.deadAir.game.run.stats.spins);
+// A real flick: grab at nine o'clock, sweep over the top fast, let go.
+await idle(20000);
+await page.mouse.move(...at(180));
+await page.mouse.down();
+await page.waitForTimeout(120);
+for (let d = 186; d <= 320; d += 14) {
+  await page.mouse.move(...at(d));
+  await page.waitForTimeout(12);
+}
+await page.mouse.up();
+const flicked = await page.waitForFunction((n) => window.deadAir.game.run.stats.spins > n, geo.spins, { timeout: 6000 }).then(() => true, () => false);
+check('grabbing the wheel: a feeble drag springs back, a clockwise flick spins it', geo.phase === 'AwaitAction' && afterFeeble === geo.spins && flicked, `spins before ${geo.spins}, after feeble drag ${afterFeeble}, flick spun: ${flicked}`);
+await idle(30000);
+
 // ---- 5. Quitting during a spin waits for the spin, then quits cleanly -------------------
 await idle(20000);
 await page.keyboard.down(' ');

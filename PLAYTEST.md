@@ -14,7 +14,7 @@ Three kinds of check were run against the built game (`npm run build`, served wi
    - Saves: a reload mid-run followed by Continue must restore the same Tray, Vault, spins, Deadline, Streak, Debt and shelf.
    - Escape: pressed during play, it must open the pause menu and keep it open.
    The late-game options force states that random play rarely reaches: `--jump8` (Deadline 8, for victory and Endless), `--doom` (an unpayable Debt, for game over), `--reload`, `--unlock` (Ratings unlocked), `--boost` (more money, so the Cabinet and phone come up sooner).
-2. **Scripted scenarios** (`node tools/scenarios.mjs`, 11 checks). These cover the paths random play barely reaches: Prize Room and Credits rendering, every settings option, 2× resolution, a tooltip compared with the wedge under the flapper, quitting during a spin, continuing a saved run, abandoning a run, fast-mode toggling, and winning Deadline 8 into Endless.
+2. **Scripted scenarios** (`node tools/scenarios.mjs`, 12 checks). These cover the paths random play barely reaches: Prize Room and Credits rendering, grabbing the wheel (a feeble drag springs back, a clockwise flick spins it), every settings option, 2× resolution, a tooltip compared with the wedge under the flapper, quitting during a spin, continuing a saved run, abandoning a run, fast-mode toggling, and winning Deadline 8 into Endless.
 3. **Static text checks** (`tests/text.test.ts`). Every string the in-world font draws, from wedges, artifacts, bargains, scratch cards, mutators, host lines and combos, is checked for characters the font can't draw. Those would otherwise appear as question marks.
 
 Plus screenshot review of each station and overlay, at 320×180 and 1280×720, and the simulator (`npm run sim`).
@@ -34,6 +34,7 @@ Plus screenshot review of each station and overlay, at 320×180 and 1280×720, a
 | 7 | 2 min | as pass 2, with the provided music | 61 | 3 | 23 | 0 | 2 | 0 | — | — | 0 |
 | 8 | 4 min | as pass 2, Sponsor's Challenge, coins, light shows | 143 | 4 | 39 | 34 | 3 | 2 | — | — | 0 |
 | 9 | 4 min | as pass 2, art pack (cut-out host, menus, icons) | 107 | 3 | 39 | 5 | 2 | 2 | — | — | 0 |
+| 10 | 4 min | as pass 2, wheel redesign, grab-and-spin, slow-motion finishes | 157 | 2 | 32 | 39 | 1 | 0 | — | — | 0 |
 
 Passes 6 and 7 ran after the presentation pass (voice-over, lighting, post effects, camera moves, new chyron, Double or Nothing, the provided music). The 11 scenario checks also pass on that build with zero page errors. Software-rendered frame pacing dropped from 26–30 fps to 22–23 fps with the new beams and bloom; that is headless SwiftShader, not a GPU, and still needs a measurement on real hardware.
 

@@ -17,16 +17,8 @@ export const WHEEL_R = 1.25;
 const INNER_R = 0.42;
 const PEG_R = WHEEL_R - 0.05;
 const FLAP_LEN = 0.2;
-/**
- * Marquee bulbs: one on each bulb painted on the owner's ornamental frame (five per quarter,
- * mirrored about the four cartouches), in degrees clockwise from the top. Without the frame
- * art they fall back to 40 evenly spaced bulbs.
- */
-const FRAME_BULBS = [16.6, 28.5, 42.2, 56.5, 70.4].flatMap((d) => [d, 180 - d, 180 + d, 360 - d]).sort((x, y) => x - y);
-/** The frame sprite: half its width in world units, so its band's inner edge clears the wheel. */
-const FRAME_HALF = 1.58;
-/** Painted bulb centres sit at this fraction of the sprite's half-width. */
-const FRAME_BULB_R = 0.881;
+/** Marquee bulbs round the gold rim. */
+const BULBS = 40;
 /** Wheel face texture size, and the bitmap-font scale on it (native pixel size on screen). */
 const FACE_PX = 256;
 const GLYPH = 2;
@@ -208,38 +200,33 @@ export class WheelView {
   private chase = 0;
   private colorblind = false;
   private flapJiggle = 0;
+  private speedDeg = 0;
+  private sun!: CanvasPanel;
+  private sunKey = '';
+  /**
+   * How far gone the show is, 0..1 (the app raises it every Deadline): more ink runs down the
+   * dividers, more stains on the print, and the sun's tear.
+   */
+  decay = 0;
+  /** Where the hub sun's eyes look (-1..1, screen-ish), and its mood. */
+  sunLook = { x: 0, y: 0.25 };
+  sunMood: 'idle' | 'dizzy' | 'gloat' = 'idle';
+  private lastTheta = 0;
 
   constructor(assets: Assets) {
     const g = this.group;
     g.position.set(0, 1.55, -0.6);
 
-    // Back plate / frame (static). The owner's ornamental ring replaces the plain gold torus.
-    const frameImg = art.img('wheel.frame');
-    // Static frame: back plate, gold rim, stand, hub, flapper bracket, inner pointer — one mesh.
+    // Static frame: back plate, gold rim, stand, flapper bracket, inner pointer — one mesh.
     const frame = new PropBuilder()
-      .cyl(frameImg ? 0x24160e : 0x8a8a92, WHEEL_R + (frameImg ? 0.08 : 0.16), WHEEL_R + (frameImg ? 0.08 : 0.16), 0.12, [0, 0, -0.08], [Math.PI / 2, 0, 0], 40)
+      .cyl(0x2a1a12, WHEEL_R + 0.16, WHEEL_R + 0.16, 0.12, [0, 0, -0.08], [Math.PI / 2, 0, 0], 40)
+      .torus(0xd8a830, WHEEL_R + 0.09, 0.045, [0, 0, 0], [0, 0, 0], 40, 5)
       .box(0x3a2216, [0.35, 1.5, 0.3], [0, -1.0, -0.2])
       .box(0xc89830, [0.39, 0.05, 0.34], [0, -0.3, -0.2])
       .box(0xd8a830, [0.12, 0.1, 0.12], [0, WHEEL_R + 0.2, 0.06])
       .cone(0xc0392b, 0.04, 0.09, [0, INNER_R + 0.02, 0.07], [0, 0, Math.PI])
       .build();
     g.add(frame);
-    if (frameImg) {
-      const tex = new THREE.Texture(frameImg);
-      tex.colorSpace = THREE.NoColorSpace;
-      tex.magFilter = THREE.NearestFilter;
-      tex.minFilter = THREE.LinearMipmapLinearFilter;
-      tex.needsUpdate = true;
-      const ring = new THREE.Mesh(
-        new THREE.PlaneGeometry(FRAME_HALF * 2, FRAME_HALF * 2 * (frameImg.height / frameImg.width)),
-        // Unlit (slightly dimmed): it's the show's painted marquee, it should read in a dark studio.
-        psxMaterial({ map: tex, alphaTest: 0.5, lit: false, color: 0xd8ccb8, fog: 0.5, side: THREE.DoubleSide }),
-      );
-      ring.position.z = 0.01;
-      // Decoration only: its see-through middle must not block picks on the wheel.
-      ring.raycast = () => {};
-      g.add(ring);
-    } else g.add(new PropBuilder().torus(0xd8a830, WHEEL_R + 0.09, 0.045, [0, 0, 0], [0, 0, 0], 40, 5).build());
     void assets;
 
     // Outer wheel face.
@@ -275,7 +262,8 @@ export class WheelView {
     g.add(this.ringSpinner);
     // Hub: a grinning brass sun that stays upright while the wheel turns under it.
     const sun = new CanvasPanel(96, 96);
-    sun.draw((ctx) => drawSun(ctx, 48));
+    this.sun = sun;
+    sun.draw((ctx) => drawSun(ctx, 48, this.sunMood, 0, 0.25, 0));
     sun.texture.minFilter = THREE.LinearMipmapLinearFilter;
     sun.texture.generateMipmaps = true;
     const hub = new THREE.Mesh(new THREE.CircleGeometry(0.17, 24), psxMaterial({ map: sun.texture, alphaTest: 0.5, wrap: 0.5 }));
@@ -306,10 +294,10 @@ export class WheelView {
 
     // Marquee bulbs around the frame.
     const bulbMat = psxMaterial({ lit: false, color: 0xffffff, fog: 0.3 });
-    this.bulbAngles = frameImg ? FRAME_BULBS.map((d) => d / 360) : Array.from({ length: 40 }, (_, i) => i / 40);
-    const n = this.bulbAngles.length;
-    const br = frameImg ? FRAME_HALF * FRAME_BULB_R : WHEEL_R + 0.13;
-    this.bulbs = new THREE.InstancedMesh(new THREE.OctahedronGeometry(frameImg ? 0.032 : 0.035, 0), bulbMat, n);
+    this.bulbAngles = Array.from({ length: BULBS }, (_, i) => i / BULBS);
+    const n = BULBS;
+    const br = WHEEL_R + 0.13;
+    this.bulbs = new THREE.InstancedMesh(new THREE.OctahedronGeometry(0.035, 0), bulbMat, n);
     const m = new THREE.Matrix4();
     for (let i = 0; i < n; i++) {
       const a = this.bulbAngles[i] * TAU;
@@ -374,6 +362,21 @@ export class WheelView {
       ctx.clip();
       ctx.globalCompositeOperation = 'multiply';
       ctx.drawImage(grain(w), -R, -R);
+      // Twisted: the print is going off. Stain rings, more of them as the show rots.
+      const rnd = seeded(layout.segments.length * 977 + Math.round(this.decay * 8));
+      for (let k = 0; k < 2 + Math.round(this.decay * 5); k++) {
+        const a = rnd() * TAU,
+          rr = hub + 8 + rnd() * (rimIn - hub - 20),
+          sr = 5 + rnd() * 9;
+        ctx.globalCompositeOperation = 'multiply';
+        ctx.fillStyle = 'rgba(120,60,30,0.10)';
+        ctx.strokeStyle = 'rgba(90,40,20,0.22)';
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        ctx.arc(Math.cos(a) * rr, Math.sin(a) * rr, sr, 0, TAU);
+        ctx.fill();
+        ctx.stroke();
+      }
       ctx.restore();
       // Gilded wedges: a gold inlay inside the rim (two lines for a double gild).
       for (const s of layout.segments) {
@@ -422,13 +425,81 @@ export class WheelView {
       ctx.arc(0, 0, R - 1.5, 0, TAU);
       ctx.stroke();
       for (const s of layout.segments) {
-        if (s.end - s.start < 6) continue;
+        if (s.end - s.start < 6 || s.kind === 'bankrupt') continue;
         const a = ((s.start + s.end) / 2 - 90) * DEG;
         const rr = (R + rimIn) / 2;
         ctx.fillStyle = '#fff0c8';
         ctx.beginPath();
         ctx.arc(Math.cos(a) * rr, Math.sin(a) * rr, 2.2, 0, TAU);
         ctx.fill();
+      }
+      // Twisted: ink bleeds from the rim down the dividers (never across a label), and Bankrupt
+      // wedges have a faint grin and a staring eye in the rim where the dot should be.
+      const drip = seeded(layout.segments.length * 131 + Math.round(this.decay * 8));
+      const segs = layout.segments;
+      for (let si = 0; si < segs.length; si++) {
+        const s = segs[si];
+        const prev = segs[(si - 1 + segs.length) % segs.length];
+        // Only between wedges wide enough that a label never comes near the divider out here.
+        if (drip() > 0.22 + this.decay * 0.45 || s.end - s.start < 14 || prev.end - prev.start < 14) continue;
+        const a = (s.start - 90) * DEG;
+        const len = 6 + drip() * 10 + this.decay * 18;
+        const r0 = rimIn + 1,
+          r1 = rimIn - len;
+        ctx.strokeStyle = '#2a0c06';
+        ctx.fillStyle = '#2a0c06';
+        ctx.lineWidth = 1.6 + drip() * 0.8;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(Math.cos(a) * r0, Math.sin(a) * r0);
+        ctx.lineTo(Math.cos(a) * r1, Math.sin(a) * r1);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(Math.cos(a) * r1, Math.sin(a) * r1, ctx.lineWidth * 0.75, 0, TAU);
+        ctx.fill();
+      }
+      for (const s of layout.segments) {
+        if (s.kind !== 'bankrupt') continue;
+        const mid = ((s.start + s.end) / 2 - 90) * DEG;
+        // The eye in the rim.
+        const re = (R + rimIn) / 2;
+        const ex = Math.cos(mid) * re,
+          ey = Math.sin(mid) * re;
+        ctx.fillStyle = '#fff0c8';
+        ctx.beginPath();
+        ctx.ellipse(ex, ey, 3.2, 2.2, mid + Math.PI / 2, 0, TAU);
+        ctx.fill();
+        ctx.fillStyle = '#b01810';
+        ctx.beginPath();
+        ctx.arc(ex, ey, 1.2, 0, TAU);
+        ctx.fill();
+        // A faint grin, low in the wedge, where nothing else is drawn.
+        const span = (s.end - s.start) * DEG;
+        const gr = hub + 14;
+        const gw = Math.min(span * gr * 0.42, 9);
+        if (gw < 4) continue;
+        ctx.save();
+        ctx.rotate(mid + Math.PI / 2);
+        ctx.translate(0, -gr);
+        ctx.strokeStyle = 'rgba(255,240,210,0.3)';
+        ctx.fillStyle = 'rgba(255,240,210,0.3)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.arc(0, -gw * 0.6, gw, 0.35, Math.PI - 0.35);
+        ctx.stroke();
+        for (let t = -2; t <= 2; t++) {
+          const tx = t * gw * 0.3;
+          ctx.beginPath();
+          ctx.moveTo(tx - 1, gw * 0.3);
+          ctx.lineTo(tx + 1, gw * 0.3);
+          ctx.lineTo(tx, gw * 0.3 + 2);
+          ctx.fill();
+        }
+        ctx.beginPath();
+        ctx.arc(-gw * 0.45, -gw * 0.75, 1, 0, TAU);
+        ctx.arc(gw * 0.45, -gw * 0.75, 1, 0, TAU);
+        ctx.fill();
+        ctx.restore();
       }
       // Contents: the drawn icon at the rim and the label along the radius, each only if it fits.
       for (const s of layout.segments) {
@@ -670,6 +741,30 @@ export class WheelView {
     return !!this.play || !!this.tween;
   }
 
+  /** Seconds of recorded spin left to play (0 when not spinning). */
+  get timeLeft(): number {
+    return this.play ? Math.max(0, this.play.duration - this.play.t) : 0;
+  }
+
+  /** How fast the face is turning, degrees per second (smoothed). */
+  get spinSpeed(): number {
+    return this.speedDeg;
+  }
+
+  /** World position of the pointer's tip, and of the hub. */
+  pointerTipWorld(): THREE.Vector3 {
+    return new THREE.Vector3(0, WHEEL_R - 0.05, 0.1).applyMatrix4(this.group.matrixWorld);
+  }
+
+  centerWorld(): THREE.Vector3 {
+    return new THREE.Vector3(0, 0, 0.05).applyMatrix4(this.group.matrixWorld);
+  }
+
+  /** Rim point straight up from the hub (for the on-screen radius). */
+  rimWorld(): THREE.Vector3 {
+    return new THREE.Vector3(0, WHEEL_R, 0.05).applyMatrix4(this.group.matrixWorld);
+  }
+
   /** Instantly finish the current playback (fast-forward). */
   skip(): void {
     if (this.play) this.play.t = this.play.duration + this.play.hang;
@@ -725,6 +820,20 @@ export class WheelView {
       this.flapJiggle *= Math.pow(0.02, dt);
       this.psi = this.psi * Math.pow(0.001, dt) + Math.sin(time * 30) * this.flapJiggle * 2;
     }
+    const mood = this.speedDeg > 260 ? 'dizzy' : this.sunMood;
+    const step = Math.floor(time * 12);
+    const lx = Math.round(this.sunLook.x * 6) / 6,
+      ly = Math.round(this.sunLook.y * 6) / 6;
+    const key = mood === 'dizzy' ? `d${step}` : `${mood}${lx},${ly},${Math.round(this.decay * 4)}`;
+    if (key !== this.sunKey) {
+      this.sunKey = key;
+      this.sun.draw((ctx) => drawSun(ctx, 48, mood, lx, ly, this.decay, time));
+    }
+    if (dt > 0) {
+      const v = Math.abs(this.theta - this.lastTheta) / dt;
+      this.speedDeg += (v - this.speedDeg) * Math.min(1, dt * 10);
+    }
+    this.lastTheta = this.theta;
     this.spinner.rotation.z = -this.theta * DEG;
     this.ringSpinner.rotation.z = -this.alpha * DEG;
     this.flapperPivot.rotation.z = this.psi * DEG * (PEG_R / FLAP_LEN);
@@ -776,17 +885,34 @@ export class WheelView {
   }
 }
 
-/** The hub: a brass sun with rays and a cartoon grin, in the art pack's ink style. */
-function drawSun(ctx: CanvasRenderingContext2D, r: number): void {
+/** Deterministic little PRNG so a layout's stains and drips don't jump about between redraws. */
+function seeded(seed: number): () => number {
+  let t = seed >>> 0;
+  return () => {
+    t = (t + 0x6d2b79f5) >>> 0;
+    let x = Math.imul(t ^ (t >>> 15), 1 | t);
+    x ^= x + Math.imul(x ^ (x >>> 7), 61 | x);
+    return ((x ^ (x >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+/**
+ * The hub: a brass sun with a grin that has slightly too many teeth. Its eyes follow `look`
+ * (the player's hand), roll while the wheel spins, and go to slits when it gloats; late in the
+ * show, ink runs from one eye.
+ */
+function drawSun(ctx: CanvasRenderingContext2D, r: number, mood: 'idle' | 'dizzy' | 'gloat', lx: number, ly: number, decay: number, time = 0): void {
   ctx.clearRect(0, 0, 2 * r, 2 * r);
   ctx.save();
   ctx.translate(r, r);
   const rays = 12;
   for (let i = 0; i < rays; i++) {
-    const a = (i / rays) * TAU;
+    const a = (i / rays) * TAU + (mood === 'dizzy' ? time * 0.6 : 0);
+    // Rays aren't quite even: one is bent.
+    const tip = i === 7 ? 0.86 : 0.97;
     ctx.beginPath();
     ctx.moveTo(Math.cos(a - 0.2) * r * 0.6, Math.sin(a - 0.2) * r * 0.6);
-    ctx.lineTo(Math.cos(a) * r * 0.97, Math.sin(a) * r * 0.97);
+    ctx.lineTo(Math.cos(a + (i === 7 ? 0.12 : 0)) * r * tip, Math.sin(a + (i === 7 ? 0.12 : 0)) * r * tip);
     ctx.lineTo(Math.cos(a + 0.2) * r * 0.6, Math.sin(a + 0.2) * r * 0.6);
     ctx.closePath();
     ctx.fillStyle = i % 2 ? '#e2a52e' : '#f3dfb0';
@@ -806,30 +932,66 @@ function drawSun(ctx: CanvasRenderingContext2D, r: number): void {
   ctx.lineWidth = 3;
   ctx.strokeStyle = '#2a1206';
   ctx.stroke();
-  // Pie-cut eyes and a wide grin.
-  ctx.fillStyle = '#1c0a04';
+  // Eyes: whites with pupils that follow, roll (dizzy) or narrow (gloat).
   for (const s of [-1, 1]) {
-    ctx.beginPath();
-    ctx.ellipse(s * r * 0.2, -r * 0.12, r * 0.08, r * 0.14, 0, 0, TAU);
-    ctx.fill();
+    const ex = s * r * 0.21,
+      ey = -r * 0.13;
     ctx.fillStyle = '#fff8e0';
+    ctx.strokeStyle = '#1c0a04';
+    ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.moveTo(s * r * 0.2, -r * 0.12);
-    ctx.arc(s * r * 0.2, -r * 0.12, r * 0.08, -1.2, -0.5);
+    ctx.ellipse(ex, ey, r * 0.11, mood === 'gloat' ? r * 0.06 : r * 0.15, 0, 0, TAU);
     ctx.fill();
-    ctx.fillStyle = '#1c0a04';
+    ctx.stroke();
+    let px = lx,
+      py = ly;
+    if (mood === 'dizzy') {
+      px = Math.cos(time * 9 * s);
+      py = Math.sin(time * 9 * s);
+    }
+    ctx.fillStyle = mood === 'gloat' ? '#8a1008' : '#1c0a04';
+    ctx.beginPath();
+    ctx.arc(ex + px * r * 0.05, ey + py * (mood === 'gloat' ? r * 0.01 : r * 0.08), r * 0.055, 0, TAU);
+    ctx.fill();
+    // Heavy lids when gloating.
+    if (mood === 'gloat') {
+      ctx.beginPath();
+      ctx.moveTo(ex - r * 0.13, ey - r * 0.02 - s * r * 0.03);
+      ctx.lineTo(ex + r * 0.13, ey - r * 0.02 + s * r * 0.03);
+      ctx.stroke();
+    }
   }
+  // The grin: wide, with a row of small pointed teeth.
+  const wide = mood === 'gloat' ? 0.4 : 0.33;
+  ctx.fillStyle = '#1c0a04';
   ctx.beginPath();
-  ctx.arc(0, r * 0.05, r * 0.32, 0.25, Math.PI - 0.25);
+  ctx.arc(0, r * 0.06, r * wide, 0.22, Math.PI - 0.22);
   ctx.closePath();
   ctx.fill();
-  ctx.fillStyle = '#c0392b';
+  ctx.fillStyle = '#fff4d8';
+  const teeth = 9;
+  for (let t = 0; t < teeth; t++) {
+    const a = 0.32 + ((Math.PI - 0.64) * (t + 0.5)) / teeth;
+    const x = Math.cos(a) * r * wide * 0.92;
+    const y = r * 0.06 + Math.sin(0.22) * r * wide;
+    ctx.beginPath();
+    ctx.moveTo(x - r * 0.03, y);
+    ctx.lineTo(x + r * 0.03, y);
+    ctx.lineTo(x, y + r * 0.07);
+    ctx.fill();
+  }
+  ctx.fillStyle = 'rgba(255,255,255,0.5)';
   ctx.beginPath();
-  ctx.arc(0, r * 0.3, r * 0.1, Math.PI, 0);
+  ctx.ellipse(-r * 0.3, -r * 0.36, r * 0.09, r * 0.04, -0.6, 0, TAU);
   ctx.fill();
-  ctx.fillStyle = 'rgba(255,255,255,0.55)';
-  ctx.beginPath();
-  ctx.ellipse(-r * 0.28, -r * 0.34, r * 0.1, r * 0.05, -0.6, 0, TAU);
-  ctx.fill();
+  // Late in the show: ink runs from the right eye down the brass.
+  if (decay > 0.35) {
+    const len = r * (0.15 + decay * 0.3);
+    ctx.fillStyle = '#1c0a04';
+    ctx.fillRect(r * 0.24, -r * 0.02, r * 0.035, len);
+    ctx.beginPath();
+    ctx.arc(r * 0.257, -r * 0.02 + len, r * 0.035, 0, TAU);
+    ctx.fill();
+  }
   ctx.restore();
 }

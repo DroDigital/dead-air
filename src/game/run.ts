@@ -714,10 +714,15 @@ export class Game implements PayoutHost {
   // =====================================================================================
   // Spinning
   // =====================================================================================
-  spin(power: number, opts: { peek?: boolean } = {}): SpinOutcome {
+  /**
+   * Spin with a lever power 0..1. `startAngle` is where a player who grabbed the wheel by hand
+   * let go of it: the spin starts from there instead of where it last stopped.
+   */
+  spin(power: number, opts: { peek?: boolean; startAngle?: number } = {}): SpinOutcome {
     this.assertPhase('AwaitAction');
     const run = this.run;
     if (run.spinsLeft <= 0) throw new Error('No spins left');
+    if (opts.startAngle !== undefined && Number.isFinite(opts.startAngle)) run.wheelAngle = mod360(opts.startAngle);
     this.triggerSink = [];
     this.notes = [];
     const layout = this.layout();

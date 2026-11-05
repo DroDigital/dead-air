@@ -84,7 +84,14 @@ The only library over ~100 kB gz is three.js. GSAP measures ~28 kB gz. Built app
 - The model sheet is opaque, so parts are cut out with a flood fill from the crop edges that stops at the ink outline, then feathered.
 - He is a billboard facing the contestant's chair. He used to be a low-poly mannequin; the 3D model the owner mentioned can replace the billboard later without changing the `HostView` API.
 - The wheel face is a 256 px texture with the pixel font at scale 2, so text is the same on-screen size as the HUD's (it can't shrink and stay legible at 320×180). That fixes what fits: on a standard 15° wedge a four-character value fills the outer half of the wedge, so numbers win over icons there; the icon joins the label on wider wedges and stands alone on non-number wedges. The face is mipmapped (unlike the rest of the PS1 textures) so the painted detail doesn't shimmer while it spins.
-- The owner's painted wheel was a reference; only its ornamental frame is used, at the owner's request.
+- The owner's painted wheel and ornamental frame were references; the frame was tried around the wheel and taken out again at the owner's request (it didn't sit right), so the wheel keeps its gold rim and 40 marquee bulbs.
+
+## Grabbing the wheel, and the slow-motion finishes
+
+- A hand spin uses the same physics and the same sweet-spot rule as the lever: the flick's angular speed over the last 0.12 s maps to power (140°/s is the least that spins, 1000°/s is full power), and the spin starts from wherever the player let go. Starting angle is a new input to `Game.spin` (`startAngle`); runs stay deterministic for the same inputs. Because the omega jitter still applies, letting go at a chosen angle doesn't let a player aim a wedge.
+- A feeble or backwards flick springs back to where the wheel stopped, so the wheel can't be parked by hand between spins.
+- Mouse only: the gamepad cursor and keyboard keep the lever.
+- Which spins get the slow-motion finish is decided when the spin starts (the outcome is already known), so the close-up begins in time rather than reacting late. Fast mode skips it, and Reduced Flashing drops the flash frames and softens the shock.
 
 ## Desktop launcher
 

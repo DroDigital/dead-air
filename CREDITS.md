@@ -37,6 +37,12 @@ DEAD AIR — design, code, writing, procedural art, procedural audio and music: 
 | `sfx.button` | https://opengameart.org/content/rpg-sound-pack | artisticdude (OpenGameArt, "RPG Sound Pack") | CC0-1.0 | Source file "RPG Sound Pack/interface/interface2.wav" from the zip. Converted to mono 22.05 kHz PCM16 with a one-pole lowpass at 7 kHz and 10-bit crush. Plays on menu and panel selections. |
 | `sfx.scratch` | https://opengameart.org/content/rpg-sound-pack | artisticdude (OpenGameArt, "RPG Sound Pack") | CC0-1.0 | Source file "RPG Sound Pack/inventory/cloth.wav" from the zip. Converted to mono 22.05 kHz PCM16 with a one-pole lowpass at 7 kHz and 10-bit crush. Plays when a Scratch Card is used. |
 | `sfx.crank` | https://opengameart.org/content/rpg-sound-pack | artisticdude (OpenGameArt, "RPG Sound Pack") | CC0-1.0 | Source file "RPG Sound Pack/inventory/chainmail1.wav" from the zip. Converted to mono 22.05 kHz PCM16 with a one-pole lowpass at 7 kHz and 10-bit crush. Plays when the Prize Cabinet crank turns. |
+| `sfx.swish` | https://opengameart.org/content/swishes-sound-pack | artisticdude (OpenGameArt, "Swishes Sound Pack") | CC0-1.0 | Source file "swishes/swish-7.wav" from the zip. Converted to mono 22.05 kHz PCM16 with a one-pole lowpass at 7 kHz and 10-bit crush. The flick that sends the wheel spinning, and the camera's whip moves. |
+| `sfx.riser` | https://opengameart.org/content/air-whoosh | pyranostudios (OpenGameArt, "Air Whoosh") | CC0-1.0 | Source file "whoosh2_0.wav", trimmed to its last 2.6 s (the build-up) with a 0.4 s fade-in. Converted to mono 22.05 kHz PCM16 with a one-pole lowpass at 7 kHz and 10-bit crush. Swells under the slow-motion finish of a dramatic spin. |
+| `sfx.impact` | https://opengameart.org/content/75-cc0-breaking-falling-hit-sfx | rubberduck (OpenGameArt, "75 CC0 breaking / falling / hit sfx") | CC0-1.0 | Source file "bfh1_hit_02.ogg" from the zip. Converted to mono 22.05 kHz PCM16 with a one-pole lowpass at 7 kHz and 10-bit crush. The slam when a big result lands. |
+| `sfx.clunk` | https://opengameart.org/content/75-cc0-breaking-falling-hit-sfx | rubberduck (OpenGameArt, "75 CC0 breaking / falling / hit sfx") | CC0-1.0 | Source file "bfh1_metal_hit_05.ogg" from the zip. Converted to mono 22.05 kHz PCM16 with a one-pole lowpass at 7 kHz and 10-bit crush. A hand grabbing the wheel. |
+| `sfx.boing` | https://opengameart.org/content/boing | Aeva (OpenGameArt, "Boing") | CC0-1.0 | Source file "boing.flac", first 1.3 s with a 0.4 s fade-out. Converted to mono 22.05 kHz PCM16 with a one-pole lowpass at 7 kHz and 10-bit crush. The wheel springing back from a feeble flick. |
+| `sfx.ding` | https://opengameart.org/content/4-metal-dingsrings | starninjas (OpenGameArt, "4 Metal Dings/Rings") | CC0-1.0 | Source file "ding.4.ogg" from the zip. Converted to mono 22.05 kHz PCM16 with a one-pole lowpass at 7 kHz and 10-bit crush. A flick in the sweet spot. |
 
 ## Music
 
@@ -87,7 +93,7 @@ Voice-over (custom-designed voices, `eleven_v4`), sound effects (`eleven_text_to
 
 ## Art
 
-The 2D art pack (the Host, his faces, the callers, wedge, artifact and scratch-card icons, the menu and HUD kits, the title plate, the wheel frame, the full-screen cards and the studio textures) was provided for this project by the project owner. Sources in `assets-src/art`; `tools/art.ts` slices them into the sprites in `public/assets/art`.
+The 2D art pack (the Host, his faces, the callers, wedge, artifact and scratch-card icons, the menu and HUD kits, the title plate, the full-screen cards and the studio textures) was provided for this project by the project owner. Sources in `assets-src/art`; `tools/art.ts` slices them into the sprites in `public/assets/art`.
 
 
 ## Libraries

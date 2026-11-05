@@ -25,7 +25,7 @@ import { META_VERSION, applyRun, computeRatings, endlessUnlocked, newMeta, noteR
 import { Game, RUN_VERSION, type DeadlineEndResult, type SpinOutcome, type SpinResolution } from './game/run';
 import { sellValue } from './game/shop';
 import type { PackageId, RunState } from './game/types';
-import { angleForSegment, meterValue } from './game/wheel';
+import { angleForSegment, inSweetSpot, meterValue, mod360 } from './game/wheel';
 import { CabinetView, type ServiceButton } from './render/scene/cabinet';
 import { buildProp } from './render/scene/props';
 import { Stage } from './render/stage';
@@ -39,6 +39,11 @@ import * as THREE from 'three';
 type TargetMode = 'replace' | 'remove' | 'gild' | 'widen' | 'narrow';
 
 const wait = (s: number) => new Promise<void>((r) => setTimeout(r, s * 1000));
+
+/** Hand spins: a flick slower than this (deg/s) springs back; this fast is full power. */
+const GRAB_MIN = 140;
+const GRAB_FULL = 1000;
+const DEG = Math.PI / 180;
 
 export class App {
   readonly assets = new Assets();
@@ -70,6 +75,13 @@ export class App {
   private time = 0;
   private hitstop = 0;
   private charge: { t: number; peek: boolean; lastTick: number } | null = null;
+  /** Slow motion: the stage's clock runs at `timeScale`, eased toward `timeScaleTarget`. */
+  private timeScale = 1;
+  private timeScaleTarget = 1;
+  /** A dramatic spin's finish (decided when the spin starts): when its slow-motion close-up begins. */
+  private drama: { at: number; started: boolean; kind: 'jackpot' | 'bankrupt' | 'big' | 'near'; beds: { stop: (fade?: number) => void }[] } | null = null;
+  /** The wheel in the player's hand: the mouse's angle round the hub, the wheel's angle, recent samples. */
+  private grab: { ang: number; theta: number; samples: { t: number; th: number }[]; seg: number } | null = null;
   private target: { mode: TargetMode; idx: number } | null = null;
   private shopSel = 0;
   private convertN = 0;
@@ -241,6 +253,7 @@ export class App {
     this.stage.post.dither = this.settings.dither;
     this.stage.setWarp(this.settings.warp);
     this.stage.vfx.reducedFlashing = this.settings.reducedFlashing;
+    this.hud.reducedFlashing = this.settings.reducedFlashing;
     this.stage.marquee.reduced = this.settings.reducedFlashing;
     this.stage.wheel.setColorblind(this.settings.colorblind);
     this.hud.fastMode = this.settings.fastMode;
@@ -777,8 +790,9 @@ export class App {
     await this.doSpin(power, c.peek);
   }
 
-  private async doSpin(power: number, peek: boolean): Promise<void> {
+  private async doSpin(power: number, peek: boolean, opts: { startAngle?: number; source?: 'lever' | 'hand' } = {}): Promise<void> {
     const g = this.game!;
+    const hand = opts.source === 'hand';
     await this.withBusy(async () => {
       this.fsm.force('Spinning');
       this.hud.payout = null;
@@ -787,15 +801,30 @@ export class App {
         this.spinsMax = g.run.spinsLeft;
         this.spinsMaxFor = g.run.deadline;
       }
-      const outcome = g.spin(power, { peek });
-      this.sfx.play('lever', { gain: 0.8 });
-      this.stage.lever.pull = 1;
-      setTimeout(() => (this.stage.lever.pull = 0), 250);
+      const outcome = g.spin(power, { peek, startAngle: opts.startAngle });
+      if (!hand) {
+        this.sfx.play('lever', { gain: 0.8 });
+        this.stage.lever.pull = 1;
+        setTimeout(() => (this.stage.lever.pull = 0), 250);
+      }
+      // Dramatic finishes (decided now; the outcome is already known) get a slow-motion close-up.
+      this.drama = this.settings.fastMode ? null : this.dramaFor(outcome);
       this.stage.marquee.set(outcome.sweet ? 'SWEET SPOT!' : outcome.locked ? 'LOCKED!' : 'SPINNING…', outcome.sweet ? '#60ff80' : '#ffe060');
       if (outcome.sweet) this.sfx.play('blip', { pitch: 2, gain: 0.5 });
       // Wheel layout at spin time (Static jackpots etc. are already visible).
       this.stage.wheel.setLayout(outcome.layout, outcome.ring, (s) => segmentLabel(g, s));
       this.layoutSig = '';
+      const st = this.stage;
+      if (!hand && !this.settings.fastMode) {
+        // Wind-up: the wheel rocks back against the brake, the camera draws breath, then — go.
+        const th = st.wheel.theta;
+        this.sfx.play('ratchet', { gain: 0.45, pitch: 0.7 });
+        st.rig.punch(3);
+        await st.wheel.rotateTo(th - 9, 0.2);
+        this.sfx.play('whoosh', { gain: 0.6 });
+        st.rig.punch(-5);
+        await st.wheel.rotateTo(th, 0.05);
+      } else if (hand) st.rig.punch(-4);
       await this.stage.wheel.playTrace(outcome.sim.trace, {
         hang: outcome.sim.hang,
         onTick: (t) => {
@@ -803,6 +832,7 @@ export class App {
           this.stage.wheel.kickFlapper();
         },
       });
+      this.endSlowMo();
       this.fsm.force('Resolving');
       this.stage.wheel.showHighlight(outcome.sim.outerIndex, 0xffffff, 0.3);
       if (!outcome.resolution) {
@@ -812,6 +842,165 @@ export class App {
       await this.presentResolution(outcome, outcome.resolution);
     });
     await this.enterPhase();
+  }
+
+  /** Which spins earn the slow-motion finish: Jackpot, Bankrupt, a big win, or a near miss. */
+  private dramaFor(o: ReturnType<Game['spin']>): NonNullable<App['drama']> | null {
+    const segs = o.layout.segments;
+    const n = segs.length;
+    const i = o.sim.outerIndex;
+    const s = segs[i];
+    const cash = o.resolution?.payout.cash ?? 0;
+    let kind: NonNullable<App['drama']>['kind'] | null = null;
+    if (s.kind === 'jackpot') kind = 'jackpot';
+    else if (s.kind === 'bankrupt') kind = 'bankrupt';
+    else if (cash >= Math.max(400, this.game!.run.debt * 0.4)) kind = 'big';
+    else {
+      // A near miss: it stops within 3° of a Jackpot or a Bankrupt next door.
+      const local = mod360(-o.sim.finalAngle);
+      const hot = (x: { kind: string }) => x.kind === 'jackpot' || x.kind === 'bankrupt';
+      const prev = segs[(i - 1 + n) % n],
+        next = segs[(i + 1) % n];
+      if ((hot(prev) && mod360(local - s.start) < 3) || (hot(next) && mod360(s.end - local) < 3)) kind = 'near';
+    }
+    return kind ? { at: kind === 'near' ? 0.7 : 0.95, started: false, kind, beds: [] } : null;
+  }
+
+  /** Slow motion in: the clock drops, the camera pushes onto the pointer, letterbox, heartbeat. */
+  private startSlowMo(): void {
+    const dr = this.drama;
+    if (!dr || dr.started) return;
+    dr.started = true;
+    const st = this.stage;
+    this.timeScaleTarget = 0.32;
+    // Aim just below the glove so the wedges ticking past it fill the shot.
+    const look = st.wheel.pointerTipWorld().add(new THREE.Vector3(0, -0.3, 0));
+    st.rig.focus(look, { push: 0.3, fov: 34, roll: dr.kind === 'bankrupt' ? -0.06 : 0.05, in: 0.5, hold: Infinity });
+    this.hud.letterboxTarget = 1;
+    this.mixer.setMuffle(0.45);
+    this.music.setLevel(0.35, 0.4);
+    this.sfx.play('riser', { gain: 0.7 });
+    const hb = this.sfx.loop('heartbeat', 0.8, 'sfx', 0.1);
+    if (hb) dr.beds.push(hb);
+  }
+
+  /** Slow motion out, on the landing: a hard cut back to speed with an impact. */
+  private endSlowMo(): void {
+    const dr = this.drama;
+    this.drama = null;
+    if (!dr || !dr.started) return;
+    const st = this.stage;
+    this.timeScaleTarget = 1;
+    this.timeScale = 1;
+    for (const b of dr.beds) b.stop(0.3);
+    this.mixer.setMuffle(0);
+    this.music.setLevel(1, 0.6);
+    this.hud.letterboxTarget = 0;
+    this.hitstop = Math.max(this.hitstop, 0.12);
+    this.sfx.play('impact', { gain: 0.9, pitch: dr.kind === 'bankrupt' ? 0.75 : 1 });
+    st.rig.punch(-7);
+    if (this.settings.screenShake) st.rig.shake(0.45);
+    st.post.shock = Math.max(st.post.shock, this.settings.reducedFlashing ? 0.25 : 0.6);
+    this.hud.impact(dr.kind === 'bankrupt' ? '#000' : '#fff', 2);
+    setTimeout(() => {
+      st.rig.release(0.5);
+      this.sfx.play('whoosh', { gain: 0.35, pitch: 0.8 });
+    }, 650);
+    // A reaction shot: whip to the host for the big ones.
+    if (dr.kind === 'jackpot' || dr.kind === 'big') {
+      setTimeout(() => {
+        this.sfx.play('whoosh', { gain: 0.5, pitch: 1.2 });
+        st.rig.whip(1);
+        st.rig.focus(st.host.headWorld(), { push: 0.32, fov: 30, in: 0.25, hold: 1.1, out: 0.4 });
+      }, 1250);
+    }
+  }
+
+  /** World point → internal-resolution pixel. */
+  private toScreen(v: THREE.Vector3): { x: number; y: number } {
+    const p = v.clone().project(this.stage.rig.camera);
+    return { x: (p.x * 0.5 + 0.5) * this.stage.post.width, y: (-p.y * 0.5 + 0.5) * this.stage.post.height };
+  }
+
+  // ===================================================================================
+  // Grab the wheel (mouse): drag it round, flick it clockwise, let go.
+  // ===================================================================================
+  private canGrab(): boolean {
+    const g = this.game;
+    return !!g && g.run.phase === 'AwaitAction' && !this.busy && !this.charge && !this.grab && !this.menus.open && !this.hud.choice && !this.target && !this.stage.wheel.busy;
+  }
+
+  private startGrab(): void {
+    const st = this.stage;
+    const m = this.input.mouse;
+    const c = this.toScreen(st.wheel.centerWorld());
+    this.grab = { ang: Math.atan2(m.y - c.y, m.x - c.x) / DEG, theta: st.wheel.theta, samples: [{ t: this.time, th: st.wheel.theta }], seg: -1 };
+    this.sfx.play('clunk', { gain: 0.6 });
+    st.rig.punch(-1.5);
+    this.hud.hint = 'FLICK IT CLOCKWISE AND LET GO';
+    this.updateArrows();
+  }
+
+  /** Angular speed of the hand over the last ~0.12 s, degrees per second (clockwise +). */
+  private grabOmega(): number {
+    const sm = this.grab?.samples ?? [];
+    if (sm.length < 2) return 0;
+    const a = sm[0],
+      b = sm[sm.length - 1];
+    const dt = b.t - a.t;
+    return dt > 0.015 ? (b.th - a.th) / dt : 0;
+  }
+
+  private grabPower(omega: number): number {
+    return Math.max(0, Math.min(1, (omega - GRAB_MIN) / (GRAB_FULL - GRAB_MIN)));
+  }
+
+  private updateGrab(): void {
+    const gr = this.grab!;
+    const g = this.game!;
+    const st = this.stage;
+    const m = this.input.mouse;
+    const c = this.toScreen(st.wheel.centerWorld());
+    const a = Math.atan2(m.y - c.y, m.x - c.x) / DEG;
+    const d = mod360(a - gr.ang + 180) - 180;
+    // Right over the hub the angle jumps about: only turn the wheel from a few pixels out.
+    if (Math.hypot(m.x - c.x, m.y - c.y) > 6 * st.post.scale) gr.theta += d;
+    gr.ang = a;
+    st.wheel.theta = gr.theta;
+    gr.samples.push({ t: this.time, th: gr.theta });
+    while (gr.samples.length > 2 && this.time - gr.samples[0].t > 0.12) gr.samples.shift();
+    // The lever's gauge reads the flick, so the sweet spot can be aimed by hand too.
+    const power = this.grabPower(this.grabOmega());
+    st.lever.drawGauge(power, BALANCE.sweetCenter, g.chargeContext().sweetHalfWidth, true, false);
+    // Pegs click past the pointer as the wheel is dragged.
+    const L = g.layout();
+    const seg = segmentAt(L, st.wheel.pointerLocal());
+    if (gr.seg >= 0 && seg !== gr.seg) {
+      this.sfx.tick(Math.min(1, Math.abs(d) / 8));
+      st.wheel.kickFlapper();
+    }
+    gr.seg = seg;
+  }
+
+  private releaseGrab(): void {
+    const g = this.game;
+    if (!this.grab || !g) return;
+    const omega = this.grabOmega();
+    const theta = this.grab.theta;
+    this.grab = null;
+    this.hud.hint = '';
+    if (omega >= GRAB_MIN && g.run.phase === 'AwaitAction') {
+      const power = this.grabPower(omega);
+      this.sfx.play('whoosh', { gain: 0.8, pitch: 0.8 + power * 0.5 });
+      if (inSweetSpot(power, g.chargeContext().sweetHalfWidth)) this.sfx.play('ding', { gain: 0.6 });
+      void this.doSpin(power, false, { startAngle: theta, source: 'hand' });
+    } else {
+      // Too feeble (or backwards): the wheel springs back to where it was.
+      this.sfx.play('boing', { gain: 0.55 });
+      this.hud.toast(omega <= -GRAB_MIN ? 'THE OTHER WAY!' : 'PUT SOME ARM INTO IT!', '#ffd040');
+      void this.stage.wheel.rotateTo(g.run.wheelAngle, 0.45);
+      this.updateArrows();
+    }
   }
 
   private showNudge(): void {
@@ -969,6 +1158,8 @@ export class App {
 
   private async bankruptDrama(lost: number, deadAir: boolean): Promise<void> {
     const st = this.stage;
+    st.wheel.sunMood = 'gloat';
+    setTimeout(() => (st.wheel.sunMood = 'idle'), 4000);
     this.sfx.play('bankrupt', { gain: 0.9 });
     if (this.settings.screenShake) st.rig.shake(1);
     st.rig.tilt(0.12 * (Math.random() < 0.5 ? -1 : 1), 1.4);
@@ -1449,6 +1640,10 @@ export class App {
       if (this.target) return this.endTarget();
       if (g) {
         this.charge = null;
+        if (this.grab) {
+          this.grab = null;
+          void this.stage.wheel.rotateTo(g.run.wheelAngle, 0.3);
+        }
         this.loops.drum?.stop(0.1);
         this.loops.drum = null;
         this.menus.show('pause', null);
@@ -1464,9 +1659,11 @@ export class App {
     if (!g) return;
     if (a.type === 'leverDown') return this.startCharge();
     if (a.type === 'leverUp') {
+      if (this.grab) return this.releaseGrab();
       if (this.charge) void this.releaseCharge();
       return;
     }
+    if (this.grab) return;
     if (this.charge) {
       if (a.type === 'key' && a.key === 'e' && g.canPeek()) {
         this.charge.peek = true;
@@ -1610,7 +1807,8 @@ export class App {
     if (id === 'services' && uv) return this.service(CabinetView.serviceAt(uv));
     if (id === 'host') return this.hostSay('idle', 'wink', 'present');
     if (id === 'wheel' || id === 'ring') {
-      if (this.stage.rig.station !== 'center') this.stage.rig.go('center');
+      if (this.stage.rig.station !== 'center') return this.stage.rig.go('center');
+      if (button === 0 && id === 'wheel' && this.canGrab()) this.startGrab();
       return;
     }
     if (id === 'tray' || id === 'vault') {
@@ -1805,6 +2003,12 @@ export class App {
     }
     const st = this.stage;
     const g = this.game;
+    const realDt = dt;
+    this.timeScale += (this.timeScaleTarget - this.timeScale) * Math.min(1, realDt * 8);
+    if (this.grab) this.updateGrab();
+    // A dramatic finish: slow motion for the last stretch of the spin, then a hard cut back.
+    if (this.drama && !this.drama.started && st.wheel.busy && st.wheel.timeLeft > 0 && st.wheel.timeLeft < this.drama.at) this.startSlowMo();
+    if (this.drama?.started && st.wheel.timeLeft <= 0) this.endSlowMo();
     // Lever charging: the meter oscillates; ratchet ticks; Glass Eye live preview.
     if (this.charge && g) {
       this.charge.t += dt;
@@ -1836,17 +2040,39 @@ export class App {
     if (this.vo.speaking) st.host.talking = Math.max(st.host.talking, 0.15);
     st.post.roll = Math.max(g?.run.phase === 'PhoneCall' && !this.phoneAnswered ? 0.7 : 0, st.post.roll - dt * 0.4);
     if (this.settings.reducedFlashing) st.post.roll = Math.min(st.post.roll, 0.25);
-    st.update(dt, this.time, this.speed);
+    // The wheel rots with the show, and its sun keeps an eye on the player's hand.
+    if (g) st.wheel.decay = Math.min(1, (g.run.deadline - 1) / 7);
+    {
+      const c = this.toScreen(st.wheel.centerWorld());
+      const lm = this.input.mouse;
+      if (lm.inside && st.rig.station === 'center') {
+        const dx = lm.x - c.x,
+          dy = lm.y - c.y,
+          d = Math.max(1, Math.hypot(dx, dy));
+        st.wheel.sunLook = { x: dx / d, y: dy / d };
+      } else st.wheel.sunLook = { x: 0, y: 0.6 };
+    }
+    st.update(dt * this.timeScale, this.time, this.speed);
+    // Speed lines round the wheel while it's really going.
+    const sp = st.wheel.spinSpeed;
+    if (st.rig.station === 'center' && sp > 150 && !this.menus.open) {
+      const c = this.toScreen(st.wheel.centerWorld());
+      const r = this.toScreen(st.wheel.rimWorld());
+      this.hud.speedLines = { x: c.x, y: c.y, r: Math.hypot(r.x - c.x, r.y - c.y), amt: Math.min(1, (sp - 150) / 700), rot: st.wheel.theta * DEG };
+    } else this.hud.speedLines = null;
     this.input.pollGamepad(dt, st.post.width, st.post.height);
     this.input.flush();
     this.hud.update(dt);
 
     // Hover tooltip.
     const m = this.input.mouse;
+    let hoverId: string | null = null;
     if (!this.target) {
       const hit = m.inside && !this.hud.choice ? st.pick(m.x, m.y) : null;
-      this.hud.tooltip = hit ? tooltipFor(hit, g) : null;
+      hoverId = hit?.id ?? null;
+      this.hud.tooltip = hit && !this.grab ? tooltipFor(hit, g) : null;
     }
+    this.hud.cursor = this.grab ? 'grab' : hoverId === 'wheel' && st.rig.station === 'center' && this.canGrab() ? 'open' : null;
     // Overlay.
     const ctx = st.post.ui;
     const w = st.post.width,
