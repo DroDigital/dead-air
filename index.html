@@ -563,6 +563,33 @@
       .unlocks li.on {
         color: #2a7a20;
       }
+
+      /* Responsive menus: the panels and buttons keep the art pack's look. These rules only let them fit small screens. */
+      #menus {
+        padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right))
+          max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+        box-sizing: border-box;
+      }
+      #menus .panel {
+        box-sizing: border-box;
+        min-width: 0;
+      }
+      #menus button:focus-visible, #menus input:focus-visible, #menus select:focus-visible {
+        outline: 2px solid #fff0b0;
+        outline-offset: 2px;
+      }
+      @media (max-width: 600px) {
+        #menus .panel { padding: 20px; }
+        #menus .grid2 { grid-template-columns: 1fr; }
+        #menus .row { flex-wrap: wrap; }
+        #menus .row button { flex: 1 1 auto; }
+        #menus label { flex-wrap: wrap; line-height: 1.5; }
+        #menus input, #menus select { min-width: 0; max-width: 100%; }
+        .unlocks { columns: 1; }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        #menus button { transition: none; }
+      }
     </style>
   </head>
   <body>

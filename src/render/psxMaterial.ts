@@ -19,7 +19,9 @@ export const PSX_SHARED = {
   uRes: { value: new THREE.Vector2(INTERNAL_W, INTERNAL_H) },
   uSnap: { value: 1.0 },
   uWarp: { value: 1.0 },
-  uAmbient: { value: new THREE.Color(0.14, 0.11, 0.09) },
+  // A little fill keeps the host and unlit studio corners legible around the
+  // brighter wheel while preserving the warm, low-key lighting.
+  uAmbient: { value: new THREE.Color(0.18, 0.14, 0.11) },
   uFogColor: { value: new THREE.Color(0.06, 0.035, 0.025) },
   uFogNear: { value: 3.5 },
   uFogFar: { value: 11.0 },

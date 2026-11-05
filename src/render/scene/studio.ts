@@ -255,10 +255,14 @@ export class StudioView {
     const p = this.dust.geometry.getAttribute('position') as THREE.BufferAttribute;
     const a = p.array as Float32Array;
     for (let i = 0; i < a.length; i += 3) {
-      a[i] += this.dustVel[i] * dt + Math.sin(time * 0.5 + i) * 0.002;
+      a[i] += (this.dustVel[i] + Math.sin(time * 0.5 + i) * 0.12) * dt;
       a[i + 1] += this.dustVel[i + 1] * dt;
       a[i + 2] += this.dustVel[i + 2] * dt;
+      if (a[i] > 1.6) a[i] -= 3.2;
+      if (a[i] < -1.6) a[i] += 3.2;
       if (a[i + 1] < 0.3) a[i + 1] = 3.6;
+      if (a[i + 2] > 1.8) a[i + 2] -= 2.4;
+      if (a[i + 2] < -0.6) a[i + 2] += 2.4;
     }
     p.needsUpdate = true;
     (this.dust.material as THREE.PointsMaterial).opacity = 0.5 * this.spotLevel * lv;
