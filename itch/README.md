@@ -20,10 +20,11 @@ Preview it all together: run `python3 -m http.server 8000` in the repo root, the
 | `background/edge-haunt.gif` | 1920×1024, 16 frames | **Edit theme → Background image**: repeat vertically, top center |
 | `background/edge-haunt.png` | 1920×1024 | Background, still alternative |
 | `screenshots/*.png` | 1920×1080 | **Edit game → Screenshots**, in order |
-| `gifs/spin.gif` | 720 wide | Description: a lever spin with its slow-motion finish and payout |
-| `gifs/flick.gif` | 720 wide | Description: grabbing the wheel with the mouse and flicking it |
-| `gifs/phone.gif` | 720 wide | Description: the phone rings, the Producer's deals |
+| `gifs/spin.gif` | 600 wide | Description: a lever spin with its slow-motion finish and payout |
+| `gifs/flick.gif` | 600 wide | Description: grabbing the wheel with the mouse and flicking it, landing a prize |
+| `gifs/phone.gif` | 600 wide | Description: the phone rings, the Producer's deals |
 | `gifs/game-over.gif` | 720 wide | Description: the trapdoor |
+| `video/*.mp4` | 960×540 | The same four clips at full quality, for devlogs, socials and the trailer field |
 | `gifs/host.gif`, `producer.gif`, `other-line.gif` | 360×440, transparent | Description and devlogs: the cast, animated |
 | `gifs/divider.gif` | 960×64, transparent | Chasing-bulb divider |
 | `headers/header-*.gif` / `.png` | 720×190, transparent | Section headers on the red ribbon (animated with line boil, or still) |

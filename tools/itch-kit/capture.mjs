@@ -8,7 +8,6 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
 import { chromium } from '../browser.mjs';
-import { gif } from './build.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, '..', '..');
@@ -66,8 +65,26 @@ async function still(page, name) {
   report.push(`screenshots/${name}.png  1920×1080  ${(statSync(out).size / 1024).toFixed(0)} KB`);
 }
 
+/**
+ * Raw frames (r000.png…) → gifs/<name>.gif and video/<name>.mp4. A spinning wheel changes
+ * nearly every pixel each frame, so the GIF is kept to 600 px and 160 colours (a 7 s clip at
+ * 720 px and 256 colours was 10 MB); the MP4 keeps full quality for devlogs and socials.
+ */
+export function encode(dir, name, fps, width = 600) {
+  const gifOut = join(OUT, 'gifs', `${name}.gif`);
+  const mp4Out = join(OUT, 'video', `${name}.mp4`);
+  mkdirSync(dirname(gifOut), { recursive: true });
+  mkdirSync(dirname(mp4Out), { recursive: true });
+  const src = ['-framerate', String(fps), '-i', join(dir, 'r%03d.png')];
+  const vf = `scale=${width}:-2:flags=lanczos`;
+  const pal = join(dir, 'palette.png');
+  execFileSync('ffmpeg', ['-y', '-v', 'error', ...src, '-vf', `${vf},palettegen=stats_mode=diff:max_colors=160`, pal]);
+  execFileSync('ffmpeg', ['-y', '-v', 'error', ...src, '-i', pal, '-lavfi', `${vf}[x];[x][1:v]paletteuse=dither=bayer:bayer_scale=5:diff_mode=rectangle`, '-loop', '0', gifOut]);
+  execFileSync('ffmpeg', ['-y', '-v', 'error', ...src, '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-crf', '18', '-movflags', '+faststart', mp4Out]);
+}
+
 /** Step `count` frames at `fps`, calling `each(f)` first, and turn them into a GIF. */
-async function clip(ctx, name, count, fps, each, width = 720) {
+async function clip(ctx, name, count, fps, each, { width = 600 } = {}) {
   const dir = join(TMP, name);
   rmSync(dir, { recursive: true, force: true });
   mkdirSync(dir, { recursive: true });
@@ -92,12 +109,9 @@ async function clip(ctx, name, count, fps, each, width = 720) {
     await ctx.page.screenshot({ path: join(dir, `r${String(f).padStart(3, '0')}.png`) });
   }
   await ctx.page.evaluate((s) => Object.assign(window.deadAir.stage.post, s), saved);
-  // Downscale with a good filter, then one shared palette for the whole clip.
-  execFileSync('ffmpeg', ['-y', '-v', 'error', '-framerate', String(fps), '-i', join(dir, 'r%03d.png'), '-vf', `scale=${width}:-2:flags=lanczos`, join(dir, 'f%03d.png')]);
+  encode(dir, name, fps, width);
   const out = join(OUT, 'gifs', `${name}.gif`);
-  mkdirSync(dirname(out), { recursive: true });
-  gif(join(dir, 'f%03d.png'), fps, out, false);
-  report.push(`gifs/${name}.gif  ${width}px  ${count} fr @ ${fps} fps  ${(statSync(out).size / 1024).toFixed(0)} KB`);
+  report.push(`gifs/${name}.gif  ${width}px  ${count} fr @ ${fps} fps  ${(statSync(out).size / 1024).toFixed(0)} KB  (+ video/${name}.mp4)`);
 }
 
 async function startRun(ctx, seed, pkg = '2') {
@@ -123,10 +137,10 @@ if (want('spin')) {
   await startRun(c, 'ITCH-SPIN');
   await still(c.page, '02-the-wheel');
   let shot = false;
-  await clip(c, 'spin', 96, 12, async (f) => {
+  await clip(c, 'spin', 60, 12, async (f) => {
     if (f === 4) await c.page.keyboard.down(' ');
     if (f === 20) await c.page.keyboard.up(' ');
-    if (!shot && f === 52) {
+    if (!shot && f === 21) {
       shot = true;
       await still(c.page, '03-slow-motion-finish');
     }
@@ -153,10 +167,16 @@ if (want('flick')) {
       await c.page.mouse.move(...at(180));
       await c.page.mouse.down();
     }
-    // Drag slowly round to show the grip, then sweep over the top fast and let go.
+    // Drag slowly round to show the grip, then sweep over the top fast and let go. The game
+    // times the drag on the page clock, so the sweep advances it in small steps.
     if (f > 6 && f <= 14) await c.page.mouse.move(...at(180 + (f - 6) * 2));
-    if (f > 14 && f <= 17) await c.page.mouse.move(...at(196 + (f - 14) * 40));
-    if (f === 17) await c.page.mouse.up();
+    if (f === 15) {
+      for (let d = 200; d <= 320; d += 15) {
+        await c.page.mouse.move(...at(d));
+        await c.step(12);
+      }
+      await c.page.mouse.up();
+    }
   });
   await c.page.close();
 }
@@ -172,8 +192,8 @@ if (want('phone')) {
     g.changed('phone');
   });
   // Let it ring, then keep answering until the call is on the line.
-  await clip(c, 'phone', 72, 12, async (f) => {
-    if (f >= 24 && f % 4 === 0 && !(await c.page.evaluate(() => !!window.deadAir.hud.choice))) await c.page.keyboard.press('Enter');
+  await clip(c, 'phone', 96, 12, async (f) => {
+    if (f >= 30 && f % 4 === 0 && !(await c.page.evaluate(() => !!window.deadAir.hud.choice))) await c.page.keyboard.press('Enter');
   });
   await c.step(1500);
   await still(c.page, '04-the-producer-calls');
@@ -195,11 +215,21 @@ if (want('shop')) {
   await c.page.keyboard.down(' ');
   await c.step(300);
   await c.page.keyboard.up(' ');
-  for (let i = 0; i < 12; i++) {
-    const ph = await c.page.evaluate(() => window.deadAir.game?.run.phase);
+  // Answered through the game's choice handler, never the keyboard: a key that arrives just
+  // as the cabinet opens would buy something.
+  for (let i = 0; i < 40; i++) {
+    const ph = await c.page.evaluate(() => {
+      const a = window.deadAir;
+      const p = a.game?.run.phase;
+      if (p !== 'Shop' && a.hud.choice && a.choiceHandler) {
+        const opts = a.hud.choice.options;
+        // Conversion: CONFIRM is the last option; anything else: the first.
+        a.choiceHandler(p === 'Conversion' ? opts.length - 1 : 0);
+      }
+      return p;
+    });
     if (ph === 'Shop') break;
-    if (await c.page.evaluate(() => !!window.deadAir.hud.choice)) await c.page.keyboard.press('1');
-    await c.step(2500);
+    await c.step(800);
   }
   await c.settled();
   await c.step(1500);
