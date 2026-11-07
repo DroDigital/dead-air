@@ -44,6 +44,10 @@ DEAD AIR — design, code, writing, procedural art, procedural audio and music: 
 | `sfx.clunk` | https://opengameart.org/content/75-cc0-breaking-falling-hit-sfx | rubberduck (OpenGameArt, "75 CC0 breaking / falling / hit sfx") | CC0-1.0 | Source file "bfh1_metal_hit_05.ogg" from the zip. Converted to mono 22.05 kHz PCM16 with a one-pole lowpass at 7 kHz and 10-bit crush. A hand grabbing the wheel. |
 | `sfx.boing` | https://opengameart.org/content/boing | Aeva (OpenGameArt, "Boing") | CC0-1.0 | Source file "boing.flac", first 1.3 s with a 0.4 s fade-out. Converted to mono 22.05 kHz PCM16 with a one-pole lowpass at 7 kHz and 10-bit crush. The wheel springing back from a feeble flick. |
 | `sfx.ding` | https://opengameart.org/content/4-metal-dingsrings | starninjas (OpenGameArt, "4 Metal Dings/Rings") | CC0-1.0 | Source file "ding.4.ogg" from the zip. Converted to mono 22.05 kHz PCM16 with a one-pole lowpass at 7 kHz and 10-bit crush. A flick in the sweet spot. |
+| `mdl.skeleton_minion` | https://github.com/KayKit-Game-Assets/KayKit-Character-Pack-Skeletons-1.0 | Kay Lousberg (KayKit) | CC0-1.0 | Rig and mesh kept; animations cut to the seated-audience set (Sit_Chair_Idle, Sit_Chair_Down, Sit_Chair_StandUp, Cheer, Idle, Taunt, Skeletons_Awaken_Standing, Hit_A) and resampled; texture downscaled to 64×64; PSX material (skinned) at runtime. The studio audience of dead contestants. |
+| `mdl.skeleton_rogue` | https://github.com/KayKit-Game-Assets/KayKit-Character-Pack-Skeletons-1.0 | Kay Lousberg (KayKit) | CC0-1.0 | Rig and mesh kept; animations cut to the seated-audience set (Sit_Chair_Idle, Sit_Chair_Down, Sit_Chair_StandUp, Cheer, Idle, Taunt, Skeletons_Awaken_Standing, Hit_A) and resampled; texture downscaled to 64×64; PSX material (skinned) at runtime. The studio audience of dead contestants. |
+| `mdl.bolt_cutters` | https://polyhaven.com/a/bolt_cutters_01 | Yann Kervran, Antanas Kep (Poly Haven) | CC0-1.0 | Normal/ARM maps dropped; decimated; base colour downscaled to 64×64; PSX material at runtime. Split into two hinged halves at load so the jaws close in the collateral scene. |
+| `mdl.spoon` | https://polyhaven.com/a/wooden_spoon | Ronnie Barter (Poly Haven) | CC0-1.0 | Normal/ARM maps dropped; decimated; base colour downscaled; PSX material at runtime. Used in the eye collateral scene. |
 
 ## Music
 
@@ -91,6 +95,17 @@ Voice-over (custom-designed voices, `eleven_v4`), sound effects (`eleven_text_to
 | `el.ambience` | loop | eleven_text_to_sound_v2 | Abandoned TV studio room tone (seamless loop) |
 | `el.music_main` | music | eleven_music_v2_5 | Detuned 1970s game-show theme, organ, walking bass, brushes (instrumental) |
 | `el.music_lounge` | music | eleven_music_v2_5 | Warped music-box and Hammond intermission bossa (instrumental) |
+| `el.chop` | sfx | eleven_text_to_sound_v2 | Heavy meat cleaver chopping down through flesh and bone onto a wooden block, one wet thunk with a crack |
+| `el.snap` | sfx | eleven_text_to_sound_v2 | Bolt cutters snapping through a finger bone, sharp crunch and wet squelch |
+| `el.chew` | sfx | eleven_text_to_sound_v2 | Grotesque wet chewing and one loud gulp, close up |
+| `el.retch` | sfx | eleven_text_to_sound_v2 | Monster retching then a wet gush of coins spilling out |
+| `el.drip` | sfx | eleven_text_to_sound_v2 | Three slow thick blood drips into a puddle, quiet room |
+| `el.tear` | sfx | eleven_text_to_sound_v2 | Surgical stitches ripping open, threads snapping, wet flesh tear |
+| `el.blink` | sfx | eleven_text_to_sound_v2 | Wet squelchy eyelid blink, moist and gross, close up |
+| `el.breaker` | sfx | eleven_text_to_sound_v2 | Heavy breaker switch clunk, electrical hum dies into silence |
+| `el.boneclap` | sfx | eleven_text_to_sound_v2 | Dry bony hollow clapping from a small skeleton audience, slow and eerie |
+| `el.bulbpop` | sfx | eleven_text_to_sound_v2 | Old light bulb bursting with a pop and tinkling glass |
+| `el.seats` | sfx | eleven_text_to_sound_v2 | Many old theatre seats creaking as people stand at once, bones cracking |
 
 ## Art
 

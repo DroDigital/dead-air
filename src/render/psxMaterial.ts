@@ -57,6 +57,8 @@ uniform float uLit;
 uniform float uWrap;
 uniform vec4 uUvTransform;
 
+#include <skinning_pars_vertex>
+
 varying vec3 vLight;
 varying vec2 vUvW;
 varying float vW;
@@ -64,8 +66,15 @@ varying float vFog;
 varying vec3 vTint;
 
 void main() {
-  vec4 local = vec4(position, 1.0);
-  vec3 nrm = normal;
+  vec3 objectNormal = normal;
+  vec3 transformed = position;
+#ifdef USE_SKINNING
+  #include <skinbase_vertex>
+  #include <skinnormal_vertex>
+  #include <skinning_vertex>
+#endif
+  vec4 local = vec4(transformed, 1.0);
+  vec3 nrm = objectNormal;
 #ifdef USE_INSTANCING
   local = instanceMatrix * local;
   nrm = mat3(instanceMatrix) * nrm;

@@ -78,7 +78,19 @@ type SfxId =
   | 'impact'
   | 'clunk'
   | 'boing'
-  | 'ding';
+  | 'ding'
+  // The horror pass.
+  | 'chop'
+  | 'snap'
+  | 'chew'
+  | 'retch'
+  | 'drip'
+  | 'tear'
+  | 'blink'
+  | 'breaker'
+  | 'boneclap'
+  | 'bulbpop'
+  | 'seats';
 
 /** ElevenLabs recordings (assets/elevenlabs.json) take precedence over CC0 files and synthesis. */
 const EL_IDS: Partial<Record<SfxId, string>> = {
@@ -101,6 +113,17 @@ const EL_IDS: Partial<Record<SfxId, string>> = {
   drumroll: 'el.drumroll',
   heartbeat: 'el.heartbeat',
   roomtone: 'el.ambience',
+  chop: 'el.chop',
+  snap: 'el.snap',
+  chew: 'el.chew',
+  retch: 'el.retch',
+  drip: 'el.drip',
+  tear: 'el.tear',
+  blink: 'el.blink',
+  breaker: 'el.breaker',
+  boneclap: 'el.boneclap',
+  bulbpop: 'el.bulbpop',
+  seats: 'el.seats',
   tension: 'track.charge',
   gameoverCue: 'track.gameover',
 };
@@ -235,6 +258,18 @@ export class Sfx {
       });
       return s;
     });
+    // Horror (procedural stand-ins for the ElevenLabs recordings).
+    B('chop', 0.6, (t, _i, _n, st) => ((rnd(st) * 2 - 1) * 0.7 + Math.sin(2 * Math.PI * 70 * t)) * env(t, 0.001, 0.09), 8, 3000);
+    B('snap', 0.4, (t, _i, _n, st) => (rnd(st) * 2 - 1) * env(t, 0.0005, 0.02) + (rnd(st) * 2 - 1) * env(Math.max(0, t - 0.03), 0.01, 0.12) * 0.4, 8, 2500);
+    B('chew', 1.0, (t, _i, _n, st) => (rnd(st) * 2 - 1) * Math.max(0, Math.sin(t * 22)) * 0.5 * (t < 0.8 ? 1 : 0) + Math.sin(2 * Math.PI * 90 * t) * env(Math.max(0, t - 0.8), 0.005, 0.08), 8, 1800);
+    B('retch', 0.9, (t, _i, _n, st) => (rnd(st) * 2 - 1) * Math.sin(Math.min(1, t / 0.5) * Math.PI) * 0.6 + Math.sin(2 * Math.PI * (60 + 40 * t) * t) * 0.3 * (t < 0.5 ? 1 : 0), 8, 1500);
+    B('drip', 0.8, (t) => [0, 0.3, 0.55].reduce((s, at) => s + (t > at ? Math.sin(2 * Math.PI * (900 - (t - at) * 3000) * (t - at)) * env(t - at, 0.001, 0.03) : 0), 0) * 0.5);
+    B('tear', 0.8, (t, _i, _n, st) => (rnd(st) * 2 - 1) * (0.4 + 0.6 * (Math.sin(t * 90) > 0.6 ? 1 : 0)) * env(t, 0.01, 0.4) * 0.6, 8, 4000);
+    B('blink', 0.3, (t, _i, _n, st) => (rnd(st) * 2 - 1) * Math.sin(Math.min(1, t / 0.3) * Math.PI) * 0.4, 8, 1200);
+    B('breaker', 1.2, (t, _i, _n, st) => (rnd(st) * 2 - 1) * env(t, 0.001, 0.05) + sq(t * 60) * 0.15 * Math.max(0, 1 - t / 0.9), 8, 3000);
+    B('boneclap', 1.0, (t, _i, _n, st) => (rnd(st) * 2 - 1) * env((t * 3) % 1 / 3, 0.0005, 0.012) * 0.8, 8, 5000);
+    B('bulbpop', 0.9, (t, _i, _n, st) => (rnd(st) * 2 - 1) * env(t, 0.0005, 0.03) + Math.sin(2 * Math.PI * 4200 * t) * (rnd(st) < 0.02 ? 1 : 0) * env(t, 0.01, 0.4) * 0.5);
+    B('seats', 0.9, (t) => Math.sin(2 * Math.PI * (120 + 60 * Math.sin(t * 9)) * t) * Math.sin(Math.min(1, t / 0.9) * Math.PI) * 0.3, 8, 2000);
     // Juice (procedural stand-ins for the CC0 recordings).
     B('riser', 2.6, (t, _i, _n, st) => {
       st.a += ((rnd(st) * 2 - 1) - st.a) * (0.02 + 0.3 * (t / 2.6));

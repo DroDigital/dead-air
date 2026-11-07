@@ -114,6 +114,36 @@
   "w": 128,
   "h": 125
  },
+ "wedge.mouth": {
+  "url": "assets/art/wedge/mouth.png",
+  "w": 128,
+  "h": 128
+ },
+ "wedge.cleaver": {
+  "url": "assets/art/wedge/cleaver.png",
+  "w": 128,
+  "h": 128
+ },
+ "wedge.stump": {
+  "url": "assets/art/wedge/stump.png",
+  "w": 128,
+  "h": 128
+ },
+ "wedge.bleeder": {
+  "url": "assets/art/wedge/bleeder.png",
+  "w": 128,
+  "h": 128
+ },
+ "wedge.eye": {
+  "url": "assets/art/wedge/eye.png",
+  "w": 128,
+  "h": 128
+ },
+ "wedge.stitches": {
+  "url": "assets/art/wedge/stitches.png",
+  "w": 128,
+  "h": 128
+ },
  "artifact.lucky_penny": {
   "url": "assets/art/artifact/lucky_penny.png",
   "w": 125,

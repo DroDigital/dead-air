@@ -35,7 +35,14 @@ export type HostTrigger =
   | 'title'
   | 'gambleOffer'
   | 'gambleWin'
-  | 'gambleLose';
+  | 'gambleLose'
+  | 'mouth'
+  | 'cleaver'
+  | 'eye'
+  | 'stitchTear'
+  | 'bleeder'
+  | 'silence'
+  | 'collateral';
 
 export const HOST_LINES: Record<HostTrigger, readonly string[]> = {
   intro: [
@@ -232,7 +239,18 @@ export const HOST_LINES: Record<HostTrigger, readonly string[]> = {
     'NOTHING! It came up nothing! The very best kind of nothing!',
     "Oh, it's gone! All of it! Doubled into nothing! That's showbusiness!",
   ],
+  // The horror pass: short lines, so every one can be voiced.
+  mouth: ['Feeding time!'],
+  cleaver: ['Chop chop!'],
+  eye: ['The Eye sees all!'],
+  stitchTear: ['Popped a stitch!'],
+  bleeder: ["You're leaking!"],
+  silence: ['Shhh. Keep spinning.'],
+  collateral: ['Give it a hand! Most of one!'],
 };
+
+/** Whispered from inside the host's screen when the picture slips. */
+export const SLIP_WHISPER = "He isn't the host.";
 
 /** The host announces each Deadline by number. */
 export const DEADLINE_LINES: readonly string[] = [

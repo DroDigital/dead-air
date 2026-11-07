@@ -487,6 +487,201 @@ export const WEDGES: Record<WedgeKind, WedgeDef> = {
       ops.note(`PAYDAY $${t} → VAULT`);
     },
   },
+  // ------------------------------------------------------------------ The horror wedges --
+  mouth: {
+    kind: 'mouth',
+    name: 'The Mouth',
+    glyph: 'FEED',
+    text: `Every spin that misses it, it eats ${Math.round(BALANCE.mouthBite * 100)}% of the Tray. Land on it and it brings everything back up ×${BALANCE.mouthVomit}.`,
+    rarity: 'cursed',
+    cost: 4,
+    shop: true,
+    cashLike: false,
+    gildable: false,
+    defaultValue: 0,
+    color: 0x7a1c22,
+    ink: 0xffd8c8,
+    pattern: 'zigzag',
+    repeatable: false,
+    land: (l) => {
+      const belly = l.run.marks[`belly:${l.seg.uid}`] ?? 0;
+      if (belly <= 0) {
+        l.nothing('THE MOUTH IS EMPTY');
+        return;
+      }
+      l.run.marks.mouthUid = l.seg.uid;
+      l.prize('mouth', belly * BALANCE.mouthVomit, `THE MOUTH +$${Math.round(belly * BALANCE.mouthVomit * l.weight)}`);
+    },
+    apply: (ops, p) => {
+      const amount = Math.round(p.amount * p.weight);
+      const uid = ops.run.marks.mouthUid;
+      if (uid !== undefined) {
+        delete ops.run.marks[`belly:${uid}`];
+        delete ops.run.marks.mouthUid;
+        ops.horror({ type: 'mouthVomit', uid, amount });
+      }
+      ops.addTray(amount, 'mouth');
+      ops.note(`IT BRINGS UP $${amount}`);
+    },
+  },
+  cleaver: {
+    kind: 'cleaver',
+    name: 'The Cleaver',
+    glyph: 'CUT',
+    text: `Pays $${BALANCE.cleaverValue}. Counts as Cash. Then it chops a wedge beside it into a Stump.`,
+    rarity: 'cursed',
+    cost: 4,
+    shop: true,
+    cashLike: true,
+    gildable: true,
+    defaultValue: BALANCE.cleaverValue,
+    color: 0x6e7378,
+    ink: 0x1a0606,
+    pattern: 'diag',
+    repeatable: false,
+    land: (l) => {
+      const v = l.cashValue(l.seg);
+      l.cash(v, `CUT $${Math.round(v)}`);
+      // Pick the victim now (loot stream) so the landing replays exactly.
+      const segs = l.ops.layout().segments;
+      const i = segs.findIndex((s) => s.idx === l.seg.idx);
+      const n = segs.length;
+      const sides = [segs[(i - 1 + n) % n], segs[(i + 1) % n]].filter(
+        (s) => s && s.uid !== l.seg.uid && !['bankrupt', 'jackpot', 'stump', 'cleaver'].includes(s.kind),
+      );
+      if (sides.length) {
+        l.run.marks.cleaveTarget = l.rng.loot.pick(sides).uid;
+        l.run.marks.cleaverUid = l.seg.uid;
+      }
+      l.prize('cleaver', 1, 'CHOP');
+    },
+    apply: (ops) => {
+      const target = ops.run.marks.cleaveTarget;
+      if (target === undefined) return;
+      delete ops.run.marks.cleaveTarget;
+      ops.horror({ type: 'cleave', uid: ops.run.marks.cleaverUid ?? -1, target });
+      delete ops.run.marks.cleaverUid;
+      ops.setWedgeKind(target, 'stump');
+      ops.note('A WEDGE IS SEVERED');
+    },
+  },
+  stump: {
+    kind: 'stump',
+    name: 'Stump',
+    glyph: 'STUMP',
+    text: 'What the Cleaver left. Pays nothing. It is still bleeding.',
+    rarity: 'starter',
+    cost: 0,
+    shop: false,
+    cashLike: false,
+    gildable: false,
+    defaultValue: 0,
+    color: 0x4a1410,
+    ink: 0xe8c8b0,
+    pattern: 'checker',
+    repeatable: false,
+    land: (l) => l.nothing('STUMP'),
+  },
+  bleeder: {
+    kind: 'bleeder',
+    name: 'Bleeder',
+    glyph: 'BLEED',
+    text: `Pays $${BALANCE.bleederValue}. Counts as Cash. The Tray then loses ${Math.round(BALANCE.bleedRate * 100)}% every spin until you deposit.`,
+    rarity: 'uncommon',
+    cost: 4,
+    shop: true,
+    cashLike: true,
+    gildable: true,
+    defaultValue: BALANCE.bleederValue,
+    color: 0x9a1418,
+    ink: 0xfff0e0,
+    pattern: 'stripes',
+    repeatable: false,
+    land: (l) => {
+      const v = l.cashValue(l.seg);
+      l.cash(v, `BLEED $${Math.round(v)}`);
+      l.prize('bleeder', 1, 'BLEEDING');
+    },
+    apply: (ops) => {
+      ops.run.marks.bleeding = 1;
+      ops.note('THE TRAY IS BLEEDING');
+    },
+  },
+  eye: {
+    kind: 'eye',
+    name: 'The Eye',
+    glyph: 'EYE',
+    text: `Shows you where the wheel will land (+${BALANCE.eyePeeks} previews, press E while charging). ${BALANCE.eyePeeks} spins later it blinks shut and becomes a Bankrupt.`,
+    rarity: 'rare',
+    cost: 5,
+    shop: true,
+    cashLike: false,
+    gildable: false,
+    defaultValue: 0,
+    color: 0xe8dcc0,
+    ink: 0x7a1010,
+    pattern: 'rings',
+    repeatable: false,
+    land: (l) => {
+      l.run.marks.eyeUid = l.seg.uid;
+      l.prize('eye', BALANCE.eyePeeks, 'THE EYE OPENS');
+    },
+    apply: (ops, p) => {
+      const n = Math.max(1, Math.round(p.amount * p.weight));
+      if (ops.run.marks.eyeLost) ops.note('NOTHING TO SEE WITH');
+      else {
+        ops.run.flags.peek += n;
+        ops.note(`+${n} PEEKS (E)`);
+      }
+      const uid = ops.run.marks.eyeUid;
+      if (uid === undefined) return;
+      delete ops.run.marks.eyeUid;
+      ops.horror({ type: 'eyeOpen', uid });
+      if (ops.run.marks[`eye:${uid}`] === undefined) ops.run.marks[`eye:${uid}`] = BALANCE.eyePeeks;
+    },
+  },
+  stitches: {
+    kind: 'stitches',
+    name: 'Stitches',
+    glyph: 'STITCH',
+    text: `Sewn to both its neighbours: pays (or costs) each of them at ${Math.round(BALANCE.stitchWeight * 100)}%. Tears open into a Bankrupt on landing ${BALANCE.stitchLife}.`,
+    rarity: 'uncommon',
+    cost: 4,
+    shop: true,
+    cashLike: false,
+    gildable: false,
+    defaultValue: 0,
+    color: 0xc89a86,
+    ink: 0x2a0a08,
+    pattern: 'cross',
+    repeatable: false,
+    land: (l) => {
+      const segs = l.ops.layout().segments;
+      const i = segs.findIndex((s) => s.idx === l.seg.idx);
+      const n = segs.length;
+      for (const nb of [segs[(i - 1 + n) % n], segs[(i + 1) % n]]) {
+        if (!nb || nb.uid === l.seg.uid || nb.kind === 'stitches' || nb.kind === 'splitter') continue;
+        l.resolveAs(nb.kind, nb.kind === 'jackpot' ? BALANCE.jackpotValue : nb.value, `STITCH → ${WEDGES[nb.kind].name.toUpperCase()}`, BALANCE.stitchWeight);
+      }
+      l.run.marks.stitchUid = l.seg.uid;
+      l.prize('stitches', 1, 'THE THREAD STRAINS');
+    },
+    apply: (ops) => {
+      const uid = ops.run.marks.stitchUid;
+      if (uid === undefined) return;
+      delete ops.run.marks.stitchUid;
+      const wear = (ops.run.marks[`stitch:${uid}`] ?? 0) + 1;
+      if (wear >= BALANCE.stitchLife) {
+        ops.horror({ type: 'stitchTear', uid });
+        ops.setWedgeKind(uid, 'bankrupt');
+        ops.note('THE STITCHES TEAR OPEN');
+      } else {
+        ops.run.marks[`stitch:${uid}`] = wear;
+        ops.horror({ type: 'stitchStrain', uid, wear });
+        ops.note(`STITCHES ${wear}/${BALANCE.stitchLife}`);
+      }
+    },
+  },
 };
 
 export const WEDGE_KINDS = Object.keys(WEDGES) as WedgeKind[];

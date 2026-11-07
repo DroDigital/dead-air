@@ -12,7 +12,7 @@ import { VoPlayer, type VoMood } from './audio/vo';
 import { artifactDef } from './content/artifacts';
 import { bargainDef, fillDeal } from './content/bargains';
 import { COMBO_NAMES } from './game/combos';
-import { DEADLINE_LINES, HOST_LINES, HOST_SILENT_LINES, PRODUCER_ACCEPT, PRODUCER_HANGUP, SECRET_ACCEPT, type HostTrigger } from './content/hostLines';
+import { DEADLINE_LINES, HOST_LINES, HOST_SILENT_LINES, PRODUCER_ACCEPT, PRODUCER_HANGUP, SECRET_ACCEPT, SLIP_WHISPER, type HostTrigger } from './content/hostLines';
 import { challengeText } from './content/challenges';
 import { mutatorDef } from './content/mutators';
 import { scratchDef } from './content/scratchCards';
@@ -24,7 +24,8 @@ import { BALANCE } from './game/balance';
 import { META_VERSION, applyRun, computeRatings, endlessUnlocked, newMeta, noteRunProgress, unlockedArtifacts, unlockedWedges, type MetaState } from './game/meta';
 import { Game, RUN_VERSION, type DeadlineEndResult, type SpinOutcome, type SpinResolution } from './game/run';
 import { sellValue } from './game/shop';
-import type { PackageId, RunState } from './game/types';
+import type { HorrorEvent, PackageId, RunState } from './game/types';
+import { rot as rotOf } from './game/rot';
 import { angleForSegment, mod360 } from './game/wheel';
 import { CabinetView, type ServiceButton } from './render/scene/cabinet';
 import { buildProp } from './render/scene/props';
@@ -100,6 +101,12 @@ export class App {
   private lastFrame = performance.now();
   private deferToken = 0;
   private debug = false;
+  /** Horror beats from the rules, held until the spin's result is presented. */
+  private pendingHorror: HorrorEvent[] = [];
+  /** Policy 7: seconds since the player last did anything at the wheel, and a cooldown. */
+  private lastInput = 0;
+  private silenceCool = 0;
+  private bulbsDead = 0;
 
   constructor(private canvas: HTMLCanvasElement) {
     this.meta = this.metaSlot.load() ?? newMeta();
@@ -343,8 +350,11 @@ export class App {
     g.bus.on('phone', () => {
       this.phoneAnswered = false;
     });
+    g.bus.on('horror', (e) => {
+      if (e.type !== 'collateral' && e.type !== 'silence') this.pendingHorror.push(e);
+    });
     g.bus.on('artifactGained', (e) => {
-      if (this.game && this.game.run.artifacts.length >= BALANCE.maxArtifacts) this.game.run.marks.fullShelf = 1;
+      if (this.game && this.game.run.artifacts.length >= this.game.maxArtifacts()) this.game.run.marks.fullShelf = 1;
       this.sfx.play('pickup', { gain: 0.5 });
       void e;
     });
@@ -355,6 +365,16 @@ export class App {
     this.stage.studio.openTrapdoor(0);
     this.stage.host.silent = !!g.run.marks.hostSilent;
     this.resetStageVisuals();
+    // The dead in the stands, the hand on the chair, and whatever the run has already taken.
+    this.pendingHorror = [];
+    this.stage.audience.setCount(this.meta.runs - this.meta.wins, this.settings.uncut);
+    this.stage.audience.approach(Math.min(4, g.run.marks.silences ?? 0), g.run.marks.eyeLost ? 1 : -1);
+    this.stage.collateral.reset();
+    this.stage.collateral.setFingers(g.run.marks.fingers ?? 0);
+    this.stage.post.eyePatch = g.run.marks.eyeLost ? 1 : 0;
+    this.hud.fingersLost = g.run.marks.fingers ?? 0;
+    this.bulbsDead = this.stage.wheel.deadBulbs = Math.floor(Math.max(0, rotOf(g.run) - 0.3) * 30);
+    this.lastInput = this.time;
     this.stage.tray.setAmount(g.run.tray, false);
     this.stage.vault.setVault(g.run.vault, true);
     this.sync(false);
@@ -577,11 +597,14 @@ export class App {
     const st = this.stage;
     const L = g.layout();
     const ring = g.effectiveRing();
-    const sig = JSON.stringify([L.segments.map((s) => [s.kind, s.start.toFixed(2), Math.round(g.cashValueOf(s)), s.gild, s.overridden]), ring, this.settings.colorblind]);
+    const sig = JSON.stringify([L.segments.map((s) => [s.kind, s.start.toFixed(2), Math.round(g.cashValueOf(s)), s.gild, s.overridden]), ring, this.settings.colorblind, st.wheel.bloody]);
     if (sig !== this.layoutSig) {
       this.layoutSig = sig;
       st.wheel.setLayout(L, ring, (s) => segmentLabel(g, s));
     }
+    st.wedgeProps.sync(L, r.marks, this.settings.uncut);
+    this.hud.fingersLost = r.marks.fingers ?? 0;
+    st.post.eyePatch = Math.max(st.post.eyePatch, r.marks.eyeLost ? 1 : 0);
     st.wheel.streak = r.streak;
     st.tray.setStreak(r.streak, r.tray);
     st.tray.setAmount(r.tray, pour);
@@ -871,6 +894,8 @@ export class App {
     dr.started = true;
     const st = this.stage;
     this.timeScaleTarget = 0.32;
+    st.audience.watchTarget = st.wheel.pointerTipWorld();
+    st.audience.watchWeight = 1;
     // Aim just below the glove so the wedges ticking past it fill the shot.
     const look = st.wheel.pointerTipWorld().add(new THREE.Vector3(0, -0.3, 0));
     st.rig.focus(look, { push: 0.3, fov: 34, roll: dr.kind === 'bankrupt' ? -0.06 : 0.05, in: 0.5, hold: Infinity });
@@ -890,6 +915,7 @@ export class App {
     const st = this.stage;
     this.timeScaleTarget = 1;
     this.timeScale = 1;
+    setTimeout(() => (st.audience.watchWeight = 0.15), 1800);
     for (const b of dr.beds) b.stop(0.3);
     this.mixer.setMuffle(0);
     this.music.setLevel(1, 0.6);
@@ -1068,6 +1094,8 @@ export class App {
       if (c === 'deadAir') continue;
       st.vfx.float(st.wheel.group.position.clone().add(new THREE.Vector3(0, 1.2, 0)), COMBO_NAMES[c], '#ff70ff', 2, 1.6);
     }
+    this.playHorror(this.pendingHorror.splice(0));
+    if (p.landedKind === 'bleeder') this.hostSay('bleeder', 'grin', 'point');
     if (res.combos.includes('hatTrick')) this.hostSay('hatTrick', 'shock', 'cheer');
     else if (res.combos.includes('neighbors') && Math.random() < 0.5) this.hostSay('neighbors', 'shock', 'point');
     else if (res.combos.some((c) => c !== 'deadAir') && Math.random() < 0.5) this.hostSay('combo', 'grin', 'cheer');
@@ -1176,6 +1204,13 @@ export class App {
     if (lost > 0) st.vfx.float(st.tray.group.position.clone().add(new THREE.Vector3(0, 0.4, 0)), `-$${lost}`, '#ff4040', 1, 1.8);
     st.marquee.set(deadAir ? 'DEAD AIR' : 'BANKRUPT', '#ff3020', true);
     this.hostSay('bankrupt', 'laugh', 'shrug');
+    // The dead applaud. On DEAD AIR they get to their feet.
+    st.audience.clap(2.6);
+    this.sfx.play('boneclap', { gain: 0.5, delay: 0.3 });
+    if (deadAir) {
+      st.audience.standAll(4);
+      this.sfx.play('seats', { gain: 0.7, delay: 0.2 });
+    }
     if (deadAir) {
       this.sfx.play('static', { gain: 0.6 });
       this.stage.post.roll = 1;
@@ -1190,7 +1225,7 @@ export class App {
     const g = this.game!;
     const p = g.run.pending;
     if (!p || p.type !== 'artifactPick') return;
-    const full = g.run.artifacts.length >= BALANCE.maxArtifacts;
+    const full = g.run.artifacts.length >= g.maxArtifacts();
     this.setChoice(
       {
         title: 'A PRIZE FROM THE PROP ROOM — PICK ONE',
@@ -1310,6 +1345,7 @@ export class App {
     this.hud.hint = 'THE PHONE IS RINGING — LOOK LEFT, [ENTER] TO ANSWER';
     this.setChoice(null, null);
     if (g.run.phone?.reason !== 'secret') this.hostSay('phone', 'shock', 'point');
+    if (g.run.phone?.reason === 'collateral') this.stage.collateral.setStrain(1);
     this.updateArrows();
   }
 
@@ -1348,7 +1384,7 @@ export class App {
     const nameOf = (id: string) => artifactDef(id).name;
     this.setChoice(
       {
-        title: secret ? 'THE OTHER LINE' : ph.reason === 'deadAir' ? 'THE PRODUCER — DEAD AIR' : 'THE PRODUCER',
+        title: secret ? 'THE OTHER LINE' : ph.reason === 'deadAir' ? 'THE PRODUCER — DEAD AIR' : ph.reason === 'collateral' ? 'THE PRODUCER — PAYMENT IN KIND' : 'THE PRODUCER',
         portrait: secret ? 'caller.secret' : 'caller.producer',
         lines: [ph.intro],
         options: [
@@ -1356,7 +1392,7 @@ export class App {
             const b = bargainDef(o.bargainId);
             return { label: `OFFER ${i + 1}`, detail: fillDeal(b.deal, o.params, nameOf), color: secret ? '#d0a0ff' : '#ffb080' };
           }),
-          { label: 'HANG UP', detail: secret ? 'Click.' : 'He will remember.' },
+          { label: 'HANG UP', detail: secret ? 'Click.' : ph.reason === 'collateral' ? 'The floor opens.' : 'He will remember.' },
         ],
         selected: 0,
         layout: 'list',
@@ -1371,6 +1407,17 @@ export class App {
         this.stage.phone.offHook = 0;
         this.stage.post.roll = 0;
         this.music.setLevel(1, 1.5);
+        if (ph.reason === 'collateral' && i < ph.offers.length) {
+          // Payment in kind: the deal closes on screen before the books do.
+          const part = ph.offers[i].bargainId === 'collateral_eye' ? 'eye' : 'finger';
+          this.producerSay(PRODUCER_ACCEPT[Math.floor(Math.random() * PRODUCER_ACCEPT.length)], false);
+          this.phoneAnswered = false;
+          void this.withBusy(async () => {
+            await this.payInKind(part);
+            g.phoneAccept(i);
+          }).then(() => this.enterPhase());
+          return;
+        }
         if (i < ph.offers.length) {
           const b = bargainDef(ph.offers[i].bargainId);
           const d = this.producerSay(secret ? SECRET_ACCEPT : PRODUCER_ACCEPT[Math.floor(Math.random() * PRODUCER_ACCEPT.length)], secret);
@@ -1416,8 +1463,15 @@ export class App {
       }
       st.vault.setVault(e.vaultBefore);
       await wait(0.8 / this.speed);
+      if (e.refused) {
+        // The collateral call was refused: nothing more to say.
+        this.sync(false);
+        return;
+      }
       st.marquee.set(`PAYMENT DUE: $${e.debt}`, '#ffd040', true);
-      this.hud.showBanner(e.paid ? 'PAID' : 'SHORT', e.paid ? `$${e.debt} TO THE NETWORK` : `VAULT $${e.vaultBefore} OF $${e.debt}`, e.paid ? '#80ff80' : '#ff3020', 2.2);
+      if (e.inKind) this.hud.showBanner('PAID IN KIND', e.inKind === 'eye' ? 'ONE EYE TO THE NETWORK' : 'ONE FINGER TO THE NETWORK', '#ff6040', 2.4);
+      else if (e.collateral) this.hud.showBanner('SHORT', 'THE PHONE IS RINGING', '#ff3020', 2.2);
+      else this.hud.showBanner(e.paid ? 'PAID' : 'SHORT', e.paid ? `$${e.debt} TO THE NETWORK` : `VAULT $${e.vaultBefore} OF $${e.debt}`, e.paid ? '#80ff80' : '#ff3020', 2.2);
       if (e.paid) {
         this.sfx.play('register', { gain: 0.6 });
         st.vault.setVault(e.vaultAfter);
@@ -1633,6 +1687,7 @@ export class App {
     }
     if (this.fsm.state === 'Boot') return;
     const g = this.game;
+    this.lastInput = this.time;
     if (a.type === 'pause') {
       if (this.target) return this.endTarget();
       if (g) {
@@ -1789,6 +1844,7 @@ export class App {
 
   private onPick(id: string, uv: THREE.Vector2 | null, button: number): void {
     const g = this.game!;
+    this.lastInput = this.time;
     if (id === 'lever' && button === 0) return this.startCharge();
     if (id === 'deposit') return this.doDeposit();
     if (id === 'phone') return this.answerPhone();
@@ -1995,6 +2051,205 @@ export class App {
   // ===================================================================================
   // Frame
   // ===================================================================================
+  // ===================================================================================
+  // The horror pass
+  // ===================================================================================
+  /** Wedge beats from the last spin, acted out on the wheel's props. */
+  private playHorror(events: HorrorEvent[]): void {
+    const st = this.stage;
+    let ate = false;
+    for (const e of events) {
+      st.wedgeProps.event(e);
+      const at = 'uid' in e ? st.wedgeProps.worldPos(e.uid) : null;
+      switch (e.type) {
+        case 'mouthEat':
+          if (ate) break;
+          ate = true;
+          this.sfx.play('chew', { gain: 0.6 });
+          if (at) st.vfx.float(at.clone().add(new THREE.Vector3(0, 0.15, 0.1)), `-$${e.amount}`, '#ff4040', 1, 1.2);
+          break;
+        case 'mouthVomit':
+          this.sfx.play('retch', { gain: 0.8 });
+          if (at) st.coins.burst(at.clone().add(new THREE.Vector3(0, 0, 0.1)), Math.min(40, 6 + Math.round(e.amount / 30)));
+          this.hostSay('mouth', 'shock', 'point');
+          break;
+        case 'cleave':
+          this.sfx.play('chop', { gain: 0.9, delay: 0.6 });
+          setTimeout(() => {
+            if (this.settings.screenShake) st.rig.shake(0.5);
+            st.post.shock = Math.max(st.post.shock, 0.5);
+          }, 600);
+          this.hostSay('cleaver', 'grin', 'point');
+          break;
+        case 'bleed':
+          this.sfx.play('drip', { gain: 0.5 });
+          st.vfx.float(st.tray.group.position.clone().add(new THREE.Vector3(0, 0.3, 0)), `-$${e.amount}`, '#c01010', 1, 1.2);
+          break;
+        case 'eyeOpen':
+          this.sfx.play('blink', { gain: 0.6 });
+          this.hostSay('eye', 'shock', 'present');
+          break;
+        case 'eyeShut':
+          this.sfx.play('blink', { gain: 0.7, pitch: 0.7 });
+          break;
+        case 'stitchStrain':
+          this.sfx.play('tear', { gain: 0.25, pitch: 1.5 });
+          break;
+        case 'stitchTear':
+          this.sfx.play('tear', { gain: 0.8 });
+          this.hostSay('stitchTear', 'laugh', 'shrug');
+          break;
+        default:
+          break;
+      }
+    }
+  }
+
+  /** The finger or the eye, on camera. Censored cuts to snow before the worst of it. */
+  private async payInKind(part: 'finger' | 'eye'): Promise<void> {
+    const st = this.stage;
+    const uncut = this.settings.uncut;
+    st.collateral.uncut = uncut;
+    this.music.setLevel(0.15, 0.6);
+    st.lights.setMode('tense');
+    const veil = (v: number) => (st.post.veil = uncut ? Math.max(st.post.veil, v) : 0);
+    if (part === 'finger') {
+      st.rig.go('down', 0.5);
+      await wait(0.6);
+      st.rig.focus(st.collateral.knuckle(), { push: 0.55, fov: 26, in: 0.6, hold: Infinity });
+      this.sfx.play('crank', { gain: 0.4, pitch: 0.6 });
+      await st.collateral.takeFinger({
+        onSnap: () => {
+          this.sfx.play('snap', { gain: 1 });
+          if (this.settings.screenShake) st.rig.shake(0.8);
+          st.post.shock = 1;
+          this.hitstop = 0.15;
+          if (uncut && !this.settings.reducedFlashing) {
+            st.post.flashColor.setRGB(0.8, 0, 0);
+            st.post.flashAmt = 0.5;
+          }
+        },
+        snow: (v) => {
+          st.post.snow = v;
+          if (v > 0) this.sfx.play('static', { gain: 0.5 });
+        },
+        veil,
+      });
+      this.hud.fingersLost += 1;
+      await wait(0.4);
+      st.rig.release(0.6);
+    } else {
+      st.rig.go('center', 0.5);
+      await wait(0.6);
+      await st.collateral.takeEye(st.rig.camera, {
+        onContact: () => {
+          this.sfx.play('blink', { gain: 1, pitch: 0.8 });
+          this.sfx.play('snap', { gain: 0.6, pitch: 1.3, delay: 0.1 });
+          if (this.settings.screenShake) st.rig.shake(1);
+          st.post.shock = 1;
+          veil(1.2);
+          if (!uncut) st.post.snow = 1;
+        },
+        snow: (v) => {
+          st.post.snow = v;
+          if (v > 0) this.sfx.play('static', { gain: 0.5 });
+        },
+      });
+      // The patch settles in over the left of the picture, for the rest of the run.
+      const t0 = performance.now();
+      while (performance.now() - t0 < 900) {
+        st.post.eyePatch = Math.min(1, (performance.now() - t0) / 900);
+        await wait(1 / 60);
+      }
+      st.post.eyePatch = 1;
+      st.post.snow = 0;
+    }
+    st.collateral.setStrain(0.6);
+    st.lights.setMode('idle');
+    this.music.setLevel(1, 2);
+    this.hostSay('collateral', 'grin', 'cheer');
+    this.sfx.play('boneclap', { gain: 0.5, delay: 0.4 });
+    st.audience.clap(2);
+    await wait(1.2);
+  }
+
+  /**
+   * Policy 7. Late in the show, a silence at the wheel is Dead Air: the power dies, and when the
+   * lights come back something in the studio has moved closer.
+   */
+  private async breachSilence(): Promise<void> {
+    const g = this.game;
+    if (!g) return;
+    const st = this.stage;
+    await this.withBusy(async () => {
+      this.sfx.play('breaker', { gain: 0.9 });
+      this.music.setLevel(0, 0.05);
+      this.mixer.setMuffle(0.9);
+      st.studio.lightLevel = 0;
+      st.studio.spotLevel = 0;
+      st.wheel.bulbsOn = 0;
+      st.lights.setMode('off');
+      st.post.snow = 0.08;
+      await wait(1.4);
+      const n = g.recordSilence();
+      // It comes up on the side you can still see.
+      st.audience.approach(Math.min(4, n), g.run.marks.eyeLost ? 1 : -1);
+      st.host.slip(n % 3, 4);
+      await wait(0.25);
+      this.sfx.play('bulbpop', { gain: 0.5, pitch: 0.8 });
+      st.studio.lightLevel = 0.6;
+      await wait(0.08);
+      st.studio.lightLevel = 0;
+      await wait(0.3);
+      st.studio.lightLevel = 1;
+      st.studio.spotLevel = 1;
+      st.wheel.bulbsOn = 1;
+      st.post.snow = 0;
+      st.lights.setMode('idle');
+      this.mixer.setMuffle(0);
+      this.music.setLevel(1, 3);
+      this.hostSay('silence', 'wink', 'idle');
+    });
+    this.lastInput = this.time;
+  }
+
+  /** The Rot, every frame: decay, burst bulbs, the picture going off, slips, the silence rule. */
+  private updateRot(dt: number): void {
+    const st = this.stage;
+    const g = this.game;
+    const r = g ? rotOf(g.run) : 0;
+    const uncut = this.settings.uncut;
+    st.rot.rot = r;
+    st.rot.uncut = uncut;
+    st.collateral.uncut = uncut;
+    st.wheel.bloody = uncut && r > 0.45;
+    st.post.grain = 0.035 + r * 0.05;
+    st.post.veil = Math.max(0, st.post.veil - dt * 0.3);
+    // Marquee bulbs burst one by one past the halfway mark, and stay dead.
+    const dead = g ? Math.floor(Math.max(0, r - 0.3) * 30) : 0;
+    if (dead > this.bulbsDead && !this.menus.open) {
+      this.bulbsDead++;
+      st.wheel.deadBulbs = this.bulbsDead;
+      this.sfx.play('bulbpop', { gain: 0.4, pitch: 0.9 + Math.random() * 0.3 });
+      st.vfx.float(st.wheel.bulbWorld(st.wheel.deadBulb(this.bulbsDead - 1)), '*', '#fff0c0', 1, 0.4);
+    } else if (dead < this.bulbsDead) st.wheel.deadBulbs = this.bulbsDead = dead;
+    if (!g || this.menus.open) return;
+    // The mask slips now and then once the show is rotten (and always behind a silence).
+    if (r > 0.4 && !this.busy && !st.host.slipping && Math.random() < dt * (r - 0.4) * 0.04) {
+      st.host.slip();
+      this.sfx.play('static', { gain: 0.3, pitch: 0.7 });
+      if (Math.random() < 0.35) setTimeout(() => this.game && this.producerSay(SLIP_WHISPER, true), 200);
+    }
+    // Policy 7: from Deadline 5, four seconds of silence at the wheel is Dead Air.
+    this.silenceCool = Math.max(0, this.silenceCool - dt);
+    const quiet = g.run.phase === 'AwaitAction' && g.run.deadline >= 5 && !this.busy && !this.charge && !this.grab && !this.hud.choice && st.rig.station === 'center';
+    if (!quiet) this.lastInput = this.time;
+    if (quiet && this.silenceCool <= 0 && this.time - this.lastInput > 4) {
+      this.silenceCool = 30;
+      void this.breachSilence();
+    }
+  }
+
   private frame(now: number): void {
     requestAnimationFrame((t) => this.frame(t));
     let dt = Math.min(0.05, (now - this.lastFrame) / 1000);
@@ -2043,6 +2298,7 @@ export class App {
     if (this.settings.reducedFlashing) st.post.roll = Math.min(st.post.roll, 0.25);
     // The wheel rots with the show, and its sun keeps an eye on the player's hand.
     if (g) st.wheel.decay = Math.min(1, (g.run.deadline - 1) / 7);
+    this.updateRot(dt);
     {
       const c = this.toScreen(st.wheel.centerWorld());
       const lm = this.input.mouse;

@@ -6,12 +6,14 @@
  *  - deadAir: offered on a DEAD AIR (Bankrupt while the Tray held more than the Debt).
  *  - secret:  "The Other Line". Unlocked by hanging up on The Producer three times in one
  *             run; the next call comes from the Previous Contestant instead.
+ *  - collateral: when a Debt is missed, the Producer calls once more and takes payment in
+ *             kind (a finger, then an eye). Hanging up opens the floor.
  */
 import { BALANCE } from '../game/balance';
 import type { GameOps } from '../game/hooks';
 import type { Rarity, RunState } from '../game/types';
 
-export type BargainTier = 'normal' | 'deadAir' | 'secret';
+export type BargainTier = 'normal' | 'deadAir' | 'secret' | 'collateral';
 
 export interface BargainDef {
   id: string;
@@ -492,7 +494,31 @@ export const BARGAINS: readonly BargainDef[] = [
   },
 ];
 
-export const BARGAIN_MAP: Record<string, BargainDef> = Object.fromEntries(BARGAINS.map((b) => [b.id, b]));
+/** Payment in kind for a missed Debt (offered only on the collateral call, one at a time). */
+export const COLLATERAL_BARGAINS: readonly BargainDef[] = [
+  {
+    id: 'collateral_finger',
+    tier: 'collateral',
+    line: "One finger. You won't miss it.",
+    deal: 'The Network covers the ${short} you are short (it only takes fingers for near misses). Lose a finger: one fewer artifact slot for the rest of the run.',
+    weight: 1,
+    apply: (ops) => {
+      ops.run.marks.fingers = (ops.run.marks.fingers ?? 0) + 1;
+    },
+  },
+  {
+    id: 'collateral_eye',
+    tier: 'collateral',
+    line: 'An eye. You have a spare.',
+    deal: 'The Network covers the ${short} you are short. Lose an eye: no more landing previews, and one fewer spin every Deadline.',
+    weight: 1,
+    apply: (ops) => {
+      ops.run.marks.eyeLost = 1;
+    },
+  },
+];
+
+export const BARGAIN_MAP: Record<string, BargainDef> = Object.fromEntries([...BARGAINS, ...COLLATERAL_BARGAINS].map((b) => [b.id, b]));
 
 export function bargainDef(id: string): BargainDef {
   const b = BARGAIN_MAP[id];
@@ -523,4 +549,5 @@ export const PRODUCER_INTROS: Record<BargainTier, readonly string[]> = {
     "That's going in the blooper reel. Unless... you and I come to an arrangement.",
   ],
   secret: ["Don't talk. Just listen. I'm not the Producer, and this line isn't here."],
+  collateral: ["You're short. The Network takes other payment."],
 };

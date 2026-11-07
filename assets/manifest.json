@@ -478,6 +478,88 @@
       "author": "starninjas (OpenGameArt, \"4 Metal Dings/Rings\")",
       "license": "CC0-1.0",
       "modifications": "Source file \"ding.4.ogg\" from the zip. Converted to mono 22.05 kHz PCM16 with a one-pole lowpass at 7 kHz and 10-bit crush. A flick in the sweet spot."
+    },
+    {
+      "id": "mdl.skeleton_minion",
+      "type": "model",
+      "skinned": true,
+      "src": "models/kaykit_skeletons/Skeleton_Minion.glb",
+      "out": "models/skeleton_minion.glb",
+      "texSize": 64,
+      "keepAnims": [
+        "Sit_Chair_Idle",
+        "Sit_Chair_Down",
+        "Sit_Chair_StandUp",
+        "Cheer",
+        "Idle",
+        "Taunt",
+        "Skeletons_Awaken_Standing",
+        "Hit_A"
+      ],
+      "fetch": {
+        "url": "https://raw.githubusercontent.com/KayKit-Game-Assets/KayKit-Character-Pack-Skeletons-1.0/15b62b9bad122f72926c10fb14d622c73819fa54/addons/kaykit_character_pack_skeletons/Characters/gltf/Skeleton_Minion.glb"
+      },
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Character-Pack-Skeletons-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "license": "CC0-1.0",
+      "modifications": "Rig and mesh kept; animations cut to the seated-audience set (Sit_Chair_Idle, Sit_Chair_Down, Sit_Chair_StandUp, Cheer, Idle, Taunt, Skeletons_Awaken_Standing, Hit_A) and resampled; texture downscaled to 64×64; PSX material (skinned) at runtime. The studio audience of dead contestants."
+    },
+    {
+      "id": "mdl.skeleton_rogue",
+      "type": "model",
+      "skinned": true,
+      "src": "models/kaykit_skeletons/Skeleton_Rogue.glb",
+      "out": "models/skeleton_rogue.glb",
+      "texSize": 64,
+      "keepAnims": [
+        "Sit_Chair_Idle",
+        "Sit_Chair_Down",
+        "Sit_Chair_StandUp",
+        "Cheer",
+        "Idle",
+        "Taunt",
+        "Skeletons_Awaken_Standing",
+        "Hit_A"
+      ],
+      "fetch": {
+        "url": "https://raw.githubusercontent.com/KayKit-Game-Assets/KayKit-Character-Pack-Skeletons-1.0/15b62b9bad122f72926c10fb14d622c73819fa54/addons/kaykit_character_pack_skeletons/Characters/gltf/Skeleton_Rogue.glb"
+      },
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Character-Pack-Skeletons-1.0",
+      "author": "Kay Lousberg (KayKit)",
+      "license": "CC0-1.0",
+      "modifications": "Rig and mesh kept; animations cut to the seated-audience set (Sit_Chair_Idle, Sit_Chair_Down, Sit_Chair_StandUp, Cheer, Idle, Taunt, Skeletons_Awaken_Standing, Hit_A) and resampled; texture downscaled to 64×64; PSX material (skinned) at runtime. The studio audience of dead contestants."
+    },
+    {
+      "id": "mdl.bolt_cutters",
+      "type": "model",
+      "src": "models/bolt_cutters_01/bolt_cutters_01.gltf",
+      "out": "models/bolt_cutters.glb",
+      "texSize": 64,
+      "fetch": {
+        "polyhaven": "bolt_cutters_01",
+        "kind": "model"
+      },
+      "sourceUrl": "https://polyhaven.com/a/bolt_cutters_01",
+      "author": "Yann Kervran, Antanas Kep (Poly Haven)",
+      "license": "CC0-1.0",
+      "modifications": "Normal/ARM maps dropped; decimated; base colour downscaled to 64×64; PSX material at runtime. Split into two hinged halves at load so the jaws close in the collateral scene.",
+      "targetTris": 700
+    },
+    {
+      "id": "mdl.spoon",
+      "type": "model",
+      "src": "models/wooden_spoon/wooden_spoon.gltf",
+      "out": "models/spoon.glb",
+      "targetTris": 200,
+      "texSize": 64,
+      "fetch": {
+        "polyhaven": "wooden_spoon",
+        "kind": "model"
+      },
+      "sourceUrl": "https://polyhaven.com/a/wooden_spoon",
+      "author": "Ronnie Barter (Poly Haven)",
+      "license": "CC0-1.0",
+      "modifications": "Normal/ARM maps dropped; decimated; base colour downscaled; PSX material at runtime. Used in the eye collateral scene."
     }
   ]
 }

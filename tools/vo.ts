@@ -14,8 +14,8 @@ import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, readdirSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { BARGAINS, PRODUCER_INTROS } from '../src/content/bargains';
-import { DEADLINE_LINES, HOST_LINES, PRODUCER_ACCEPT, PRODUCER_HANGUP, SECRET_ACCEPT, type HostTrigger } from '../src/content/hostLines';
+import { BARGAINS, COLLATERAL_BARGAINS, PRODUCER_INTROS } from '../src/content/bargains';
+import { DEADLINE_LINES, HOST_LINES, PRODUCER_ACCEPT, PRODUCER_HANGUP, SECRET_ACCEPT, SLIP_WHISPER, type HostTrigger } from '../src/content/hostLines';
 import { LORE } from '../src/content/lore';
 import { voId } from '../src/audio/voId';
 
@@ -65,6 +65,13 @@ const HOST_TAG: Partial<Record<HostTrigger, string>> = {
   gambleOffer: '[mischievously]',
   gambleWin: '[shouting] [excited]',
   gambleLose: '[laughs]',
+  mouth: '[excited]',
+  cleaver: '[mischievously]',
+  eye: '[dramatically]',
+  stitchTear: '[laughs]',
+  bleeder: '[mischievously]',
+  silence: '[whispers]',
+  collateral: '[excited]',
 };
 
 /** Per-trigger tag rotation so a batch doesn't read every line the same way. */
@@ -121,8 +128,11 @@ export function allLines(): Line[] {
   PRODUCER_ACCEPT.forEach((l) => add('producer', l, '[chuckles]'));
   PRODUCER_HANGUP.forEach((l) => add('producer', l, '[angry] [raspy]'));
   for (const b of BARGAINS) if (b.tier !== 'secret') prod(b.line);
+  for (const l of PRODUCER_INTROS.collateral) add('producer', l, '[raspy] [slowly]');
+  for (const b of COLLATERAL_BARGAINS) add('producer', b.line, '[softly]');
   for (const l of PRODUCER_INTROS.secret) add('secret', l, '[whispers] [nervous]');
   add('secret', SECRET_ACCEPT, '[whispers]');
+  add('secret', SLIP_WHISPER, '[whispers] [terrified]');
   for (const b of BARGAINS) if (b.tier === 'secret') add('secret', b.line, '[whispers] [trembling voice]');
   for (const n of LORE.slice(0, ARCHIVE_VOICED)) add('archive', n.text, '[tired] [slowly]');
   return out;

@@ -22,6 +22,8 @@ export interface Settings {
   captions: boolean;
   screenShake: boolean;
   dither: boolean;
+  /** Broadcast Standards: Uncut shows the gore; Censored cuts away to static before it. */
+  uncut: boolean;
 }
 
 export const SETTINGS_VERSION = 2;
@@ -43,6 +45,7 @@ export function defaultSettings(): Settings {
     captions: true,
     screenShake: true,
     dither: true,
+    uncut: true,
   };
 }
 
@@ -66,6 +69,7 @@ export function sanitizeSettings(s: Partial<Settings> | null | undefined): Setti
     captions: typeof s.captions === 'boolean' ? s.captions : d.captions,
     screenShake: typeof s.screenShake === 'boolean' ? s.screenShake : d.screenShake,
     dither: typeof s.dither === 'boolean' ? s.dither : d.dither,
+    uncut: typeof s.uncut === 'boolean' ? s.uncut : d.uncut,
   };
 }
 

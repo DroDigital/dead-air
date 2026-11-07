@@ -128,11 +128,11 @@ function landSegment(
       label(half('BANKRUPT'));
     },
     nothing: (l) => label(half(l)),
-    resolveAs: (kind, value, l) => {
-      if (primary) b.resolvedKind = kind;
+    resolveAs: (kind, value, l, weightMult = 1) => {
+      if (primary && weightMult === 1) b.resolvedKind = kind;
       const sub: Segment = { ...seg, kind, value, gild: kind === 'cash' || kind === 'jackpot' ? seg.gild : 0 };
       // The re-dispatched wedge reports through a sink that prefixes the reveal label.
-      landSegment(host, b, sub, weight, false, (inner) => {
+      landSegment(host, b, sub, weight * weightMult, false, (inner) => {
         const bare = inner.replace(/^½ /, '');
         label(half(bare.startsWith('$') || bare.startsWith('JACKPOT') ? `${l} ${bare.replace('JACKPOT ', '')}` : l));
       });

@@ -83,6 +83,8 @@ export class Hud {
   showCursor = true;
   /** Cursor art: an open glove over something grabbable, a closed one while dragging. */
   cursor: 'open' | 'grab' | null = null;
+  /** Fingers the Network has taken: the glove cursor wears a bandage. */
+  fingersLost = 0;
   /** Cartoon speed lines round the wheel (internal px centre/radius, 0..1 amount). */
   speedLines: { x: number; y: number; r: number; amt: number; rot: number } | null = null;
   /** Cinematic letterbox bars, 0..1 (eased toward `letterboxTarget`). */
@@ -486,6 +488,15 @@ export class Hud {
       if (glove) {
         const gs = (this.cursor === 'grab' ? 14 : 16) * k;
         this.sprite(ctx, glove, mouse.x - gs / 2, mouse.y - gs / 2, gs, gs * (glove.height / glove.width));
+        if (this.fingersLost > 0) {
+          // A bandaged stump where the little finger was, spotted through.
+          const bx = mouse.x - gs * (this.cursor === 'grab' ? 0.18 : 0.38),
+            by = mouse.y - gs * (this.cursor === 'grab' ? 0.2 : 0.3);
+          ctx.fillStyle = '#f0ece0';
+          ctx.fillRect(Math.round(bx), Math.round(by), Math.max(2, Math.round(gs * 0.16)), Math.max(2, Math.round(gs * 0.12)));
+          ctx.fillStyle = '#9a0a06';
+          ctx.fillRect(Math.round(bx + gs * 0.05), Math.round(by + gs * 0.03), Math.max(1, Math.round(k)), Math.max(1, Math.round(k)));
+        }
       } else {
         ctx.fillStyle = '#000';
         ctx.fillRect(mouse.x - k, mouse.y - k, 3 * k, 3 * k);

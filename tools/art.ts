@@ -21,6 +21,7 @@ import { fileURLToPath } from 'node:url';
 import { ARTIFACTS } from '../src/content/artifacts';
 import { SCRATCH_CARDS } from '../src/content/scratchCards';
 import { WEDGE_KINDS } from '../src/content/wedges';
+import { horrorIcons } from './horror-art';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const SRC = join(ROOT, 'assets-src', 'art');
@@ -230,7 +231,14 @@ async function gameOver(sharp: Sharp): Promise<void> {
 export async function buildArt(): Promise<number> {
   if (!existsSync(join(SRC, 'icons-wedges.png'))) return 0;
   const sharp = (await import('sharp')).default;
-  await grid(sharp, 'icons-wedges.png', 5, 5, [...WEDGE_KINDS], 'wedge', 128);
+  // The owner's sheet covers the wedges up to Payday; the horror wedges are drawn by tools/horror-art.ts.
+  await grid(sharp, 'icons-wedges.png', 5, 5, WEDGE_KINDS.slice(0, WEDGE_KINDS.indexOf('payday') + 1), 'wedge', 128);
+  await horrorIcons(sharp, async (id, buf) => {
+    const out = join(OUT, 'wedge', `${id}.png`);
+    await mkdir(dirname(out), { recursive: true });
+    await writeFile(out, buf);
+    index[`wedge.${id}`] = { url: `assets/art/wedge/${id}.png`, w: 128, h: 128 };
+  });
   const arts = ARTIFACTS.map((a) => a.id);
   await grid(sharp, 'icons-artifacts-1.png', 5, 5, arts.slice(0, 25), 'artifact', 128);
   await grid(sharp, 'icons-artifacts-2.png', 5, 5, arts.slice(25, 50), 'artifact', 128);

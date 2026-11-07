@@ -5,6 +5,7 @@
 import type { RngStreams } from '../core/rng';
 import type { WidthMods, PhysicsMods } from './wheel';
 import type {
+  HorrorEvent,
   Layout,
   Wedge,
   ArtifactInstance,
@@ -44,6 +45,8 @@ export interface GameOps {
   recomputeDebt(): void;
   cashValueOf(seg: Segment): number;
   wedgeByUid(uid: number): Wedge | undefined;
+  /** Tell the stage about a horror beat (presented with the spin's result). */
+  horror(e: HorrorEvent): void;
 }
 
 // ---------------------------------------------------------------------------------------
@@ -220,8 +223,8 @@ export interface LandCtx {
   prize(kind: WedgeKind, amount: number, text: string, scalable?: boolean): void;
   bankrupt(frac: number): void;
   nothing(label: string): void;
-  /** Re-dispatch as another kind (Mystery, Haunted, Wild). */
-  resolveAs(kind: WedgeKind, value: number, label: string): void;
+  /** Re-dispatch as another kind (Mystery, Haunted, Wild); `weightMult` scales it (Stitches). */
+  resolveAs(kind: WedgeKind, value: number, label: string, weightMult?: number): void;
   bestCashValue(): number;
   mystery(): MysteryCtx;
 }

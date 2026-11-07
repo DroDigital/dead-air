@@ -260,7 +260,7 @@ export class Bot {
         const p = r.pending;
         if (p?.type !== 'artifactPick') return true;
         const ranked = [...p.options].sort((a, b) => artifactScore(b) - artifactScore(a));
-        if (r.artifacts.length >= BALANCE.maxArtifacts) {
+        if (r.artifacts.length >= g.maxArtifacts()) {
           const worst = r.artifacts.map((a, i) => ({ i, s: artifactScore(a.id) })).sort((a, b) => a.s - b.s)[0];
           if (artifactScore(ranked[0]) > worst.s + 1) g.pickArtifact(ranked[0], worst.i);
           else g.pickArtifact(null);
@@ -300,6 +300,9 @@ export class Bot {
           'cursed_gift',
           'rare_for_debt',
           'insurance_policy',
+          // Payment in kind beats the floor.
+          'collateral_finger',
+          'collateral_eye',
         ]);
         const idx = ph.offers.findIndex((o) => good.has(o.bargainId) && (!bargainDef(o.bargainId).available || bargainDef(o.bargainId).available!(r)));
         if (idx >= 0) g.phoneAccept(idx);
@@ -320,7 +323,7 @@ export class Bot {
       if (BALANCE.bankruptRemovable && bkIdx >= 0 && r.tokens >= g.serviceCost('remove') + 1 && g.shopRemove(bkIdx).ok) continue;
       // 2. Best affordable artifact.
       const arts = shop.items.filter((i) => i.type === 'artifact' && !i.sold && i.cost <= r.tokens).sort((a, b) => artifactScore(b.id) - artifactScore(a.id));
-      if (arts.length && r.artifacts.length < BALANCE.maxArtifacts && artifactScore(arts[0].id) >= 5) {
+      if (arts.length && r.artifacts.length < g.maxArtifacts() && artifactScore(arts[0].id) >= 5) {
         g.shopBuy(arts[0].slot);
         continue;
       }

@@ -39,6 +39,29 @@ export const BALANCE = {
   gildMult: 0.5, // +50% per gild [BRIEF]
   houseEdgeRespinCash: 25, // [BRIEF]
 
+  // ---- Horror wedges --------------------------------------------------------------------
+  /** The Mouth eats this share of the Tray on every spin that misses it. */
+  mouthBite: 0.1,
+  /** ...and gives back its belly times this when it is landed. */
+  mouthVomit: 2,
+  /** The Cleaver's printed value (cash-like, gildable). */
+  cleaverValue: 500,
+  bleederValue: 400,
+  /** A bleeding Tray loses this share every spin until it is deposited. */
+  bleedRate: 0.08,
+  /** Landing the Eye grants this many landing previews, and it shuts after this many spins. */
+  eyePeeks: 3,
+  /** Stitches pays each neighbour at this weight. */
+  stitchWeight: 0.75,
+  /** ...and tears open into a Bankrupt on this landing. */
+  stitchLife: 3,
+
+  // ---- Collateral (paying a missed Debt with your body) ---------------------------------
+  /** At most this many collateral payments per run: a finger, then an eye. */
+  collateralMax: 2,
+  /** The most of the Debt each part can cover: a near miss only (finger, then eye). */
+  collateralCover: [0.2, 0.35] as readonly number[],
+
   // ---- Wheel geometry -----------------------------------------------------------------
   baseWidth: 15,
   jackpotWidth: 6, // [BRIEF]
