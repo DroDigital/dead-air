@@ -20,6 +20,10 @@ import { CanvasPanel, panelMesh } from './scene/util';
 import { VaultView } from './scene/vault';
 import { WheelView } from './scene/wheel';
 import { Vfx } from './vfx';
+import { AudienceView } from './horror/audience';
+import { CollateralView } from './horror/collateral';
+import { RotView } from './horror/rotView';
+import { WedgeModels } from './horror/wedgeModels';
 
 export interface PickHit {
   id: string;
@@ -88,6 +92,10 @@ export class Stage {
   readonly lights = new ShowLights();
   readonly coins = new CoinShower();
   readonly vfx = new Vfx();
+  readonly rot: RotView;
+  readonly audience: AudienceView;
+  readonly wedgeProps: WedgeModels;
+  readonly collateral: CollateralView;
   private raycaster = new THREE.Raycaster();
   stats = { calls: 0, triangles: 0 };
 
@@ -110,7 +118,15 @@ export class Stage {
     this.phone = new PhoneView();
     this.lever = new LeverView();
     this.marquee = new Marquee();
+    this.rot = new RotView(assets);
+    this.audience = new AudienceView(assets);
+    this.wedgeProps = new WedgeModels(this.rot.blood);
+    this.wheel.attach(this.wedgeProps.group);
+    this.collateral = new CollateralView(assets, this.rot.blood);
     this.scene.add(
+      this.rot.group,
+      this.audience.group,
+      this.collateral.group,
       this.studio.group,
       this.wheel.group,
       this.tray.group,
@@ -181,6 +197,10 @@ export class Stage {
     this.lights.update(dt, time);
     this.coins.update(dt);
     this.vfx.update(dt);
+    this.rot.update(dt, time);
+    this.audience.update(dt);
+    this.wedgeProps.update(dt, time, this.rig.camera);
+    this.collateral.update(dt);
     this.rig.apply(time, dt);
   }
 

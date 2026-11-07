@@ -212,6 +212,11 @@ export class WheelView {
    * dividers, more stains on the print, and the sun's tear.
    */
   decay = 0;
+  /** The ink runs red (Broadcast Standards: Uncut, late in the show). */
+  bloody = false;
+  /** Marquee bulbs that have burst and stay dark, in a fixed random order. */
+  deadBulbs = 0;
+  private deadOrder: number[] = Array.from({ length: BULBS }, (_, i) => i).sort((a, b) => ((a * 7919) % 41) - ((b * 7919) % 41));
   /** Where the hub sun's eyes look (-1..1, screen-ish), and its mood. */
   sunLook = { x: 0, y: 0.25 };
   sunMood: 'idle' | 'dizzy' | 'gloat' = 'idle';
@@ -310,6 +315,23 @@ export class WheelView {
       this.bulbs.setColorAt(i, new THREE.Color(1, 0.8, 0.3));
     }
     g.add(this.bulbs);
+  }
+
+  /** Mount something on the turning face (wheel-local: +Y up from the hub at angle 0). */
+  attach(o: THREE.Object3D): void {
+    this.spinner.add(o);
+  }
+
+  /** Wheel-local position of marquee bulb `i` (for the burst sparks). */
+  bulbWorld(i: number): THREE.Vector3 {
+    const a = this.bulbAngles[i] * TAU;
+    const br = WHEEL_R + 0.13;
+    return new THREE.Vector3(Math.sin(a) * br, Math.cos(a) * br, 0.04).applyMatrix4(this.group.matrixWorld);
+  }
+
+  /** The index of the nth bulb to burst. */
+  deadBulb(n: number): number {
+    return this.deadOrder[n % BULBS];
   }
 
   setColorblind(on: boolean): void {
@@ -447,11 +469,11 @@ export class WheelView {
         // Only between wedges wide enough that a label never comes near the divider out here.
         if (drip() > 0.22 + this.decay * 0.45 || s.end - s.start < 14 || prev.end - prev.start < 14) continue;
         const a = (s.start - 90) * DEG;
-        const len = 6 + drip() * 10 + this.decay * 18;
+        const len = 6 + drip() * 10 + this.decay * 18 + (this.bloody ? 10 : 0);
         const r0 = rimIn + 1,
           r1 = rimIn - len;
-        ctx.strokeStyle = '#2a0c06';
-        ctx.fillStyle = '#2a0c06';
+        ctx.strokeStyle = this.bloody ? '#7a0604' : '#2a0c06';
+        ctx.fillStyle = this.bloody ? '#7a0604' : '#2a0c06';
         ctx.lineWidth = 1.6 + drip() * 0.8;
         ctx.lineCap = 'round';
         ctx.beginPath();
@@ -874,6 +896,7 @@ export class WheelView {
           c.setRGB(b, b * 0.05, b * 0.03);
         }
       } else c.setRGB(b, b * (0.82 - 0.4 * hot), b * (0.35 - 0.3 * hot));
+      if (this.deadBulbs > 0 && this.deadOrder.indexOf(i) < this.deadBulbs) c.setRGB(0.04, 0.03, 0.02);
       this.bulbs.setColorAt(i, c);
     }
     if (this.bulbs.instanceColor) this.bulbs.instanceColor.needsUpdate = true;

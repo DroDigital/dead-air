@@ -137,6 +137,9 @@ export class HostView {
   /** Studio light level 0..1 (the stage dims the host with the room). */
   light = 1;
   silent = false;
+  /** Frames left of a mask slip (what is really behind the screen), and which one. */
+  private slipFrames = 0;
+  private slipKind = 0;
   private energy = 0;
   private faceTimer = 0;
   private lastStep = -1;
@@ -175,6 +178,19 @@ export class HostView {
     const p = POSES.idle;
     this.arms = { a: armSprings(p.a), b: armSprings(p.b) };
     this.draw(0);
+  }
+
+  /**
+   * The mask slips: for a few frames the screen shows what is behind it. 0 a face pressed to the
+   * glass from inside, 1 a wet mouth with too many teeth, 2 your own chair, empty, from behind.
+   */
+  slip(kind = Math.floor(Math.random() * 3), frames = 2 + Math.floor(Math.random() * 3)): void {
+    this.slipKind = kind;
+    this.slipFrames = frames;
+  }
+
+  get slipping(): boolean {
+    return this.slipFrames > 0;
   }
 
   /** World position of his TV head (for reaction shots). */
@@ -498,7 +514,10 @@ export class HostView {
     c.clip();
     c.fillStyle = '#9fd8b0';
     c.fillRect(x, y, w, h);
-    if (faces) {
+    if (this.slipFrames > 0) {
+      this.slipFrames--;
+      drawSlip(c, x, y, w, h, this.slipKind, t);
+    } else if (faces) {
       const cs = faces.width / 4;
       const col = this.cell % 4,
         row = Math.floor(this.cell / 4);
@@ -536,4 +555,129 @@ export class HostView {
     c.fillStyle = '#7dffa8';
     c.fillRect(CW / 2 - 38, 50, 76, 58);
   }
+}
+
+/** What is behind the host's screen. Drawn straight into the CRT rectangle. */
+function drawSlip(c: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, kind: number, t: number): void {
+  const cx = x + w / 2,
+    cy = y + h / 2;
+  const jx = (Math.random() - 0.5) * 6;
+  c.save();
+  c.translate(jx, 0);
+  if (kind === 0) {
+    // A face pressed flat against the inside of the glass, palms either side.
+    c.fillStyle = '#1a221c';
+    c.fillRect(x - 10, y, w + 20, h);
+    const skin = '#c8c0b0';
+    for (const s of [-1, 1]) {
+      c.fillStyle = skin;
+      c.beginPath();
+      c.ellipse(cx + s * w * 0.4, cy + h * 0.12, w * 0.12, h * 0.2, 0, 0, Math.PI * 2);
+      c.fill();
+      for (let f = 0; f < 4; f++) {
+        c.beginPath();
+        c.ellipse(cx + s * (w * 0.33 + f * w * 0.05), cy - h * 0.18 - (f === 1 || f === 2 ? 6 : 0), w * 0.022, h * 0.14, s * 0.15, 0, Math.PI * 2);
+        c.fill();
+      }
+    }
+    c.fillStyle = skin;
+    c.beginPath();
+    c.ellipse(cx, cy + 4, w * 0.33, h * 0.46, 0, 0, Math.PI * 2);
+    c.fill();
+    // Pressed-white blotches where it touches the glass.
+    c.fillStyle = 'rgba(255,255,250,0.55)';
+    for (const [dx, dy, r] of [[0, -0.05, 0.1], [-0.12, -0.2, 0.07], [0.13, -0.18, 0.06], [0, 0.32, 0.08]]) {
+      c.beginPath();
+      c.ellipse(cx + dx * w, cy + dy * h, r * w, r * h * 0.8, 0, 0, Math.PI * 2);
+      c.fill();
+    }
+    // Eyes far too wide, tiny pupils looking straight out.
+    for (const s of [-1, 1]) {
+      c.fillStyle = '#f4f0e8';
+      c.beginPath();
+      c.ellipse(cx + s * w * 0.12, cy - h * 0.12, w * 0.07, h * 0.075, 0, 0, Math.PI * 2);
+      c.fill();
+      c.fillStyle = '#100808';
+      c.beginPath();
+      c.arc(cx + s * w * 0.12, cy - h * 0.12, 2.5, 0, Math.PI * 2);
+      c.fill();
+    }
+    c.fillStyle = '#2a0a08';
+    c.beginPath();
+    c.ellipse(cx, cy + h * 0.2, w * 0.1, h * 0.11 + Math.sin(t * 30) * 3, 0, 0, Math.PI * 2);
+    c.fill();
+  } else if (kind === 1) {
+    // A wet mouth, rows of teeth behind rows of teeth.
+    c.fillStyle = '#3a0606';
+    c.fillRect(x - 10, y, w + 20, h);
+    c.fillStyle = '#9a1418';
+    c.beginPath();
+    c.ellipse(cx, cy, w * 0.48, h * 0.42, 0, 0, Math.PI * 2);
+    c.fill();
+    c.fillStyle = '#120202';
+    c.beginPath();
+    c.ellipse(cx, cy, w * 0.38, h * 0.3 + Math.sin(t * 20) * 4, 0, 0, Math.PI * 2);
+    c.fill();
+    c.fillStyle = '#efe4c4';
+    for (let row = 0; row < 3; row++) {
+      const k = 1 - row * 0.22;
+      for (let i = 0; i < 9; i++) {
+        const tx = cx - w * 0.34 * k + (i / 8) * w * 0.68 * k;
+        for (const s of [-1, 1]) {
+          const ty = cy + s * h * 0.28 * k;
+          c.beginPath();
+          c.moveTo(tx - 5 * k, ty);
+          c.lineTo(tx + 5 * k, ty);
+          c.lineTo(tx, ty - s * 14 * k);
+          c.closePath();
+          c.fill();
+        }
+      }
+    }
+    c.strokeStyle = 'rgba(255,230,230,0.6)';
+    c.lineWidth = 1.5;
+    for (let i = 0; i < 4; i++) {
+      const sx = cx - w * 0.2 + i * w * 0.13;
+      c.beginPath();
+      c.moveTo(sx, cy - h * 0.2);
+      c.quadraticCurveTo(sx + 4, cy, sx - 2, cy + h * 0.22);
+      c.stroke();
+    }
+  } else {
+    // The contestant's chair, empty, seen from behind under one hard light.
+    c.fillStyle = '#050404';
+    c.fillRect(x - 10, y, w + 20, h);
+    const g = c.createRadialGradient(cx, y, 4, cx, y + h * 0.4, w * 0.6);
+    g.addColorStop(0, 'rgba(220,210,170,0.6)');
+    g.addColorStop(1, 'rgba(0,0,0,0)');
+    c.fillStyle = g;
+    c.beginPath();
+    c.moveTo(cx - 12, y);
+    c.lineTo(cx + 12, y);
+    c.lineTo(cx + w * 0.42, y + h);
+    c.lineTo(cx - w * 0.42, y + h);
+    c.closePath();
+    c.fill();
+    c.fillStyle = '#2a0e0a';
+    c.beginPath();
+    c.ellipse(cx, y + h * 0.92, w * 0.3, 8, 0, 0, Math.PI * 2);
+    c.fill();
+    c.fillStyle = '#4a2418';
+    c.fillRect(cx - w * 0.17, y + h * 0.3, w * 0.34, h * 0.42);
+    c.fillRect(cx - w * 0.26, y + h * 0.56, w * 0.07, h * 0.1);
+    c.fillRect(cx + w * 0.19, y + h * 0.56, w * 0.07, h * 0.1);
+    c.fillStyle = '#1a0a06';
+    c.fillRect(cx - w * 0.15, y + h * 0.72, 5, h * 0.2);
+    c.fillRect(cx + w * 0.15 - 5, y + h * 0.72, 5, h * 0.2);
+    // Straps hanging loose off the arms.
+    c.strokeStyle = '#2a1408';
+    c.lineWidth = 3;
+    for (const s of [-1, 1]) {
+      c.beginPath();
+      c.moveTo(cx + s * w * 0.22, y + h * 0.62);
+      c.quadraticCurveTo(cx + s * w * 0.25, y + h * 0.75, cx + s * w * 0.21 + Math.sin(t * 3) * 2, y + h * 0.84);
+      c.stroke();
+    }
+  }
+  c.restore();
 }
