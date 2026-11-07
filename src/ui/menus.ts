@@ -236,6 +236,7 @@ export class Menus {
           ${check('fastMode', 'FAST MODE (F)')}
           ${check('colorblind', 'COLORBLIND WEDGE PATTERNS')}
           ${check('captions', 'CAPTIONS')}
+          ${check('uncut', 'UNCUT BROADCAST (GORE)')}
           ${slider('masterVolume', 'MASTER')}
           ${slider('music', 'MUSIC')}
           ${slider('sfx', 'SFX')}

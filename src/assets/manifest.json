@@ -136,6 +136,22 @@
     "sfx.ding": {
       "type": "audio",
       "url": "assets/audio/ding.wav"
+    },
+    "mdl.skeleton_minion": {
+      "type": "skinned",
+      "url": "assets/models/skeleton_minion.glb"
+    },
+    "mdl.skeleton_rogue": {
+      "type": "skinned",
+      "url": "assets/models/skeleton_rogue.glb"
+    },
+    "mdl.bolt_cutters": {
+      "type": "model",
+      "url": "assets/models/bolt_cutters.glb"
+    },
+    "mdl.spoon": {
+      "type": "model",
+      "url": "assets/models/spoon.glb"
     }
   }
 }

@@ -32,6 +32,9 @@ interface Entry {
   size?: number;
   targetTris?: number;
   texSize?: number;
+  /** Rigged model: keep the skin (no decimation) and the listed animation clips. */
+  skinned?: boolean;
+  keepAnims?: string[];
   fetch: { polyhaven?: string; kind?: 'texture' | 'model'; url?: string } | null;
   sourceUrl: string;
   author: string;
@@ -151,7 +154,7 @@ async function convertTexture(e: Entry): Promise<void> {
 async function convertModel(e: Entry): Promise<number> {
   const { NodeIO } = await import('@gltf-transform/core');
   const { ALL_EXTENSIONS } = await import('@gltf-transform/extensions');
-  const { dedup, weld, simplify, prune, textureCompress } = await import('@gltf-transform/functions');
+  const { dedup, weld, simplify, prune, resample, textureCompress } = await import('@gltf-transform/functions');
   const { MeshoptSimplifier } = await import('meshoptimizer');
   const sharp = (await import('sharp')).default;
   await MeshoptSimplifier.ready;
@@ -166,10 +169,24 @@ async function convertModel(e: Entry): Promise<number> {
       }
     return t;
   };
-  await doc.transform(dedup(), weld());
-  const before = countTris();
-  const ratio = Math.min(1, (e.targetTris ?? 500) / Math.max(1, before));
-  await doc.transform(simplify({ simplifier: MeshoptSimplifier, ratio, error: 0.5, lockBorder: false }), prune());
+  if (e.skinned) {
+    // Rigged: keep the mesh whole (decimation tears skin weights) and only the clips we play.
+    const keep = new Set(e.keepAnims ?? []);
+    for (const a of doc.getRoot().listAnimations()) {
+      if (keep.has(a.getName())) continue;
+      for (const ch of a.listChannels()) ch.dispose();
+      for (const smp of a.listSamplers()) smp.dispose();
+      a.dispose();
+    }
+    await doc.transform(dedup(), resample(), prune({ keepLeaves: true }));
+    // Accessors left behind by the dropped clips.
+    for (const acc of doc.getRoot().listAccessors()) if (acc.listParents().every((p) => p.propertyType === 'Root')) acc.dispose();
+  } else {
+    await doc.transform(dedup(), weld());
+    const before = countTris();
+    const ratio = Math.min(1, (e.targetTris ?? 500) / Math.max(1, before));
+    await doc.transform(simplify({ simplifier: MeshoptSimplifier, ratio, error: 0.5, lockBorder: false }), prune());
+  }
   const s = e.texSize ?? 64;
   await doc.transform(textureCompress({ encoder: sharp, targetFormat: 'png', resize: [s, s] }));
   const out = join(OUT, e.out);
@@ -266,7 +283,7 @@ async function main(): Promise<void> {
         await mkdir(dirname(join(OUT, e.out)), { recursive: true });
         await copyFile(join(SRC, e.src), join(OUT, e.out));
       }
-      index[e.id] = { type: e.type, url: `assets/${e.out}` };
+      index[e.id] = { type: e.type === 'model' && e.skinned ? 'skinned' : e.type, url: `assets/${e.out}` };
       console.log(`✓ ${e.id}${extra}`);
     } catch (err) {
       console.log(`· ${e.id}: procedural fallback (${(err as Error).message})`);

@@ -173,6 +173,83 @@
       "key": "A minor",
       "shift": 0,
       "cents": -3
+    },
+    {
+      "id": "el.chop",
+      "file": "sfx_chop.mp3",
+      "kind": "sfx",
+      "model": "eleven_text_to_sound_v2",
+      "prompt": "Heavy meat cleaver chopping down through flesh and bone onto a wooden block, one wet thunk with a crack"
+    },
+    {
+      "id": "el.snap",
+      "file": "sfx_snap.mp3",
+      "kind": "sfx",
+      "model": "eleven_text_to_sound_v2",
+      "prompt": "Bolt cutters snapping through a finger bone, sharp crunch and wet squelch"
+    },
+    {
+      "id": "el.chew",
+      "file": "sfx_chew.mp3",
+      "kind": "sfx",
+      "model": "eleven_text_to_sound_v2",
+      "prompt": "Grotesque wet chewing and one loud gulp, close up"
+    },
+    {
+      "id": "el.retch",
+      "file": "sfx_retch.mp3",
+      "kind": "sfx",
+      "model": "eleven_text_to_sound_v2",
+      "prompt": "Monster retching then a wet gush of coins spilling out"
+    },
+    {
+      "id": "el.drip",
+      "file": "sfx_drip.mp3",
+      "kind": "sfx",
+      "model": "eleven_text_to_sound_v2",
+      "prompt": "Three slow thick blood drips into a puddle, quiet room"
+    },
+    {
+      "id": "el.tear",
+      "file": "sfx_tear.mp3",
+      "kind": "sfx",
+      "model": "eleven_text_to_sound_v2",
+      "prompt": "Surgical stitches ripping open, threads snapping, wet flesh tear"
+    },
+    {
+      "id": "el.blink",
+      "file": "sfx_blink.mp3",
+      "kind": "sfx",
+      "model": "eleven_text_to_sound_v2",
+      "prompt": "Wet squelchy eyelid blink, moist and gross, close up"
+    },
+    {
+      "id": "el.breaker",
+      "file": "sfx_breaker.mp3",
+      "kind": "sfx",
+      "model": "eleven_text_to_sound_v2",
+      "prompt": "Heavy breaker switch clunk, electrical hum dies into silence"
+    },
+    {
+      "id": "el.boneclap",
+      "file": "sfx_boneclap.mp3",
+      "kind": "sfx",
+      "model": "eleven_text_to_sound_v2",
+      "prompt": "Dry bony hollow clapping from a small skeleton audience, slow and eerie"
+    },
+    {
+      "id": "el.bulbpop",
+      "file": "sfx_bulbpop.mp3",
+      "kind": "sfx",
+      "model": "eleven_text_to_sound_v2",
+      "prompt": "Old light bulb bursting with a pop and tinkling glass"
+    },
+    {
+      "id": "el.seats",
+      "file": "sfx_seats.mp3",
+      "kind": "sfx",
+      "model": "eleven_text_to_sound_v2",
+      "prompt": "Many old theatre seats creaking as people stand at once, bones cracking"
     }
   ]
 }
