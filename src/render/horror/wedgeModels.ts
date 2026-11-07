@@ -74,6 +74,8 @@ interface Prop {
   fx: Record<string, number>;
   dying: number;
   size: number;
+  /** Fixed scale of the holder (the props read at a distance). */
+  base: number;
 }
 
 export class WedgeModels {
@@ -216,7 +218,12 @@ export class WedgeModels {
         break;
       }
     }
-    return { uid: seg.uid, kind: seg.kind, angle: (seg.start + seg.end) / 2, group: g, parts, t: Math.random() * 10, fx: {}, dying: 0, size: 1 };
+    const holder = new THREE.Group();
+    holder.add(g);
+    parts.inner = g;
+    const base = seg.kind === 'stitches' ? 1 : seg.kind === 'cleaver' ? 1.5 : 1.8;
+    holder.scale.setScalar(base);
+    return { uid: seg.uid, kind: seg.kind, angle: (seg.start + seg.end) / 2, group: holder, parts, t: Math.random() * 10, fx: {}, dying: 0, size: 1, base };
   }
 
   /** Rebuild after a layout change: new props appear, removed ones play out their end. */
@@ -338,7 +345,7 @@ export class WedgeModels {
           o.rotation.z += dt * 8;
         }
       }
-      p.group.scale.setScalar(Math.max(0.001, p.kind === 'stitches' ? 1 : Math.min(1, p.dying * 1.5)));
+      p.group.scale.setScalar(p.base * Math.max(0.001, p.kind === 'stitches' ? 1 : Math.min(1, p.dying * 1.5)));
       if (p.dying <= 0) {
         this.group.remove(p.group);
         this.dying.splice(i, 1);
@@ -360,7 +367,7 @@ export class WedgeModels {
         p.parts.upper.position.y = open * 0.012;
         p.parts.lower.position.y = -open * 0.018;
         const swell = p.fx.chomp ? 1 + Math.sin(p.fx.chomp * 9) * 0.08 : 1;
-        p.group.scale.setScalar(p.size * swell);
+        p.parts.inner.scale.setScalar(p.size * swell);
         break;
       }
       case 'eye': {

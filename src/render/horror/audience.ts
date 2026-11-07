@@ -14,13 +14,20 @@ import type { PsxMaterial } from '../psxMaterial';
 const UPPER = /^(spine|chest|head|upperarm|lowerarm|wrist|hand|handslot|elbowIK|handIK)/;
 const MAX_SEATED = 12;
 /** Standing height of a figure (metres). */
-const HEIGHT = 1.15;
+const HEIGHT = 1.3;
 /** The visitor's marks, one step closer to the chair for every breach of the silence. */
 const VISITOR_MARKS: [number, number, number][] = [
-  [-2.2, 0, 0.3],
-  [-1.75, 0, 1.25],
-  [-1.25, 0, 1.95],
-  [-0.92, 0, 2.45],
+  [-1.25, 0.18, -1.15],
+  [-1.15, 0, 0.75],
+  [-0.95, 0, 1.75],
+  [-0.5, 0, 2.15],
+];
+/** The same walk on the right, clear of the host (when the left eye is gone). */
+const VISITOR_MARKS_RIGHT: [number, number, number][] = [
+  [1.05, 0, 0.55],
+  [1.0, 0, 1.35],
+  [0.85, 0, 1.95],
+  [0.45, 0, 2.15],
 ];
 /** Clothes of past runs: faded studio colours. */
 const CLOTH = [0x5a2a6a, 0x2a4a6a, 0x6a4a1a, 0x3a5a3a, 0x6a1a1a, 0x4a4a4a, 0x7a5a2a, 0x2a3a5a];
@@ -118,6 +125,8 @@ class Figure {
     const c = new THREE.Color(0xc8bea8).lerp(new THREE.Color(0x6a6050), Math.max(0, 0.6 - f));
     if (uncut && f > 0.55) c.lerp(new THREE.Color(0xb0383a), (f - 0.55) * 1.3);
     mat.uniforms.uColor.value.copy(c);
+    // Bone holds a little light in the dark, so the stands read from the chair.
+    mat.uniforms.uEmissive.value.copy(c).multiplyScalar(0.22);
   }
 
   setUncut(uncut: boolean): void {
@@ -270,7 +279,7 @@ export class AudienceView {
    * The visitor: after the nth breach of the silence one of them is standing in the studio,
    * closer each time. Call it while the lights are out. 0 sends it back to the dark.
    */
-  approach(step: number): void {
+  approach(step: number, side: -1 | 1 = -1): void {
     if (step <= 0) {
       if (this.visitor) this.group.remove(this.visitor.root);
       this.visitor = null;
@@ -282,7 +291,8 @@ export class AudienceView {
       this.visitor.stand();
       this.group.add(this.visitor.root);
     }
-    const m = VISITOR_MARKS[Math.min(VISITOR_MARKS.length - 1, step - 1)];
+    const marks = side > 0 ? VISITOR_MARKS_RIGHT : VISITOR_MARKS;
+    const m = marks[Math.min(marks.length - 1, step - 1)];
     this.visitor.root.position.set(m[0], m[1], m[2]);
     this.visitor.root.lookAt(this.camera.x, m[1], this.camera.z);
   }

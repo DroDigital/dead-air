@@ -102,13 +102,18 @@ function splitCutters(model: THREE.Object3D): { root: THREE.Group; a: THREE.Grou
     return grp;
   };
   const root = new THREE.Group();
+  const inner = new THREE.Group();
   const a = make(halves[0]),
     b = make(halves[1]);
-  root.add(a, b);
+  inner.add(a, b);
+  root.add(inner);
   // Hinge axis = the thin axis; store it on the halves.
   a.userData.axis = N;
   b.userData.axis = N;
-  return { root, a, b, jaw: jaw.sub(pivot) };
+  // Turn the tool so its jaws point down the root's +Z (root.lookAt aims the jaws).
+  const toJaw = jaw.clone().sub(pivot);
+  inner.quaternion.setFromUnitVectors(toJaw.clone().normalize(), new THREE.Vector3(0, 0, 1));
+  return { root, a, b, jaw: new THREE.Vector3(0, 0, toJaw.length()) };
 }
 
 export class CollateralView {
@@ -183,6 +188,11 @@ export class CollateralView {
       this.group.add(this.cutters.root);
     }
     this.spoon = assets.fitted('mdl.spoon', 0.26);
+    // Lit from nowhere, so the wood reads as it fills the frame.
+    this.spoon.traverse((o) => {
+      const m = o as THREE.Mesh;
+      if (m.isMesh) (m.material as PsxMaterial).uniforms.uEmissive.value.setRGB(0.22, 0.15, 0.09);
+    });
     this.spoon.visible = false;
     this.group.add(this.spoon);
   }
@@ -218,15 +228,17 @@ export class CollateralView {
     c.b.rotation[ax] = -open * 0.32;
   }
 
-  /** Place the cutters so their jaw sits at `at`, approaching from above and the side. */
+  /**
+   * Place the cutters with their jaws on `at`, coming in from above and to the left; `lift`
+   * draws them back along the same line (0 = biting, 1 = well clear).
+   */
   private poseCutters(at: THREE.Vector3, lift: number): void {
     const c = this.cutters;
     if (!c) return;
-    c.root.position.copy(at).add(new THREE.Vector3(-0.05 - lift * 0.2, 0.02 + lift * 0.45, 0.02 + lift * 0.1));
-    c.root.lookAt(at.clone().add(new THREE.Vector3(0.3, -0.25, -0.6)));
-    // Bring the jaw (not the pivot) onto the knuckle.
-    const jawWorld = c.jaw.clone().applyQuaternion(c.root.quaternion);
-    c.root.position.sub(jawWorld.multiplyScalar(1 - lift * 0.5));
+    const dir = new THREE.Vector3(0.45, -0.75, 0.15).normalize();
+    const back = c.jaw.z + lift * 0.45;
+    c.root.position.copy(at).addScaledVector(dir, -back);
+    c.root.lookAt(at.clone().addScaledVector(dir, 0.2));
   }
 
   /**

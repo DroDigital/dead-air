@@ -56,6 +56,10 @@ All bots use the public Game API with real physics; a "player" releases in the s
 | 9 | Re-run after the playtest-pass rules fixes (Mannequin Hand fee on every deposit, Severance cap everywhere, Understudy shares its copy's state, Polish respects the gild cap, bargain width floor) | 95.0% | 18.1% | D5 | Targets still met; Trapdoor Lever is the top artifact at 38.8% |
 | 10 | Sponsor's Challenge, +2 Tokens for every goal (incl. a big deposit) | 95.0% | 18.8% | D6 | Depositors survive too long (50.7% pay D5) |
 | 11 | Deposit goal replaced by NO NET (ride 4 spins); rewards 1 Token for easy goals, 2 for risky ones | 95.0% | 18.4% | D5 | Targets met; the reward goes to riding, not banking |
+| 12 | Horror wedges in the shop (Mouth, Cleaver, Bleeder, Eye, Stitches); Collateral off | 91.7% | 11.0% | D5 | 300-run check before Collateral |
+| 13 | Collateral covering any miss (finger, then eye) | 96% | 49.3% | D6 | Two extra lives: far too generous |
+| 14 | Collateral only for near misses: within 30% / 50% of the Debt | 96% | 21.5% | D6 | Still above target |
+| 15 | **Near misses within 20% / 35%** | 96.3% | 17.7% | D6 | Targets met (1000 runs); blind depositors live a Deadline longer on the finger |
 
 ## Tuned values (vs. brief)
 

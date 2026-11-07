@@ -368,7 +368,7 @@ export class App {
     // The dead in the stands, the hand on the chair, and whatever the run has already taken.
     this.pendingHorror = [];
     this.stage.audience.setCount(this.meta.runs - this.meta.wins, this.settings.uncut);
-    this.stage.audience.approach(Math.min(4, g.run.marks.silences ?? 0));
+    this.stage.audience.approach(Math.min(4, g.run.marks.silences ?? 0), g.run.marks.eyeLost ? 1 : -1);
     this.stage.collateral.reset();
     this.stage.collateral.setFingers(g.run.marks.fingers ?? 0);
     this.stage.post.eyePatch = g.run.marks.eyeLost ? 1 : 0;
@@ -2192,7 +2192,8 @@ export class App {
       st.post.snow = 0.08;
       await wait(1.4);
       const n = g.recordSilence();
-      st.audience.approach(Math.min(4, n));
+      // It comes up on the side you can still see.
+      st.audience.approach(Math.min(4, n), g.run.marks.eyeLost ? 1 : -1);
       st.host.slip(n % 3, 4);
       await wait(0.25);
       this.sfx.play('bulbpop', { gain: 0.5, pitch: 0.8 });

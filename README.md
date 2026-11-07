@@ -21,7 +21,7 @@ Open the printed URL. Other scripts:
 | Command | What it does |
 |---|---|
 | `npm run build` | Typecheck (strict) + production build to `dist/` |
-| `npm test` | 199 Vitest tests: rules, wheel physics, determinism, saves and migrations, content, text coverage, regressions, simulator smoke tests |
+| `npm test` | 257 Vitest tests: rules, horror wedges and collateral, wheel physics, determinism, saves and migrations, content, text coverage, regressions, simulator smoke tests |
 | `npm run sim -- --runs 5000 --seed 1` | Headless balance simulator (all bot policies, multi-threaded) |
 | `npm run assets` | Convert `/assets-src` → `/public/assets` (PS1 conformance), slice the 2D art pack into sprites (`tools/art.ts`), regenerate the runtime indexes, CREDITS.md, ASSETS_TODO.md |
 | `npm run assets -- --fetch` | Download any missing CC0/OFL sources first, then convert |
@@ -111,11 +111,23 @@ The project owner's 2D art pack (`assets-src/art`, layouts in `docs/art-prompts.
 - **The twisted wheel:** ink bleeds down the dividers and stain rings creep in as the Deadlines pass, Bankrupt wedges grin faintly with an eye in the rim, and the hub sun's eyes follow your hand, roll while it spins, gloat after a Bankrupt and, late in the show, weep ink.
 - **New CC0 sounds** (OpenGameArt): the flick and whip-pan swish, the slow-motion riser, the landing impact, the grab clunk, the spring-back boing (see CREDITS.md).
 
+## Horror
+
+The show rots, and it takes things from you.
+
+- **The Rot** (`src/game/rot.ts`): one 0–1 number from the Deadline, the Debt still missing while you spin, and your scars (Bankrupts, body parts, silences). Everything reads it: a blood pool spreads under the wheel and its rim drips into it, wallpaper peels off the side walls in curling flaps over breathing meat, the wheel's ink runs red, marquee bulbs burst one by one and stay dark, the picture grains, and the host's mask starts to slip.
+- **The audience of the dead:** one skeleton in the raked seats for every broadcast you have lost (CC0 KayKit rigs, animated in code from their seated clips). The newest dead are still bloody; the oldest are dust. Their heads turn to the wheel on a slow-motion finish, they clap on a Bankrupt, and on DEAD AIR they all stand up.
+- **Collateral:** miss a Debt narrowly (within 20% of it the first time, 35% the second) and the Producer calls once more to take payment in kind. A **finger**: the bolt cutters come down on your strapped hand, and you have one fewer artifact slot for the rest of the run (your glove cursor is bandaged). Then an **eye**: the spoon comes up at the camera, the left of the picture goes dark for good, previews stop working and every Deadline has one fewer spin. Hang up and the floor opens.
+- **The mask slips:** late in the show the host's screen sometimes shows, for a few frames, what is behind it: a face pressed against the glass from inside, a mouth with too many teeth, your own chair, empty, from behind.
+- **Policy 7 (Dead Air):** from Deadline 5, four seconds of silence at the wheel is Dead Air. The breaker trips, the music and lights die, and when they come back one of the dead is standing in the studio, closer each time (on the side you can still see). It never attacks. It only gets closer.
+- **New wedges** (each with its own animated model on the wheel): **The Mouth** eats 10% of the Tray on every spin that misses it and brings it all back up ×2 when landed; **The Cleaver** pays $500 and chops a neighbouring wedge into a **Stump**; **Bleeder** pays $400 but the Tray loses 8% every spin until you deposit; **The Eye** grants three landing previews and blinks shut into a Bankrupt three spins later; **Stitches** pays both its neighbours at 75% (Bankrupts too) and tears open into a Bankrupt on its third landing.
+- **Broadcast Standards:** Settings → *Uncut Broadcast (gore)*. Off, the blood is ink, the fresh dead are bone, and the cutscenes cut to snow before the blade closes.
+
 ## Sound
 
 - **Music:** the project's own score: *Channel 98* (title), *The Final Round* (the wheel), *Department Store Dreams* (Prize Cabinet), *Final Question* (deadline payment, and a short last spin), a spin-tension cue and a game-over cue. Every tonal track is pitched into A minor (its relative C major for the two cues; tempo unchanged, tuning corrected to A440) so crossfades between contexts stay in key, and tonal cues follow the tape speed. The tape slows and dulls a little every Deadline.
 - **Voices:** every host, Producer, secret-caller and archive line (all 214, including every Prop Room note) is voiced with custom ElevenLabs voices (`eleven_v4` with audio tags) and placed through a per-speaker effect chain at runtime. The host's mouth on the CRT follows the voice.
-- **Effects:** ElevenLabs-generated crowd, buzzer, bells, fanfare, phone, static, trapdoor and room tone, plus CC0 recordings for the small mechanical cues.
+- **Effects:** ElevenLabs-generated crowd, buzzer, bells, fanfare, phone, static, trapdoor and room tone, plus CC0 recordings for the small mechanical cues. The horror pass adds eleven more (cleaver chop, finger snap, chewing, retching coins, drips, stitches tearing, a wet blink, the breaker, bony applause, a bursting bulb, seats creaking), each with a procedural fallback. Its new host and Producer lines are short and captioned; until they are recorded with the game's custom voices they use the gibberish voice.
 
 ## Project layout
 
@@ -124,7 +136,7 @@ src/
   main.ts, app.ts          entry + app controller (FSM, flow, input routing, autosave)
   core/                    rng (sfc32 streams), fsm, events, save (versioned + migrations), config, desktop bridge
   game/                    rules core — no DOM/Three: wheel physics, payout, combos, run, shop, hooks, balance, meta
-  content/                 wedges (23), artifacts (50), scratch cards (12), bargains (37), mutators (8), host lines (95), lore (22), starting wheels (4), stakes (4)
+  content/                 wedges (29), artifacts (50), scratch cards (12), bargains (37 + 2 collateral), mutators (8), host lines (102), lore (22), starting wheels (4), stakes (4)
   assets/                  id-based loader with procedural fallbacks; generated runtime manifest
   render/                  PSX material, post chain, camera rig, VFX, stage, scene/* (studio, wheel, tray, vault, shelf, cabinet, host, phone, lever, props)
   audio/                   mixer (buses), SFX, music (context tracks with tape wear), voice-over player with per-speaker effect chains, gibberish fallback voice
