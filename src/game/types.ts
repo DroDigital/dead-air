@@ -296,3 +296,16 @@ export interface RunState {
   /** The deadline number at which the run ended, if ended. */
   endedAt: number | null;
 }
+
+/** Horror beats the stage acts out (wedge models, the collateral cutscene, the audience). */
+export type HorrorEvent =
+  | { type: 'mouthEat'; uid: number; amount: number }
+  | { type: 'mouthVomit'; uid: number; amount: number }
+  | { type: 'cleave'; uid: number; target: number }
+  | { type: 'bleed'; amount: number }
+  | { type: 'eyeOpen'; uid: number }
+  | { type: 'eyeShut'; uid: number }
+  | { type: 'stitchStrain'; uid: number; wear: number }
+  | { type: 'stitchTear'; uid: number }
+  | { type: 'collateral'; part: 'finger' | 'eye' }
+  | { type: 'silence'; count: number };

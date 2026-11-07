@@ -26,6 +26,9 @@ uniform vec3 uGrade;
 uniform float uSat;
 uniform float uGrain;
 uniform float uTime;
+uniform float uPatch;
+uniform float uVeil;
+uniform float uStatic;
 varying vec2 vUv;
 
 float hash(vec2 p) { return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
@@ -62,6 +65,21 @@ void main() {
   c = mix(vec3(l), c, uSat) * uGrade;
   c += (hash(floor(vUv * uRes) + fract(uTime) * 91.0) - 0.5) * uGrain;
   c = mix(c, uFlash, uFlashAmt);
+  // A missing eye: the left of the picture is gone, with a soft, swimming edge.
+  if (uPatch > 0.0) {
+    float edge = 0.43 + 0.012 * sin(vUv.y * 9.0 + uTime * 0.7);
+    c *= mix(1.0, smoothstep(edge - 0.06, edge + 0.04, vUv.x) * 0.92 + 0.02, uPatch);
+  }
+  // A red veil running down the picture (the eye, the bolt cutters).
+  if (uVeil > 0.0) {
+    float run = smoothstep(0.0, 0.4, uVeil * 1.4 - (1.0 - vUv.y) * 0.6 + hash(vec2(floor(vUv.x * uRes.x / 3.0), 1.0)) * 0.25);
+    c = mix(c, vec3(0.35, 0.0, 0.0) + c * vec3(0.4, 0.0, 0.0), run * min(1.0, uVeil));
+  }
+  // Censored: the broadcast cuts to snow before the gore.
+  if (uStatic > 0.0) {
+    float n = hash(floor(vUv * uRes) + fract(uTime * 7.0) * 113.0);
+    c = mix(c, vec3(n * 0.85), uStatic);
+  }
   c *= uFade;
   vec4 ui = texture2D(tUi, vUv);
   c = mix(c, ui.rgb, ui.a);
@@ -168,6 +186,12 @@ export class PostFx {
   shock = 0;
   /** Extra vignette (heartbeat pulses, danger). */
   vig = 0;
+  /** 0..1: the left eye is gone (collateral). */
+  eyePatch = 0;
+  /** 0..1: blood running down the picture. */
+  veil = 0;
+  /** 0..1: snow over the picture (censored cut-aways, Dead Air). */
+  snow = 0;
 
   constructor(private renderer: THREE.WebGLRenderer) {
     const mk = () =>
@@ -200,6 +224,9 @@ export class PostFx {
         uSat: { value: 1 },
         uGrain: { value: 0.035 },
         uTime: { value: 0 },
+        uPatch: { value: 0 },
+        uVeil: { value: 0 },
+        uStatic: { value: 0 },
       },
       vertexShader: FS_VERT,
       fragmentShader: DITHER_FRAG,
@@ -281,6 +308,9 @@ export class PostFx {
     du.uGlow.value = this.glow;
     du.uGrain.value = this.grain;
     du.uTime.value = time;
+    du.uPatch.value = this.eyePatch;
+    du.uVeil.value = this.veil;
+    du.uStatic.value = this.snow;
     this.shock = Math.max(0, this.shock - 0.035);
     this.quad.material = this.ditherMat;
     r.setRenderTarget(this.rtLow);

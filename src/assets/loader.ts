@@ -9,6 +9,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import { clone as cloneSkinned } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { Rng } from '../core/rng';
 import { clonePsx, conformToPsx, psxMaterial, psxTexture, type PsxMaterial } from '../render/psxMaterial';
 import index from './manifest.json';
@@ -201,9 +202,16 @@ function flattenModel(root: THREE.Object3D): THREE.Object3D {
 // ---------------------------------------------------------------------------------------
 // Loader
 // ---------------------------------------------------------------------------------------
+/** A rigged model: its scene (with SkinnedMeshes and bones) and the animation clips it carries. */
+export interface SkinnedAsset {
+  root: THREE.Object3D;
+  clips: THREE.AnimationClip[];
+}
+
 export class Assets {
   private textures = new Map<string, THREE.Texture>();
   private models = new Map<string, THREE.Object3D>();
+  private rigs = new Map<string, SkinnedAsset>();
   private fonts = new Set<string>();
   readonly fallbacks: string[] = [];
 
@@ -232,6 +240,14 @@ export class Assets {
             const g = await gltf.loadAsync(e.url);
             conformToPsx(g.scene);
             this.models.set(id, flattenModel(g.scene));
+          } else if (e?.type === 'skinned') {
+            // Rigged: keep the hierarchy, the skin and the clips (no flattening).
+            const g = await gltf.loadAsync(e.url);
+            conformToPsx(g.scene, { wrap: 0.35 });
+            g.scene.traverse((o) => {
+              if ((o as THREE.SkinnedMesh).isSkinnedMesh) o.frustumCulled = false;
+            });
+            this.rigs.set(id, { root: g.scene, clips: g.animations });
           } else if (e?.type === 'font') {
             const name = id === 'font.pixel' ? 'DeadAirPixel' : id === 'font.display' ? 'DeadAirDisplay' : 'DeadAirTerminal';
             const ff = new FontFace(name, `url(${e.url})`);
@@ -274,6 +290,21 @@ export class Assets {
       if (mesh.isMesh && mesh.material) mesh.material = clonePsx(mesh.material as PsxMaterial);
     });
     return c;
+  }
+
+  /**
+   * A fresh copy of a rigged model (own skeleton, own materials) and its clips, or null when
+   * the file is missing; callers fall back to something procedural.
+   */
+  skinned(id: string): SkinnedAsset | null {
+    const r = this.rigs.get(id);
+    if (!r) return null;
+    const root = cloneSkinned(r.root);
+    root.traverse((o) => {
+      const mesh = o as THREE.Mesh;
+      if (mesh.isMesh && mesh.material) mesh.material = clonePsx(mesh.material as PsxMaterial);
+    });
+    return { root, clips: r.clips };
   }
 
   /** Scale a model so its largest dimension equals `size`, centred on its base. */

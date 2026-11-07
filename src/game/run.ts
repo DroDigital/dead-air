@@ -26,6 +26,7 @@ import type {
 import { resolvePayout, type PayoutHost, type PayoutResult } from './payout';
 import { makeWedge, newShopState, rollArtifacts, sellValue, SERVICE_COSTS } from './shop';
 import type {
+  HorrorEvent,
   ArtifactInstance,
   ComboId,
   Layout,
@@ -81,17 +82,7 @@ export interface GameEvents extends Record<string, unknown> {
   horror: HorrorEvent;
 }
 
-export type HorrorEvent =
-  | { type: 'mouthEat'; uid: number; amount: number }
-  | { type: 'mouthVomit'; uid: number; amount: number }
-  | { type: 'cleave'; uid: number; target: number }
-  | { type: 'bleed'; amount: number }
-  | { type: 'eyeOpen'; uid: number }
-  | { type: 'eyeShut'; uid: number }
-  | { type: 'stitchStrain'; uid: number; wear: number }
-  | { type: 'stitchTear'; uid: number }
-  | { type: 'collateral'; part: 'finger' | 'eye' }
-  | { type: 'silence'; count: number };
+export type { HorrorEvent };
 
 export interface RingJumpResult {
   innerIndex: number;
@@ -151,6 +142,9 @@ export interface DeadlineEndResult {
   triggers: Trigger[];
   /** Short, but the Producer is calling to take payment in kind. */
   collateral?: boolean;
+  /** The collateral call ended: what was paid, or whether it was refused. */
+  inKind?: 'finger' | 'eye';
+  refused?: boolean;
 }
 
 export interface ShopResult {
@@ -395,6 +389,10 @@ export class Game implements PayoutHost {
   randomArtifactId(rarity?: Rarity, exclude: string[] = []): string | null {
     return rollArtifacts(this.run, this.rng.events, 1, rarity, exclude)[0] ?? null;
   }
+  horror(e: HorrorEvent): void {
+    this.bus.emit('horror', e);
+  }
+
   note(text: string): void {
     this.notes.push(text);
     this.bus.emit('note', text);
@@ -1288,6 +1286,7 @@ export class Game implements PayoutHost {
     const run = this.run;
     const vaultBefore = run.marks.collateralVaultBefore ?? run.vault;
     delete run.marks.collateralVaultBefore;
+    const part = run.phone?.offers[0]?.bargainId === 'collateral_eye' ? 'eye' : 'finger';
     run.phone = null;
     if (accepted) {
       run.marks.collateral = (run.marks.collateral ?? 0) + 1;
@@ -1295,7 +1294,9 @@ export class Game implements PayoutHost {
       // Fewer fingers, fewer shelf slots: whatever no longer fits slips from your grip.
       while (run.artifacts.length > this.maxArtifacts()) this.removeArtifact(run.artifacts.length - 1);
     }
-    const res = this.settleDeadline(accepted, accepted, vaultBefore, null);
+    const res = this.settleDeadline(accepted, false, vaultBefore, null);
+    if (accepted) res.inKind = part;
+    else res.refused = true;
     this.bus.emit('deadlineEnd', res);
   }
 

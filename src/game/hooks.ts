@@ -5,6 +5,7 @@
 import type { RngStreams } from '../core/rng';
 import type { WidthMods, PhysicsMods } from './wheel';
 import type {
+  HorrorEvent,
   Layout,
   Wedge,
   ArtifactInstance,
@@ -44,6 +45,8 @@ export interface GameOps {
   recomputeDebt(): void;
   cashValueOf(seg: Segment): number;
   wedgeByUid(uid: number): Wedge | undefined;
+  /** Tell the stage about a horror beat (presented with the spin's result). */
+  horror(e: HorrorEvent): void;
 }
 
 // ---------------------------------------------------------------------------------------

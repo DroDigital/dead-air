@@ -518,6 +518,7 @@ export const WEDGES: Record<WedgeKind, WedgeDef> = {
       if (uid !== undefined) {
         delete ops.run.marks[`belly:${uid}`];
         delete ops.run.marks.mouthUid;
+        ops.horror({ type: 'mouthVomit', uid, amount });
       }
       ops.addTray(amount, 'mouth');
       ops.note(`IT BRINGS UP $${amount}`);
@@ -548,13 +549,18 @@ export const WEDGES: Record<WedgeKind, WedgeDef> = {
       const sides = [segs[(i - 1 + n) % n], segs[(i + 1) % n]].filter(
         (s) => s && s.uid !== l.seg.uid && !['bankrupt', 'jackpot', 'stump', 'cleaver'].includes(s.kind),
       );
-      if (sides.length) l.run.marks.cleaveTarget = l.rng.loot.pick(sides).uid;
+      if (sides.length) {
+        l.run.marks.cleaveTarget = l.rng.loot.pick(sides).uid;
+        l.run.marks.cleaverUid = l.seg.uid;
+      }
       l.prize('cleaver', 1, 'CHOP');
     },
     apply: (ops) => {
       const target = ops.run.marks.cleaveTarget;
       if (target === undefined) return;
       delete ops.run.marks.cleaveTarget;
+      ops.horror({ type: 'cleave', uid: ops.run.marks.cleaverUid ?? -1, target });
+      delete ops.run.marks.cleaverUid;
       ops.setWedgeKind(target, 'stump');
       ops.note('A WEDGE IS SEVERED');
     },
@@ -630,6 +636,7 @@ export const WEDGES: Record<WedgeKind, WedgeDef> = {
       const uid = ops.run.marks.eyeUid;
       if (uid === undefined) return;
       delete ops.run.marks.eyeUid;
+      ops.horror({ type: 'eyeOpen', uid });
       if (ops.run.marks[`eye:${uid}`] === undefined) ops.run.marks[`eye:${uid}`] = BALANCE.eyePeeks;
     },
   },
@@ -665,10 +672,12 @@ export const WEDGES: Record<WedgeKind, WedgeDef> = {
       delete ops.run.marks.stitchUid;
       const wear = (ops.run.marks[`stitch:${uid}`] ?? 0) + 1;
       if (wear >= BALANCE.stitchLife) {
+        ops.horror({ type: 'stitchTear', uid });
         ops.setWedgeKind(uid, 'bankrupt');
         ops.note('THE STITCHES TEAR OPEN');
       } else {
         ops.run.marks[`stitch:${uid}`] = wear;
+        ops.horror({ type: 'stitchStrain', uid, wear });
         ops.note(`STITCHES ${wear}/${BALANCE.stitchLife}`);
       }
     },
