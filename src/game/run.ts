@@ -77,7 +77,21 @@ export interface GameEvents extends Record<string, unknown> {
   wheelChanged: { reason: string };
   phone: { reason: string };
   changed: { action: string };
+  /** Horror beats the stage acts out (wedge models, the collateral cutscene, the audience). */
+  horror: HorrorEvent;
 }
+
+export type HorrorEvent =
+  | { type: 'mouthEat'; uid: number; amount: number }
+  | { type: 'mouthVomit'; uid: number; amount: number }
+  | { type: 'cleave'; uid: number; target: number }
+  | { type: 'bleed'; amount: number }
+  | { type: 'eyeOpen'; uid: number }
+  | { type: 'eyeShut'; uid: number }
+  | { type: 'stitchStrain'; uid: number; wear: number }
+  | { type: 'stitchTear'; uid: number }
+  | { type: 'collateral'; part: 'finger' | 'eye' }
+  | { type: 'silence'; count: number };
 
 export interface RingJumpResult {
   innerIndex: number;
@@ -135,6 +149,8 @@ export interface DeadlineEndResult {
   vaultAfter: number;
   deposit: DepositResult | null;
   triggers: Trigger[];
+  /** Short, but the Producer is calling to take payment in kind. */
+  collateral?: boolean;
 }
 
 export interface ShopResult {
@@ -321,8 +337,13 @@ export class Game implements PayoutHost {
       this.run.pendingQueue.push({ type: 'artifactPick', options, source });
     }
   }
+  /** Shelf slots: one fewer for every finger the Network has taken. */
+  maxArtifacts(): number {
+    return Math.max(1, BALANCE.maxArtifacts - (this.run.marks.fingers ?? 0));
+  }
+
   grantArtifact(id: string): boolean {
-    if (this.run.artifacts.length >= BALANCE.maxArtifacts) return false;
+    if (this.run.artifacts.length >= this.maxArtifacts()) return false;
     const inst: ArtifactInstance = { uid: this.run.nextUid++, id, state: {} };
     this.run.artifacts.push(inst);
     const slot = this.run.artifacts.length - 1;
@@ -342,6 +363,7 @@ export class Game implements PayoutHost {
     w.value = fresh.value;
     w.halves = fresh.halves;
     w.bonus = 0;
+    for (const k of Object.keys(this.run.marks)) if (k.endsWith(`:${uid}`)) delete this.run.marks[k];
     if (!WEDGES[kind].gildable) w.gild = 0;
     if (kind === 'jackpot') w.width = BALANCE.jackpotWidth;
     else if (wasJackpot) w.width = BALANCE.baseWidth;
@@ -506,7 +528,9 @@ export class Game implements PayoutHost {
   spinsForPackage(pkg: PackageId): number {
     const base = BALANCE.packages[pkg].spins;
     const mut = mutatorDef(this.run.mutator)?.spinsDelta ?? 0;
-    return Math.max(1, base + this.staticSum('spinsPerDeadline') + this.run.nextMods.spinsDelta + mut);
+    // A missing eye costs a spin every Deadline.
+    const eye = this.run.marks.eyeLost ? 1 : 0;
+    return Math.max(1, base + this.staticSum('spinsPerDeadline') + this.run.nextMods.spinsDelta + mut - eye);
   }
 
   tokensForPackage(pkg: PackageId): number {
@@ -522,6 +546,8 @@ export class Game implements PayoutHost {
   chargeContext(layout = this.layout()): ChargeCtx {
     const ctx: ChargeCtx = { physics: noPhysicsMods(layout), segments: layout.segments, preview: this.run.flags.peek > 0 };
     this.runHook('onSpinCharge', ctx);
+    // Nothing to see with.
+    if (this.run.marks.eyeLost) ctx.preview = false;
     return ctx;
   }
 
@@ -633,6 +659,7 @@ export class Game implements PayoutHost {
     run.boost = 0;
     run.overrides = [];
     run.marks.depositedThisDeadline = 0;
+    run.marks.bleeding = 0;
     // The Sponsor's Challenge for this Deadline (events stream, so it is part of the replay).
     run.marks.chal = this.rng.events.int(CHALLENGES.length) + 1;
     run.marks.chalProg = 0;
@@ -825,6 +852,14 @@ export class Game implements PayoutHost {
     const innerMult = ring[innerIndex];
     this.ringJumpResult = null;
 
+    // A Bleeder's wound: the Tray drains a little every spin until it is deposited.
+    if (run.marks.bleeding && run.tray > 0) {
+      const drain = Math.max(1, Math.floor(run.tray * BALANCE.bleedRate));
+      this.addTray(-drain, 'bleed');
+      this.note(`BLEEDING −$${drain}`);
+      this.bus.emit('horror', { type: 'bleed', amount: drain });
+    }
+
     const payout = resolvePayout(this, {
       seg,
       neighbor,
@@ -835,6 +870,7 @@ export class Game implements PayoutHost {
     });
 
     run.history.push({ kind: seg.kind, uid: seg.uid, segIdx: seg.idx, wasCash: payout.isCash, cash: payout.cash, innerMult });
+    this.horrorUpkeep(seg);
     if (payout.streakReset) {
       run.streak = this.streakBase();
       this.bus.emit('streak', { value: run.streak });
@@ -875,6 +911,56 @@ export class Game implements PayoutHost {
       resolution.deadlineEnd = this.maybeEndDeadline();
     }
     return resolution;
+  }
+
+  /**
+   * Wedges that act on spins that miss them: the Mouth feeds on the Tray, an open Eye counts
+   * down to blinking shut (and becomes a Bankrupt).
+   */
+  private horrorUpkeep(landed: Segment): void {
+    const run = this.run;
+    for (const w of run.wheel) {
+      if (w.kind !== 'mouth' || w.uid === landed.uid) continue;
+      const bite = Math.floor(run.tray * BALANCE.mouthBite);
+      if (bite <= 0) continue;
+      this.addTray(-bite, 'mouth');
+      run.marks[`belly:${w.uid}`] = (run.marks[`belly:${w.uid}`] ?? 0) + bite;
+      this.note(`THE MOUTH EATS $${bite}`);
+      this.bus.emit('horror', { type: 'mouthEat', uid: w.uid, amount: bite });
+    }
+    for (const k of Object.keys(run.marks)) {
+      if (!k.startsWith('eye:')) continue;
+      const uid = Number(k.slice(4));
+      // The spin that opened (or re-landed) the Eye doesn't count against it.
+      if (uid === landed.uid) continue;
+      run.marks[k] -= 1;
+      if (run.marks[k] > 0) continue;
+      delete run.marks[k];
+      if (this.wedgeByUid(uid)?.kind !== 'eye') continue;
+      this.setWedgeKind(uid, 'bankrupt');
+      this.note('THE EYE BLINKS SHUT');
+      this.bus.emit('horror', { type: 'eyeShut', uid });
+    }
+  }
+
+  /**
+   * Policy 7: a silence at the wheel late in the show is Dead Air. The breach is only counted
+   * (the studio rots a little faster); what moves in the dark is the stage's business.
+   */
+  recordSilence(): number {
+    const n = (this.run.marks.silences ?? 0) + 1;
+    this.run.marks.silences = n;
+    this.bus.emit('horror', { type: 'silence', count: n });
+    this.changed('silence');
+    return n;
+  }
+
+  /** The Producer will take payment in kind: a finger first, then an eye. */
+  canCollateral(): boolean {
+    const n = this.run.marks.collateral ?? 0;
+    if (n >= BALANCE.collateralMax) return false;
+    // A body part covers a near miss, not a rout.
+    return this.run.debt - this.run.vault <= this.run.debt * (BALANCE.collateralCover[n] ?? 0);
   }
 
   /** Ring Jump: re-spin only the inner ring and pay the previous outer wedge again. */
@@ -952,6 +1038,7 @@ export class Game implements PayoutHost {
     const amount = run.tray;
     this.addTray(-amount, 'deposit');
     this.addVault(amount - lost + ctx.bonusVault, 'deposit');
+    run.marks.bleeding = 0;
     if (!auto) this.challengeEvent({ type: 'deposit', amount });
     if (!auto) {
       run.marks.depositedThisDeadline = 1;
@@ -1061,7 +1148,7 @@ export class Game implements PayoutHost {
     if (!p || p.type !== 'artifactPick') return false;
     if (id !== null) {
       if (!p.options.includes(id)) return false;
-      if (this.run.artifacts.length >= BALANCE.maxArtifacts) {
+      if (this.run.artifacts.length >= this.maxArtifacts()) {
         if (replaceSlot === undefined) return false;
         this.removeArtifact(replaceSlot);
       }
@@ -1131,6 +1218,45 @@ export class Game implements PayoutHost {
         paid = true;
       }
     }
+    if (!paid && this.canCollateral()) {
+      // Short. Before the floor opens, the Producer calls with an offer.
+      const part = (run.marks.collateral ?? 0) === 0 ? 'finger' : 'eye';
+      run.phone = {
+        reason: 'collateral',
+        offers: [{ bargainId: `collateral_${part}`, params: { short: run.debt - run.vault } }],
+        returnTo: 'Conversion',
+        intro: this.rng.events.pick(PRODUCER_INTROS.collateral),
+      };
+      run.stats.phoneCalls += 1;
+      run.marks.collateralVaultBefore = vaultBefore;
+      const res: DeadlineEndResult = {
+        deadline: run.deadline,
+        debt: run.debt,
+        paid: false,
+        saved: false,
+        vaultBefore,
+        vaultAfter: run.vault,
+        deposit: dep,
+        triggers: this.triggerSink,
+        collateral: true,
+      };
+      this.triggerSink = before.concat(this.triggerSink);
+      this.setPhase('PhoneCall');
+      this.bus.emit('phone', { reason: 'collateral' });
+      this.bus.emit('deadlineEnd', res);
+      this.changed('deadlineEnd');
+      return res;
+    }
+    const res = this.settleDeadline(paid, saved, vaultBefore, dep);
+    this.triggerSink = before.concat(this.triggerSink);
+    this.bus.emit('deadlineEnd', res);
+    this.changed('deadlineEnd');
+    return res;
+  }
+
+  /** Pay (or miss) the Debt and move on: Conversion, Victory or Game Over. */
+  private settleDeadline(paid: boolean, saved: boolean, vaultBefore: number, dep: DepositResult | null): DeadlineEndResult {
+    const run = this.run;
     if (paid) this.addVault(-run.debt, 'debt');
     const ctx: DeadlineEndCtx = { debt: run.debt, vault: run.vault, paid, surplus: paid ? run.vault : 0 };
     this.runHook('onDeadlineEnd', ctx);
@@ -1145,7 +1271,6 @@ export class Game implements PayoutHost {
       deposit: dep,
       triggers: this.triggerSink,
     };
-    this.triggerSink = before.concat(this.triggerSink);
     if (!paid) {
       run.endedAt = run.deadline;
       this.setPhase('GameOver');
@@ -1155,9 +1280,23 @@ export class Game implements PayoutHost {
     } else {
       this.setPhase('Conversion');
     }
-    this.bus.emit('deadlineEnd', res);
-    this.changed('deadlineEnd');
     return res;
+  }
+
+  /** The collateral call ends: payment in kind (the Debt is settled) or the floor. */
+  private closeCollateral(accepted: boolean): void {
+    const run = this.run;
+    const vaultBefore = run.marks.collateralVaultBefore ?? run.vault;
+    delete run.marks.collateralVaultBefore;
+    run.phone = null;
+    if (accepted) {
+      run.marks.collateral = (run.marks.collateral ?? 0) + 1;
+      this.addVault(Math.max(0, run.debt - run.vault), 'collateral');
+      // Fewer fingers, fewer shelf slots: whatever no longer fits slips from your grip.
+      while (run.artifacts.length > this.maxArtifacts()) this.removeArtifact(run.artifacts.length - 1);
+    }
+    const res = this.settleDeadline(accepted, accepted, vaultBefore, null);
+    this.bus.emit('deadlineEnd', res);
   }
 
   /** After Victory: keep going into Endless. */
@@ -1214,7 +1353,7 @@ export class Game implements PayoutHost {
     if (!item || item.sold) return { ok: false, reason: 'sold out' };
     if (this.run.tokens < item.cost) return { ok: false, reason: 'not enough tokens' };
     if (item.type === 'artifact') {
-      if (this.run.artifacts.length >= BALANCE.maxArtifacts) return { ok: false, reason: 'shelf full' };
+      if (this.run.artifacts.length >= this.maxArtifacts()) return { ok: false, reason: 'shelf full' };
       this.addTokens(-item.cost, 'buy');
       item.sold = true;
       this.grantArtifact(item.id);
@@ -1388,7 +1527,10 @@ export class Game implements PayoutHost {
     bargainDef(offer.bargainId).apply(this, offer.params);
     this.run.stats.bargainsTaken.push(offer.bargainId);
     this.bus.emit('wheelChanged', { reason: 'bargain' });
-    this.closePhone();
+    if (ph.reason === 'collateral') {
+      this.bus.emit('horror', { type: 'collateral', part: offer.bargainId === 'collateral_eye' ? 'eye' : 'finger' });
+      this.closeCollateral(true);
+    } else this.closePhone();
     this.changed('phoneAccept');
   }
 
@@ -1397,7 +1539,8 @@ export class Game implements PayoutHost {
     const ph = this.run.phone!;
     if (ph.reason === 'deadline') this.run.marks.hangups = (this.run.marks.hangups ?? 0) + 1;
     this.run.stats.hungUp += 1;
-    this.closePhone();
+    if (ph.reason === 'collateral') this.closeCollateral(false);
+    else this.closePhone();
     this.changed('phoneHangUp');
   }
 

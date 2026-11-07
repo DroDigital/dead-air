@@ -26,7 +26,13 @@ export type WedgeKind =
   | 'ringJump'
   | 'doubler'
   | 'scratch'
-  | 'payday';
+  | 'payday'
+  | 'mouth'
+  | 'cleaver'
+  | 'stump'
+  | 'bleeder'
+  | 'eye'
+  | 'stitches';
 
 export type Rarity = 'common' | 'uncommon' | 'rare' | 'cursed';
 
@@ -145,8 +151,10 @@ export interface PhoneOffer {
   params: Record<string, string | number>;
 }
 
+export type PhoneReason = 'deadline' | 'deadAir' | 'secret' | 'collateral';
+
 export interface PhoneState {
-  reason: 'deadline' | 'deadAir' | 'secret';
+  reason: PhoneReason;
   offers: PhoneOffer[];
   /** Phase to return to after the call. */
   returnTo: RunPhase;

@@ -220,8 +220,8 @@ export interface LandCtx {
   prize(kind: WedgeKind, amount: number, text: string, scalable?: boolean): void;
   bankrupt(frac: number): void;
   nothing(label: string): void;
-  /** Re-dispatch as another kind (Mystery, Haunted, Wild). */
-  resolveAs(kind: WedgeKind, value: number, label: string): void;
+  /** Re-dispatch as another kind (Mystery, Haunted, Wild); `weightMult` scales it (Stitches). */
+  resolveAs(kind: WedgeKind, value: number, label: string, weightMult?: number): void;
   bestCashValue(): number;
   mystery(): MysteryCtx;
 }

@@ -344,7 +344,7 @@ export class App {
       this.phoneAnswered = false;
     });
     g.bus.on('artifactGained', (e) => {
-      if (this.game && this.game.run.artifacts.length >= BALANCE.maxArtifacts) this.game.run.marks.fullShelf = 1;
+      if (this.game && this.game.run.artifacts.length >= this.game.maxArtifacts()) this.game.run.marks.fullShelf = 1;
       this.sfx.play('pickup', { gain: 0.5 });
       void e;
     });
@@ -1190,7 +1190,7 @@ export class App {
     const g = this.game!;
     const p = g.run.pending;
     if (!p || p.type !== 'artifactPick') return;
-    const full = g.run.artifacts.length >= BALANCE.maxArtifacts;
+    const full = g.run.artifacts.length >= g.maxArtifacts();
     this.setChoice(
       {
         title: 'A PRIZE FROM THE PROP ROOM — PICK ONE',

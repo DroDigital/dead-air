@@ -73,6 +73,17 @@ describe('debt & run structure', () => {
     expect(g.run.endedAt).toBe(1);
   });
 
+  it('a near miss gets the collateral call first; hanging up opens the floor', () => {
+    const g = makeGame(wheelWith(), { pkg: 'short' });
+    g.run.vault = g.run.debt - 50;
+    for (let i = 0; i < 6; i++) g.spinForced(0, RING.x1);
+    expect(g.run.phase).toBe('PhoneCall');
+    expect(g.run.phone?.reason).toBe('collateral');
+    g.phoneHangUp();
+    expect(g.run.phase).toBe('GameOver');
+    expect(g.run.endedAt).toBe(1);
+  });
+
   it('conversion: $50 per Token, remainder earns 10% interest (capped)', () => {
     const g = makeGame(wheelWith(cash(1000)), { pkg: 'short' });
     for (let i = 0; i < 6; i++) g.spinForced(0, RING.x1);
