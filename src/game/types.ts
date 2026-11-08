@@ -32,7 +32,11 @@ export type WedgeKind =
   | 'stump'
   | 'bleeder'
   | 'eye'
-  | 'stitches';
+  | 'stitches'
+  | 'roulette'
+  | 'hushMoney'
+  | 'encore'
+  | 'curtainCall';
 
 export type Rarity = 'common' | 'uncommon' | 'rare' | 'cursed';
 

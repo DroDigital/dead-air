@@ -16,7 +16,8 @@ export interface RotParts {
 }
 
 export function rotParts(run: RunState): RotParts {
-  const age = Math.min(1, Math.max(0, (run.deadline - 1) / 7)) * 0.6;
+  // Something is already wrong on night one; it only gets worse.
+  const age = 0.2 + Math.min(1, Math.max(0, (run.deadline - 1) / 7)) * 0.5;
   const missing = run.debt > 0 ? (run.debt - run.vault - run.tray) / run.debt : 0;
   const pressure = run.phase === 'AwaitAction' ? Math.min(1, Math.max(0, missing)) * 0.15 : 0;
   const scars =

@@ -115,6 +115,52 @@ const ICONS: Record<string, string> = {
     <path d="M204 40 L 232 12" stroke="${STEEL}" stroke-width="5" stroke-linecap="round"/>
     ${drop(106, 140, 0.7)}
     ${shine(84, 76)}`,
+
+  // A snub revolver with a grin on the cylinder, one chamber glowing red.
+  roulette: `
+    <path d="M60 96 L 200 96 L 214 116 L 214 132 L 112 132 L 98 150 L 70 150 Z" fill="${STEEL}" ${stroke}/>
+    <path d="M70 150 L 98 150 L 92 214 C 80 222, 56 220, 50 210 Z" fill="${WOOD}" ${stroke}/>
+    <circle cx="128" cy="128" r="40" fill="${STEEL_DARK}" ${stroke}/>
+    ${[0, 1, 2, 3, 4, 5].map((i) => {
+      const a = (i / 6) * Math.PI * 2 - Math.PI / 2;
+      return `<circle cx="${128 + Math.cos(a) * 24}" cy="${128 + Math.sin(a) * 24}" r="8" fill="${i === 0 ? RED : INK}"/>`;
+    }).join('')}
+    <path d="M112 140 C 120 150, 136 150, 144 140" fill="none" stroke="${CREAM}" stroke-width="4" stroke-linecap="round"/>
+    <path d="M214 104 L 234 104" ${stroke}/>
+    <text x="196" y="72" font-family="Georgia, serif" font-weight="bold" font-size="30" fill="${RED}" stroke="${INK}" stroke-width="2">?</text>
+    ${shine(84, 106, 10, 4, 0)}`,
+
+  // A fat envelope of cash with a zipped, grinning mouth.
+  hushMoney: `
+    <rect x="44" y="72" width="168" height="120" rx="10" fill="${CREAM}" ${stroke}/>
+    <path d="M44 82 L 128 142 L 212 82" fill="none" ${stroke}/>
+    <rect x="70" y="52" width="120" height="40" rx="6" fill="${GREEN}" ${stroke}/>
+    <text x="130" y="82" font-family="Georgia, serif" font-weight="bold" font-size="28" text-anchor="middle" fill="${INK}">$</text>
+    <path d="M86 168 L 170 168" stroke="${INK}" stroke-width="10" stroke-linecap="round"/>
+    ${[0, 1, 2, 3, 4, 5].map((i) => `<path d="M${92 + i * 14} 160 L ${92 + i * 14} 176" stroke="${MUSTARD}" stroke-width="4"/>`).join('')}
+    <circle cx="176" cy="168" r="8" fill="${MUSTARD}" ${thin}/>
+    ${shine(70, 96)}`,
+
+  // A spotlight on a bouquet thrown at the stage, with a rewind arrow round it.
+  encore: `
+    <path d="M128 30 A 92 92 0 1 1 46 92" fill="none" stroke="${INK}" stroke-width="14" stroke-linecap="round"/>
+    <path d="M128 30 A 92 92 0 1 1 46 92" fill="none" stroke="${MUSTARD}" stroke-width="7" stroke-linecap="round"/>
+    <path d="M28 70 L 50 100 L 74 72 Z" fill="${MUSTARD}" ${stroke}/>
+    <path d="M110 120 L 128 196 L 146 120 Z" fill="${GREEN}" ${stroke}/>
+    ${[[100, 104], [128, 92], [156, 104], [114, 124], [142, 124]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="16" fill="${RED}" ${thin}/><circle cx="${x}" cy="${y}" r="5" fill="${CREAM}"/>`).join('')}
+    <path d="M116 168 L 140 168" stroke="${CREAM}" stroke-width="6"/>
+    ${shine(96, 98, 6, 3)}`,
+
+  // Theatre curtains swinging shut on a stage, a gold tassel each side.
+  curtainCall: `
+    <rect x="34" y="40" width="188" height="176" rx="8" fill="${INK}" ${stroke}/>
+    <path d="M34 40 L 128 40 C 118 100, 124 170, 112 216 L 34 216 Z" fill="${RED}" ${stroke}/>
+    <path d="M222 40 L 128 40 C 138 100, 132 170, 144 216 L 222 216 Z" fill="${RED}" ${stroke}/>
+    ${[60, 86].map((x) => `<path d="M${x} 44 C ${x - 6} 120, ${x + 4} 170, ${x - 4} 212" fill="none" stroke="${DARK_RED}" stroke-width="5"/>`).join('')}
+    ${[170, 196].map((x) => `<path d="M${x} 44 C ${x + 6} 120, ${x - 4} 170, ${x + 4} 212" fill="none" stroke="${DARK_RED}" stroke-width="5"/>`).join('')}
+    <rect x="30" y="30" width="196" height="22" rx="6" fill="${MUSTARD}" ${stroke}/>
+    <circle cx="104" cy="150" r="9" fill="${MUSTARD}" ${thin}/><circle cx="152" cy="150" r="9" fill="${MUSTARD}" ${thin}/>
+    ${shine(60, 70)}`,
 };
 
 /** Rasterise every horror icon and hand each PNG to `save`. */

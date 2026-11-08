@@ -28,17 +28,18 @@ describe('debt & run structure', () => {
     expect(g.run.debt).toBe(450);
     expect(g.run.wheel).toHaveLength(24);
     const count = (kind: string) => g.run.wheel.filter((w) => w.kind === kind).length;
-    expect(count('cash')).toBe(10);
-    expect(count('respin')).toBe(3);
+    expect(count('cash')).toBe(8);
+    expect(count('respin')).toBe(1);
+    for (const k of ['stitches', 'mouth', 'roulette', 'bleeder', 'hushMoney', 'encore']) expect(count(k)).toBe(1);
     expect(count('bankrupt')).toBe(2);
     expect(count('jackpot')).toBe(1);
     expect(g.run.ring).toEqual([1, 2, 1, 0, 1, 3, 1, 2]);
   });
 
-  it('starting cash values match the brief', () => {
+  it('starting cash values (the House Wheel trades two small Cash wedges for horror wedges)', () => {
     const g = Game.newRun({ seed: 'a', stake: 0, startWheel: 'standard' });
     const vals = g.run.wheel.filter((w) => w.kind === 'cash').map((w) => w.value).sort((a, b) => a - b);
-    expect(vals).toEqual([25, 25, 50, 50, 75, 75, 100, 100, 150, 200]);
+    expect(vals).toEqual([25, 50, 75, 75, 100, 100, 150, 200]);
   });
 
   it('jackpot is a 6° sliver of the layout (before normalisation)', () => {
@@ -249,7 +250,8 @@ describe('real spins', () => {
     const s = g.run.spinsLeft;
     const o = g.spin(0.5);
     expect(o.free).toBe(true);
-    const kind = o.resolution?.seg.kind;
-    if (kind !== 'respin' && kind !== 'overtime') expect(g.run.spinsLeft).toBe(s);
+    // Only the spin itself is free; a landing that grants spins (Respin, Overtime, a Stitches neighbour) still adds them.
+    const granted = (o.resolution?.payout.prizes ?? []).some((p) => p.kind === 'respin' || p.kind === 'overtime');
+    if (!granted) expect(g.run.spinsLeft).toBe(s);
   });
 });

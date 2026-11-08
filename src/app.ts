@@ -447,7 +447,8 @@ export class App {
     this.resetStageVisuals();
     // The dead in the stands, the hand on the chair, and whatever the run has already taken.
     this.pendingHorror = [];
-    this.stage.audience.setCount(this.meta.runs - this.meta.wins, this.settings.uncut);
+    // The stands are never empty: three who came before you, plus everyone you have been.
+    this.stage.audience.setCount(3 + this.meta.runs - this.meta.wins, this.settings.uncut);
     this.stage.audience.approach(Math.min(4, g.run.marks.silences ?? 0), g.run.marks.eyeLost ? 1 : -1);
     this.stage.collateral.reset();
     this.stage.collateral.setFingers(g.run.marks.fingers ?? 0);
@@ -906,7 +907,7 @@ export class App {
     await this.doSpin(c.power, c.peek);
   }
 
-  private async doSpin(power: number, peek: boolean, opts: { startAngle?: number; source?: 'lever' | 'hand' } = {}): Promise<void> {
+  private async doSpin(power: number, peek: boolean, opts: { startAngle?: number; source?: 'lever' | 'hand'; omega?: number } = {}): Promise<void> {
     const g = this.game!;
     const hand = opts.source === 'hand';
     await this.withBusy(async () => {
@@ -917,7 +918,7 @@ export class App {
         this.spinsMax = g.run.spinsLeft;
         this.spinsMaxFor = g.run.deadline;
       }
-      const outcome = g.spin(power, { peek, startAngle: opts.startAngle });
+      const outcome = g.spin(power, { peek, startAngle: opts.startAngle, omega: opts.omega });
       if (!hand) {
         this.sfx.play('lever', { gain: 0.8 });
         this.stage.lever.pull = 1;
@@ -1104,7 +1105,8 @@ export class App {
     if (omega >= GRAB_MIN && g.run.phase === 'AwaitAction') {
       const power = grabPower(omega);
       this.sfx.play('whoosh', { gain: 0.8, pitch: 0.8 + power * 0.5 });
-      void this.doSpin(power, false, { startAngle: theta, source: 'hand' });
+      // The wheel leaves your hand at the speed your hand was moving.
+      void this.doSpin(power, false, { startAngle: theta, source: 'hand', omega });
     } else {
       // Too feeble (or backwards): the wheel springs back to where it was.
       this.sfx.play('boing', { gain: 0.55 });
@@ -2356,14 +2358,14 @@ export class App {
     } else if (dead < this.bulbsDead) st.wheel.deadBulbs = this.bulbsDead = dead;
     if (!g || this.menus.open) return;
     // The mask slips now and then once the show is rotten (and always behind a silence).
-    if (r > 0.4 && !this.busy && !st.host.slipping && Math.random() < dt * (r - 0.4) * 0.04) {
+    if (r > 0.22 && !this.busy && !st.host.slipping && Math.random() < dt * (r - 0.15) * 0.05) {
       st.host.slip();
       this.sfx.play('static', { gain: 0.3, pitch: 0.7 });
       if (Math.random() < 0.35 && this.time >= this.speech.until) setTimeout(() => this.game && this.producerSay(SLIP_WHISPER, true), 200);
     }
-    // Policy 7: from Deadline 5, four seconds of silence at the wheel is Dead Air.
+    // Policy 7: from Deadline 3, four seconds of silence at the wheel is Dead Air.
     this.silenceCool = Math.max(0, this.silenceCool - dt);
-    const quiet = g.run.phase === 'AwaitAction' && g.run.deadline >= 5 && !this.busy && !this.charge && !this.grab && !this.hud.choice && st.rig.station === 'center';
+    const quiet = g.run.phase === 'AwaitAction' && g.run.deadline >= 3 && !this.busy && !this.charge && !this.grab && !this.hud.choice && st.rig.station === 'center';
     if (!quiet) this.lastInput = this.time;
     if (quiet && this.silenceCool <= 0 && this.time - this.lastInput > 4) {
       this.silenceCool = 30;

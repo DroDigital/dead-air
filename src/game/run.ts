@@ -721,7 +721,7 @@ export class Game implements PayoutHost {
   // Spinning
   // =====================================================================================
   /** Spin with player-controlled power. Hand spins can supply their release angle. */
-  spin(power: number, opts: { peek?: boolean; startAngle?: number } = {}): SpinOutcome {
+  spin(power: number, opts: { peek?: boolean; startAngle?: number; omega?: number } = {}): SpinOutcome {
     this.assertPhase('AwaitAction');
     const run = this.run;
     if (run.spinsLeft <= 0) throw new Error('No spins left');
@@ -759,7 +759,7 @@ export class Game implements PayoutHost {
     run.flags.lock = false;
     if (!sim) {
       sim = simulateSpin(
-        { layout, ringLen: ring.length, power, startAngle: run.wheelAngle, ringStartAngle: run.ringAngle, mods },
+        { layout, ringLen: ring.length, power, startAngle: run.wheelAngle, ringStartAngle: run.ringAngle, mods, omega0: opts.omega },
         this.rng.wheel,
       );
     }
