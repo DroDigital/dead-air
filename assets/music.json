@@ -61,6 +61,66 @@
       "key": "C major",
       "shift": 0,
       "cents": -2
+    },
+    {
+      "id": "track.charge.up2",
+      "file": "variants/tension_up2.mp3",
+      "kind": "sfx",
+      "title": "Spin tension, up a tone",
+      "use": "Same swell, a tone higher and brighter",
+      "key": "C major",
+      "shift": 0,
+      "cents": 0
+    },
+    {
+      "id": "track.charge.down3",
+      "file": "variants/tension_down3.mp3",
+      "kind": "sfx",
+      "title": "Spin tension, down a minor third",
+      "use": "Darker and heavier",
+      "key": "C major",
+      "shift": 0,
+      "cents": 0
+    },
+    {
+      "id": "track.charge.offset_echo",
+      "file": "variants/tension_offset_echo.mp3",
+      "kind": "sfx",
+      "title": "Spin tension, late start with echo",
+      "use": "Skips the first 1.2 s, adds a short echo",
+      "key": "C major",
+      "shift": 0,
+      "cents": 0
+    },
+    {
+      "id": "track.charge.slow",
+      "file": "variants/tension_slow.mp3",
+      "kind": "sfx",
+      "title": "Spin tension, slow",
+      "use": "Stretched to 90% for a longer build",
+      "key": "C major",
+      "shift": 0,
+      "cents": 0
+    },
+    {
+      "id": "track.charge.quick",
+      "file": "variants/tension_quick.mp3",
+      "kind": "sfx",
+      "title": "Spin tension, quick",
+      "use": "Slightly faster, warmer low end",
+      "key": "C major",
+      "shift": 0,
+      "cents": 0
+    },
+    {
+      "id": "track.charge.dark",
+      "file": "variants/tension_dark.mp3",
+      "kind": "sfx",
+      "title": "Spin tension, dark",
+      "use": "Tape-slowed, echoing and low-passed",
+      "key": "C major",
+      "shift": 0,
+      "cents": 0
     }
   ],
   "target": {

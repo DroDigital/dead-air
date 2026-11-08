@@ -73,6 +73,7 @@ type SfxId =
   | 'heartbeat'
   | 'roomtone'
   | 'tension'
+  | 'tension.up2' | 'tension.down3' | 'tension.offset_echo' | 'tension.slow' | 'tension.quick' | 'tension.dark'
   | 'gameoverCue'
   | 'riser'
   | 'impact'
@@ -130,6 +131,12 @@ const EL_IDS: Partial<Record<SfxId, string>> = {
   bulbpop: 'el.bulbpop',
   seats: 'el.seats',
   tension: 'track.charge',
+  'tension.up2': 'track.charge.up2',
+  'tension.down3': 'track.charge.down3',
+  'tension.offset_echo': 'track.charge.offset_echo',
+  'tension.slow': 'track.charge.slow',
+  'tension.quick': 'track.charge.quick',
+  'tension.dark': 'track.charge.dark',
   gameoverCue: 'track.gameover',
 };
 
@@ -164,6 +171,16 @@ export class Sfx {
   private tickSide = 1;
   private whirrLoop: { stop: (fade?: number) => void; gain: GainNode } | null = null;
   private whirrFilter: BiquadFilterNode | null = null;
+  private lastTension: SfxId | null = null;
+  private static TENSION: SfxId[] = ['tension', 'tension.up2', 'tension.down3', 'tension.offset_echo', 'tension.slow', 'tension.quick', 'tension.dark'];
+
+  /** The spin's tension cue: a different variant from the last one (the file set is rotated, not repeated). */
+  pickTension(): SfxId {
+    const pool = Sfx.TENSION.filter((id) => this.buffers.has(id) && id !== this.lastTension);
+    const id = pool.length ? pool[Math.floor(Math.random() * pool.length)] : 'tension';
+    this.lastTension = id;
+    return id;
+  }
 
   constructor(private mixer: Mixer) {
     this.build();
