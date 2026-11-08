@@ -40,3 +40,9 @@ describe('in-world font coverage', () => {
     expect(missing).toEqual([]);
   });
 });
+
+describe('host lines match their moment', () => {
+  it('the generic combo chatter (ECHO) never claims a hat trick or three in a row', () => {
+    for (const l of HOST_LINES.combo) expect(l).not.toMatch(/hat trick|three|in a row/i);
+  });
+});

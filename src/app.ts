@@ -699,6 +699,24 @@ export class App {
     this.updateArrows();
   }
 
+  /** The keys that do something right now, where the player is looking: [KEY] ACTION. */
+  private stationHint(): string {
+    const g = this.game;
+    if (!g) return '';
+    const r = g.run;
+    const st = this.stage.rig.station;
+    if (r.phase === 'PhoneCall' && !this.phoneAnswered) return 'THE PHONE IS RINGING · LOOK LEFT · [ENTER] ANSWER';
+    if (r.phase === 'Shop') {
+      if (st === 'right') return '[1-6] BUY · [R] REROLL · [X] REMOVE · [G] GILD · [+/-] RESIZE · [N] DONE, NEXT DEADLINE';
+      return 'THE PRIZE CABINET IS OPEN · LOOK RIGHT [→] · [N] DONE, NEXT DEADLINE';
+    }
+    if (r.phase !== 'AwaitAction') return '';
+    if (st === 'center') return `[HOLD SPACE] SPIN · OR DRAG THE WHEEL${g.canGamble() ? ' · [D] DOUBLE OR NOTHING' : ''} · [↓] TRAY & VAULT`;
+    if (st === 'down') return `[ENTER] DEPOSIT THE TRAY${r.scratch.length ? ' · [1-3] SCRATCH A CARD' : ''} · [↑] BACK TO THE WHEEL`;
+    if (st === 'left') return r.artifacts.length ? '[1-6] SELECT AN ARTIFACT · [,/.] MOVE IT · [X][X] SELL · [→] WHEEL' : 'YOUR SHELF: ARTIFACTS GO HERE · [→] WHEEL';
+    return 'THE CABINET OPENS AFTER EACH DEADLINE · [←] WHEEL';
+  }
+
   private updateArrows(): void {
     const nav = { center: ['down', 'left', 'right'], down: ['up', 'left', 'right'], left: ['right', 'down'], right: ['left', 'down'] } as const;
     this.hud.arrows = this.game && !this.charge && !this.target ? [...nav[this.stage.rig.station]] : [];
@@ -747,7 +765,7 @@ export class App {
       case 'AwaitAction':
         this.fsm.force('AwaitAction');
         this.setChoice(null, null);
-        this.hud.hint = this.stage.rig.station === 'center' ? (g.canGamble() ? 'HOLD SPACE TO SPIN · [D] DOUBLE OR NOTHING' : 'HOLD SPACE (OR THE LEVER) TO SPIN') : '';
+        this.hud.hint = this.stationHint();
         if (r.spinsLeft === 1 && this.lastSpinSaid !== r.deadline * 1000 + r.spinsLeft) {
           this.lastSpinSaid = r.deadline * 1000 + r.spinsLeft;
           this.hostSay('lastSpin', 'nervous', 'point');
@@ -775,7 +793,7 @@ export class App {
         this.fsm.force('Shop');
         this.setChoice(null, null);
         this.stage.rig.go('right');
-        this.hud.hint = '1-6 BUY · R REROLL · X/G/+/- SERVICES · N DONE';
+        this.hud.hint = this.stationHint();
         break;
       case 'PhoneCall':
         this.fsm.force('PhoneCall');
@@ -874,7 +892,7 @@ export class App {
     this.loops.drum?.stop(0.05);
     this.loops.drum = this.sfx.loop('tension', 0.6, 'sfx', 0.25, false, this.music.rate) ?? this.sfx.loop('drumroll', 0.32, 'sfx', 0.3);
     this.fsm.force('Charging');
-    this.hud.hint = g.canPeek() ? 'RELEASE TO SPIN · [E] PEEK' : 'RELEASE TO SPIN';
+    this.hud.hint = g.canPeek() ? '[RELEASE] SPIN AT THIS POWER · [E] PEEK WHERE IT LANDS' : '[RELEASE] SPIN AT THIS POWER';
     this.updateArrows();
   }
 
@@ -1174,7 +1192,7 @@ export class App {
     if (p.landedKind === 'bleeder') this.hostSay('bleeder', 'grin', 'point');
     if (res.combos.includes('hatTrick')) this.hostSay('hatTrick', 'shock', 'cheer');
     else if (res.combos.includes('neighbors') && Math.random() < 0.5) this.hostSay('neighbors', 'shock', 'point');
-    else if (res.combos.some((c) => c !== 'deadAir') && Math.random() < 0.5) this.hostSay('combo', 'grin', 'cheer');
+    else if (res.combos.includes('echo') && Math.random() < 0.5) this.hostSay('combo', 'grin', 'cheer');
 
     // Notes (prize effects).
     const tally = new Map<string, number>();
@@ -1428,7 +1446,7 @@ export class App {
     this.sfx.startRinging();
     this.stage.post.roll = 0.7;
     this.stage.studio.fluoFlicker = 2;
-    this.hud.hint = 'THE PHONE IS RINGING — LOOK LEFT, [ENTER] TO ANSWER';
+    this.hud.hint = this.stationHint();
     this.setChoice(null, null);
     if (g.run.phone?.reason !== 'secret') this.hostSay('phone', 'shock', 'point');
     if (g.run.phone?.reason === 'collateral') this.stage.collateral.setStrain(1);
@@ -1722,7 +1740,7 @@ export class App {
       '#80d0ff',
       1.8,
     );
-    this.hud.hint = `${mode.toUpperCase()}: ←/→ OR CLICK A WEDGE · ENTER CONFIRM · BACKSPACE CANCEL`;
+    this.hud.hint = `${mode.toUpperCase()}: [←/→] OR CLICK A WEDGE · [ENTER] CONFIRM · [BACKSPACE] CANCEL`;
     this.highlightTarget();
     this.updateArrows();
   }
@@ -1735,7 +1753,7 @@ export class App {
     this.stage.wheel.showHighlight(seg ? seg.idx : null, this.target.mode === 'remove' ? 0xff2020 : 0x40ff60, 0.45);
     const w = g.run.wheel[this.target.idx];
     if (w) this.hud.tooltip = null;
-    if (seg) this.hud.hint = `${this.target.mode.toUpperCase()} → ${WEDGES[seg.kind].name.toUpperCase()}${seg.kind === 'cash' ? ` $${Math.round(g.cashValueOf(seg))}` : ''} · ENTER OK · BACKSPACE CANCEL`;
+    if (seg) this.hud.hint = `${this.target.mode.toUpperCase()} → ${WEDGES[seg.kind].name.toUpperCase()}${seg.kind === 'cash' ? ` $${Math.round(g.cashValueOf(seg))}` : ''} · [ENTER] CONFIRM · [BACKSPACE] CANCEL`;
   }
 
   private confirmTarget(): void {
@@ -1884,8 +1902,7 @@ export class App {
     }
     if (a.type === 'nav') {
       this.stage.rig.nav(a.dir);
-      this.hud.hint = this.stage.rig.station === 'center' && g.run.phase === 'AwaitAction' ? (g.canGamble() ? 'HOLD SPACE TO SPIN · [D] DOUBLE OR NOTHING' : 'HOLD SPACE (OR THE LEVER) TO SPIN') : g.run.phase === 'Shop' ? this.hud.hint : '';
-      if (g.run.phase === 'PhoneCall' && !this.phoneAnswered) this.hud.hint = 'THE PHONE IS RINGING — [ENTER] TO ANSWER';
+      this.hud.hint = this.target ? this.hud.hint : this.stationHint();
       this.updateArrows();
       return;
     }
@@ -2404,6 +2421,8 @@ export class App {
     if (g) st.wheel.decay = Math.min(1, (g.run.deadline - 1) / 7);
     this.updateRot(dt);
     this.hud.calm = this.busy > 0 || !!this.drama || !!this.charge;
+    // The key hint always matches where the player is looking (clicking objects moves the camera too).
+    if (g && !this.target && !this.charge && !this.busy && !this.grab) this.hud.hint = this.stationHint();
     this.hud.quietFor = this.time - this.lastInput;
     this.hud.alwaysHints = this.meta.runs < 2 && (g?.run.deadline ?? 1) <= 1;
     {
