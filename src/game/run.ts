@@ -339,7 +339,7 @@ export class Game implements PayoutHost {
   /** Pull one chamber from the events stream; the result is saved with the spin. */
   fireGun(): void {
     const hit = this.rng.events.int(6) === 0;
-    this.horror({ type: 'gunshot', hit, nested: this.ringJumpDepth > 0, afterJump: this.ringJumpResult !== null });
+    this.horror({ type: 'gunshot', hit, afterJump: this.ringJumpResult !== null });
     this.note(hit ? 'THE CHAMBER WAS LOADED' : 'THE CHAMBER IS EMPTY');
     if (hit) {
       this.run.marks.gunDeath = 1;

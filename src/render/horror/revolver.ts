@@ -91,6 +91,8 @@ export class RevolverView {
     this.group.add(this.weapon);
     this.group.position.set(0.12, -0.85, -2.0);
     this.group.visible = false;
+    // Never pickable: raycasts ignore visibility, so a hidden revolver would block clicks behind it.
+    this.group.traverse((o) => { o.raycast = () => {}; });
   }
 
   raise(duration: number): void {

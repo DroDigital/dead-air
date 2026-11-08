@@ -132,3 +132,8 @@ The only library over ~100 kB gz is three.js. GSAP measures ~28 kB gz. Built app
 - **Models.** The audience is the CC0 KayKit skeleton pack, kept rigged (the asset pipeline learned skinned models: no decimation, clip filtering, orphan cleanup) and drawn with the PSX material, which now supports skinning. The bolt cutters and spoon are Poly Haven CC0 models; the cutters are split into two hinged halves at load. The hand, the wedge props, the blood, the pool and the peeling walls are generated in code. The six new wedge icons are SVG drawn in the art pack's style (`tools/horror-art.ts`).
 - **Voices.** The new lines are short so they can be recorded cheaply, but the game's custom ElevenLabs voices were not in the workspace available here, so they use the gibberish voice and captions for now. `npx tsx tools/vo.ts pending` batches exactly these lines.
 - **Uncut by default.** The game is a horror game; *Uncut Broadcast (gore)* is on by default and is a single switch away. Off, blood renders as ink and the cutscenes cut to snow.
+
+## The Gun on the House Wheel
+
+- **The Gun replaces the House Wheel's Dud.** The wheel stays at 24 wedges; the Dud slot becomes a 6° Gun, so it is live from the first spin of every run. A 6° wedge is hit about 1 spin in 60 and the chamber is loaded 1 time in 6, so roughly 0.3% of House Wheel spins end the run. With no Dud on the wheel, the stake's extra Bankrupts now replace Cash wedges only. BALANCE.md's simulator tables predate the Gun and should be re-run.
+- **Rare reveals.** Mystery and Haunted each have a 0.5% chance to reveal the Crossroads (a pact), an Angel (a blessing) or the Gun, before their usual pools.

@@ -1113,6 +1113,10 @@ export class App {
       if (c === 'deadAir') continue;
       st.vfx.float(st.wheel.group.position.clone().add(new THREE.Vector3(0, 1.2, 0)), COMBO_NAMES[c], '#ff70ff', 2, 1.6);
     }
+    st.rig.dollyTarget = 0;
+    // The tension cue ends when the wheel lands (before any gunshot, which may end the run).
+    this.loops.drum?.stop(0.35);
+    this.loops.drum = null;
     const horror = this.pendingHorror.splice(0);
     this.playHorror(horror);
     const shots = horror.filter((e): e is Extract<HorrorEvent, { type: 'gunshot' }> => e.type === 'gunshot');
@@ -1135,10 +1139,6 @@ export class App {
     for (const [n, c] of [...tally].slice(0, 4)) this.hud.toast(c > 1 ? `${n} ×${c}` : n);
 
     const big = p.cash >= Math.max(500, g.run.debt * 0.5);
-    st.rig.dollyTarget = 0;
-    // The tension cue ends when the wheel lands.
-    this.loops.drum?.stop(0.35);
-    this.loops.drum = null;
     if (p.bankrupt && !p.bankruptBlocked) await this.bankruptDrama(p.trayLost, p.deadAir);
     else if (p.bankruptBlocked) {
       this.hud.toast('BANKRUPT BLOCKED!', '#80ffff');
