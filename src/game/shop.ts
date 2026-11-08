@@ -45,7 +45,7 @@ export function makeWedge(kind: WedgeKind, uid: number, rng: Rng, value?: number
     uid,
     kind,
     value: value ?? def.defaultValue,
-    width: kind === 'jackpot' ? BALANCE.jackpotWidth : BALANCE.baseWidth,
+    width: kind === 'jackpot' || kind === 'gun' ? BALANCE.jackpotWidth : BALANCE.baseWidth,
     gild: 0,
     bonus: 0,
   };

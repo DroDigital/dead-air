@@ -128,6 +128,8 @@ export function artifactScore(id: string): number {
 /** Value of a wedge for "which one should I replace / remove" decisions (lower = worse). */
 function wedgeWorth(g: Game, s: Segment): number {
   switch (s.kind) {
+    case 'gun':
+      return -1000;
     case 'bankrupt':
       return -300;
     case 'tax':
@@ -269,6 +271,11 @@ export class Bot {
           if (artifactScore(ranked[0]) > worst.s + 1) g.pickArtifact(ranked[0], worst.i);
           else g.pickArtifact(null);
         } else g.pickArtifact(ranked[0]);
+        return true;
+      }
+      case 'SupernaturalChoice': {
+        const p = r.pending;
+        if (p?.type === 'supernatural') g.chooseSupernatural(p.source === 'pact' ? 'fortune' : 'grace');
         return true;
       }
       case 'Conversion': {

@@ -51,9 +51,9 @@ export function tooltipFor(hit: PickHit, g: Game | null): string | null {
     const i = ringSegmentAt(ring.length, -a);
     return `INNER RING ×${ring[i]}\nMultiplies Cash (with Boost) before the Streak.\nRING: ${ring.map((m) => `×${m}`).join(' ')}`;
   }
-  if (id === 'tray') return `THE TRAY $${r.tray}\nAt-risk winnings. A Bankrupt empties it.\nSTREAK ×${r.streak.toFixed(2)} (cash only)`;
+  if (id === 'tray') return `THE TRAY $${r.tray}\nAt-risk winnings. A Bankrupt empties it.\nSTREAK ×${r.streak.toFixed(2)} (cash only)${(r.marks.supernaturalCashMult ?? 1) > 1 ? `\nOTHERWORLDLY CASH ×${r.marks.supernaturalCashMult}` : ''}`;
   if (id === 'vault') return `THE VAULT $${r.vault}\nSafe money. Pays the Debt at the end of the Deadline.\nWhat's left after paying becomes Tokens; the Vault starts empty again.\nDEBT DUE $${r.debt}`;
-  if (id === 'deposit') return `DEPOSIT [ENTER]\nSweep the Tray into the Vault.\nFree, costs no spin — resets your Streak.`;
+  if (id === 'deposit') return `DEPOSIT [ENTER]\nSweep the Tray into the Vault.\nFree, costs no spin — resets your Streak.${r.marks.pactCurse ? '\nTHE PACT TAKES 25% OF EVERY DEPOSIT.' : ''}`;
   if (id.startsWith('scratch:')) {
     const i = Number(id.split(':')[1]);
     const card = r.scratch[i];
@@ -70,7 +70,7 @@ export function tooltipFor(hit: PickHit, g: Game | null): string | null {
   }
   if (id === 'phone') return r.phase === 'PhoneCall' ? 'THE PHONE IS RINGING\n[ENTER] to answer' : 'A ROTARY PHONE\nIt only rings when the Producer wants something.';
   if (id === 'host') return 'YOUR HOST\nAlways smiling. Always.';
-  if (id === 'lever') return `THE LEVER [HOLD SPACE]\nRelease to spin at the power shown on the meter.${g.canPeek() ? '\n[E] while charging: PREVIEW' : ''}\nSPINS LEFT ${r.spinsLeft}`;
+  if (id === 'lever') return `THE LEVER [HOLD SPACE]\nRelease to spin at the power shown on the meter.${g.canPeek() ? '\n[E] while charging: PREVIEW' : ''}\nSPINS LEFT ${r.spinsLeft}${r.marks.supernaturalSpins ? `\nOTHERWORLDLY: +${r.marks.supernaturalSpins} SPINS EVERY DEADLINE` : ''}`;
   if (id === 'crank') return r.shop ? `THE CRANK [R]\nRotate new stock into view.\nCOST ${r.shop.freeRerolls > 0 ? 'FREE' : `${r.shop.rerollCost} TOK`}` : 'THE CRANK\nThe cabinet is closed.';
   if (id === 'services' && hit.uv) {
     const b: ServiceButton = SERVICE_BUTTONS[Math.min(5, (Math.min(2, Math.floor((1 - hit.uv.y) * 3)) * 2 + (hit.uv.x < 0.5 ? 0 : 1)))];

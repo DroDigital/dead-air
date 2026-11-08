@@ -18,6 +18,9 @@ function step(g: Game, i: number): void {
     case 'ArtifactPick':
       if (r.pending?.type === 'artifactPick') g.pickArtifact(r.pending.options[i % 3] ?? null, 0);
       break;
+    case 'SupernaturalChoice':
+      if (r.pending?.type === 'supernatural') g.chooseSupernatural(r.pending.options[0]);
+      break;
     case 'Nudge':
       g.chooseNudge(1);
       break;

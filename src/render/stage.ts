@@ -24,6 +24,7 @@ import { AudienceView } from './horror/audience';
 import { CollateralView } from './horror/collateral';
 import { RotView } from './horror/rotView';
 import { WedgeModels } from './horror/wedgeModels';
+import { RevolverView } from './horror/revolver';
 import { WinJuice } from './winJuice';
 
 export interface PickHit {
@@ -97,6 +98,7 @@ export class Stage {
   readonly audience: AudienceView;
   readonly wedgeProps: WedgeModels;
   readonly collateral: CollateralView;
+  readonly revolver: RevolverView;
   readonly juice = new WinJuice();
   private raycaster = new THREE.Raycaster();
   stats = { calls: 0, triangles: 0 };
@@ -125,7 +127,10 @@ export class Stage {
     this.wedgeProps = new WedgeModels(this.rot.blood);
     this.wheel.attach(this.wedgeProps.group);
     this.collateral = new CollateralView(assets, this.rot.blood);
+    this.revolver = new RevolverView();
+    this.rig.camera.add(this.revolver.group);
     this.scene.add(
+      this.rig.camera,
       this.rot.group,
       this.audience.group,
       this.collateral.group,

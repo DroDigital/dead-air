@@ -27,12 +27,48 @@ const MYSTERY_POOL: { kind: WedgeKind; value: number; w: number }[] = [
 ];
 const MYSTERY_BANKRUPT_CHANCE = 0.25;
 
+/** Rare reveals shared by Mystery and Haunted: 0.5% each of a pact, a blessing and the Gun. */
+const RARE_REVEALS: { below: number; kind: WedgeKind; name: string }[] = [
+  { below: 0.005, kind: 'crossroads', name: 'CROSSROADS' },
+  { below: 0.01, kind: 'angel', name: 'ANGEL' },
+  { below: 0.015, kind: 'gun', name: 'THE GUN' },
+];
+function rareReveal(l: LandCtx, roll: number, prefix: string): boolean {
+  const hit = RARE_REVEALS.find((r) => roll < r.below);
+  if (hit) l.resolveAs(hit.kind, 0, `${prefix} → ${hit.name}`);
+  return !!hit;
+}
+
 function cashLand(l: LandCtx): void {
   const v = l.cashValue(l.seg);
   l.cash(v, `$${Math.round(v)}`);
 }
 
 export const WEDGES: Record<WedgeKind, WedgeDef> = {
+  gun: {
+    kind: 'gun', name: 'The Gun', glyph: 'GUN',
+    text: 'One chamber in six is loaded. A shot ends the run.', rarity: 'cursed', cost: 0, shop: false,
+    cashLike: false, gildable: false, defaultValue: 0, color: 0x302a27, ink: 0xe9d6bd,
+    pattern: 'stripes', repeatable: false,
+    land: (l) => l.prize('gun', 1, 'THE GUN'),
+    apply: (ops) => ops.fireGun(),
+  },
+  crossroads: {
+    kind: 'crossroads', name: 'Crossroads', glyph: 'PACT',
+    text: 'A wish, at a permanent price.', rarity: 'cursed', cost: 0, shop: false,
+    cashLike: false, gildable: false, defaultValue: 0, color: 0x391018, ink: 0xe6c2a8,
+    pattern: 'cross', repeatable: false,
+    land: (l) => l.prize('crossroads', 1, 'THE CROSSROADS'),
+    apply: (ops) => ops.queueSupernatural('pact'),
+  },
+  angel: {
+    kind: 'angel', name: 'Angel', glyph: 'GRACE',
+    text: 'Choose a blessing.', rarity: 'rare', cost: 0, shop: false,
+    cashLike: false, gildable: false, defaultValue: 0, color: 0xc4c3af, ink: 0x302e28,
+    pattern: 'cross', repeatable: false,
+    land: (l) => l.prize('angel', 1, 'A QUIET LIGHT'),
+    apply: (ops) => ops.queueSupernatural('blessing'),
+  },
   cash: {
     kind: 'cash',
     name: 'Cash',
@@ -184,6 +220,7 @@ export const WEDGES: Record<WedgeKind, WedgeDef> = {
         l.resolveAs('bankrupt', 0, 'MYSTERY → BANKRUPT');
         return;
       }
+      if (rareReveal(l, r.float(), 'MYSTERY')) return;
       const pick = r.weighted(MYSTERY_POOL, (p) => p.w);
       l.resolveAs(pick.kind, pick.kind === 'jackpot' ? BALANCE.jackpotValue : pick.value, `MYSTERY → ${WEDGES[pick.kind].name.toUpperCase()}`);
     },
@@ -281,6 +318,7 @@ export const WEDGES: Record<WedgeKind, WedgeDef> = {
     pattern: 'dots',
     repeatable: false,
     land: (l) => {
+      if (rareReveal(l, l.rng.events.float(), 'HAUNTED')) return;
       const pick = l.rng.events.weighted(HAUNTED_POOL, (p) => p.w);
       l.resolveAs(pick.kind, pick.kind === 'jackpot' ? BALANCE.jackpotValue : pick.value, `HAUNTED → ${WEDGES[pick.kind].name.toUpperCase()}`);
     },

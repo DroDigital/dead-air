@@ -97,11 +97,17 @@ const FIELD_TIPS: Record<string, string> = {
 const GAMEOVER_TITLE_LANDS_MS = 2250;
 const GAMEOVER_CARD_MS = 3100;
 
+/** A fatal shot is a different ending from the Network's usual trapdoor. */
+export function summaryDescription(won: boolean, deadline: number, cause?: 'gun'): string {
+  if (won) return 'All eight Deadlines paid. The Network is… pleased.';
+  return cause === 'gun' ? `The chamber was loaded at Deadline ${deadline}.` : `The floor opened at Deadline ${deadline}.`;
+}
+
 export class Menus {
   private root: HTMLDivElement;
   page: Page = null;
   private back: Page = null;
-  private summary: { won: boolean; deadline: number; ratings: RatingsBreakdown; unlocks: Unlock[]; canEndless: boolean } | null = null;
+  private summary: { won: boolean; deadline: number; ratings: RatingsBreakdown; unlocks: Unlock[]; canEndless: boolean; cause?: 'gun' } | null = null;
   /** Desktop build only: whether the window is fullscreen (labels the settings toggle). */
   private fullscreen = false;
 
@@ -146,8 +152,8 @@ export class Menus {
     this.root.className = '';
   }
 
-  showSummary(won: boolean, deadline: number, ratings: RatingsBreakdown, unlocks: Unlock[], canEndless: boolean): void {
-    this.summary = { won, deadline, ratings, unlocks, canEndless };
+  showSummary(won: boolean, deadline: number, ratings: RatingsBreakdown, unlocks: Unlock[], canEndless: boolean, cause?: 'gun'): void {
+    this.summary = { won, deadline, ratings, unlocks, canEndless, cause };
     this.show('summary');
   }
 
@@ -404,7 +410,7 @@ export class Menus {
       }
       html = `${s.won ? '' : '<div class="gostage" aria-hidden="true"><div class="gowave"></div><div class="golight"></div></div><div class="gotitle-wrap"><div class="gotitle"><span class="back">GAME OVER</span><span class="front">GAME OVER</span></div></div>'}<div class="panel">
         <h2 class="${s.won ? 'win' : 'lose'}">${s.won ? 'PAID IN FULL' : "THAT'S OUR SHOW"}</h2>
-        <p>${s.won ? 'All eight Deadlines paid. The Network is… pleased.' : `The floor opened at Deadline ${s.deadline}.`}</p>
+        <p>${summaryDescription(s.won, s.deadline, s.cause)}</p>
         <table class="ratings">${s.ratings.lines.map((l) => `<tr><td>${esc(l.label)}</td><td>+${l.value}</td></tr>`).join('')}<tr class="tot"><td>RATINGS</td><td>${s.ratings.total}</td></tr></table>
         ${s.unlocks.length ? `<h3>NEW IN THE PROP ROOM</h3><ul>${s.unlocks.map((u) => `<li>${esc(u.kind.toUpperCase())}: ${esc(u.name)}</li>`).join('')}</ul>` : ''}
         <div class="col">

@@ -232,12 +232,15 @@ export async function buildArt(): Promise<number> {
   if (!existsSync(join(SRC, 'icons-wedges.png'))) return 0;
   const sharp = (await import('sharp')).default;
   // The owner's sheet covers the wedges up to Payday; the horror wedges are drawn by tools/horror-art.ts.
-  await grid(sharp, 'icons-wedges.png', 5, 5, WEDGE_KINDS.slice(0, WEDGE_KINDS.indexOf('payday') + 1), 'wedge', 128);
+  await grid(sharp, 'icons-wedges.png', 5, 5, WEDGE_KINDS.slice(WEDGE_KINDS.indexOf('cash'), WEDGE_KINDS.indexOf('payday') + 1), 'wedge', 128);
   // If the GPT-image sheet for the newer wedges exists (docs/art-prompts.md §7b), slice it; the
   // drawn SVG icons below fill in whatever it doesn't cover.
   const sheet2 = ['mouth', 'cleaver', 'stump', 'bleeder', 'eye', 'stitches', 'roulette', 'hushMoney', 'encore', 'curtainCall'];
   const fromSheet = existsSync(join(SRC, 'icons-wedges-2.png'));
   if (fromSheet) await grid(sharp, 'icons-wedges-2.png', 4, 3, sheet2, 'wedge', 128);
+  if (existsSync(join(SRC, 'wedge-gun.png'))) {
+    await save(sharp, sharp(join(SRC, 'wedge-gun.png')), 'wedge.gun', 'wedge/gun.png', 192);
+  }
   await horrorIcons(sharp, async (id, buf) => {
     if (fromSheet && sheet2.includes(id)) return;
     const out = join(OUT, 'wedge', `${id}.png`);
