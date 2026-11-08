@@ -31,6 +31,7 @@ import { CabinetView, type ServiceButton } from './render/scene/cabinet';
 import { buildProp } from './render/scene/props';
 import { Stage } from './render/stage';
 import { BootScreens } from './ui/bootScreens';
+import { randomSeedString } from './core/rng';
 import { advanceCharge, GRAB_MIN, grabPower, type ChargeMeter } from './ui/charge';
 import { Hud, type ChoicePanel } from './ui/hud';
 import { Input, type Action } from './ui/input';
@@ -154,14 +155,14 @@ export class App {
   async boot(): Promise<void> {
     this.input = new Input(this.canvas);
     this.menus = new Menus({
-      onContinue: () => void this.continueRun(),
-      onNewRun: (c) => void this.newRun(c.seed, c.stake, c.startWheel),
+      onNewRun: (c) => void this.goLive(c),
       onResume: () => this.resume(),
       onAbandon: () => {
         this.menus.show('pause');
         this.abandon();
       },
-      onQuitToTitle: () => this.quitToTitle(),
+      onNextContestant: () => void this.goLive(),
+      hasGame: () => !!this.game && this.game.run.phase !== 'GameOver' && !this.game.run.marks.metaApplied,
       onSettings: (s) => this.applySettings(s),
       onEndlessContinue: () => this.endlessContinue(),
       onRetire: () => this.retire(),
@@ -230,11 +231,55 @@ export class App {
     else await screens.playIntro();
     this.introPending = false;
     this.bootScreens = null;
-    if (!skipIntro && this.mixer.running) this.startMenuAudio(false);
-    await this.powerOn();
-    this.fsm.go('Menu');
-    this.menus.show('title');
     if (new URLSearchParams(location.search).has('debug')) this.debug = true;
+    this.fsm.go('Menu');
+    // No title screen: from the curtain the camera comes into the studio and the show starts
+    // (the saved broadcast resumes if there is one). The pause menu is the hub.
+    await this.enterStudio();
+  }
+
+  /**
+   * The camera glides in from the back of the studio as the lights come up, then the broadcast
+   * starts: the saved one if there is one (unless `choice` asks for a new one), else a fresh run.
+   */
+  private async enterStudio(choice?: { seed: string; stake: number; startWheel: string }): Promise<void> {
+    const st = this.stage;
+    this.menus.hide();
+    st.rig.go('center', 0.01);
+    st.post.fade = 1;
+    const glide = st.rig.flyIn(new THREE.Vector3(0.0, 1.9, 2.3), 3.6);
+    this.music.kick();
+    this.music.startAmbience();
+    this.sfx.play('whoosh', { gain: 0.35, pitch: 0.6 });
+    await this.powerOn();
+    await wait(0.3);
+    const save = !choice && this.runSlot.exists() ? this.runSlot.load() : null;
+    if (save) await this.continueRun();
+    else await this.newRun(choice?.seed ?? randomSeedString(), choice?.stake ?? 0, choice?.startWheel ?? 'standard');
+    await glide;
+  }
+
+  /** A new broadcast from the hub (or the next contestant): any live run ends as a loss first. */
+  private async goLive(choice?: { seed: string; stake: number; startWheel: string }): Promise<void> {
+    // A spin or presentation in flight finishes first (as quitting always did).
+    if (this.deferIfBusy(() => void this.goLive(choice))) return;
+    const g = this.game;
+    if (g && g.run.phase !== 'GameOver' && !g.run.marks.metaApplied) {
+      g.run.endedAt = g.run.deadline;
+      g.run.marks.metaApplied = 1;
+      applyRun(this.meta, g.run);
+      this.saveMeta();
+    }
+    this.runSlot.clear();
+    this.game = null;
+    this.hud.choice = null;
+    this.hud.chyron = null;
+    this.hud.ticker = '';
+    this.vo.stop();
+    this.stopHeartbeat();
+    this.sfx.stopRinging();
+    this.resetStageVisuals();
+    await this.enterStudio(choice ?? { seed: randomSeedString(), stake: 0, startWheel: 'standard' });
   }
 
   /** The menu's music and ambience. On a first touch the host greets the player, unless the intro already did. */
@@ -515,28 +560,6 @@ export class App {
     return true;
   }
 
-  private quitToTitle(): void {
-    if (this.deferIfBusy(() => this.quitToTitle())) return;
-    if (this.game && this.game.run.phase !== 'GameOver' && !this.game.run.marks.metaApplied) this.runSlot.save(this.game.snapshot());
-    this.game = null;
-    this.hud.choice = null;
-    this.hud.ticker = '';
-    this.hud.chyron = null;
-    this.hud.hint = '';
-    this.choiceHandler = null;
-    this.stage.phone.ringing = false;
-    this.sfx.stopRinging();
-    this.vo.stop();
-    this.stopHeartbeat();
-    this.phoneTalk.forEach((t) => clearTimeout(t));
-    this.phoneTalk = [];
-    this.stage.post.roll = 0;
-    this.fsm.force('Menu');
-    this.music.setTrack('menu');
-    this.music.start();
-    this.menus.show('title');
-  }
-
   private abandon(): void {
     if (!this.game) return;
     if (this.deferIfBusy(() => this.abandon())) return;
@@ -567,7 +590,7 @@ export class App {
       this.saveMeta();
     }
     this.runSlot.clear();
-    this.quitToTitle();
+    void this.goLive();
   }
 
   // ===================================================================================
@@ -2413,6 +2436,9 @@ export class App {
       const hit = m.inside && !this.hud.choice ? st.pick(m.x, m.y) : null;
       hoverId = hit?.id ?? null;
       this.hud.tooltip = hit && !this.grab ? tooltipFor(hit, g) : null;
+      // The broadcast graphics explain themselves too (new players hover everything).
+      const hudTip = m.inside && !this.grab && !this.charge ? this.hud.hudTipAt(m.x, m.y, st.post.width, st.post.height, st.post.scale) : null;
+      if (hudTip) this.hud.tooltip = hudTip;
     }
     this.hud.cursor = this.grab ? 'grab' : hoverId === 'wheel' && st.rig.station === 'center' && this.canGrab() ? 'open' : null;
     // Overlay.

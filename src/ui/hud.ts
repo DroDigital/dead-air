@@ -200,6 +200,31 @@ export class Hud {
     return -1;
   }
 
+  /**
+   * New-player tips for the broadcast graphics: what each readout means, by where the mouse is.
+   * Null when the pointer is not over one (the 3D tooltips take over there).
+   */
+  hudTipAt(x: number, y: number, w: number, h: number, k: number): string | null {
+    const c = this.chyron;
+    if (!c || this.choice) return null;
+    const top = 3 * k + LINE_H * TS + 18 * k;
+    if (y < top && x < 70 * k)
+      return `DEADLINE ${c.deadline}\nEach Deadline you get a set number of spins to fill the Vault.\nWhen they run out, the Debt is taken from the Vault. Short = the floor opens.`;
+    if (y < top + 10 * k && x > w - 70 * k)
+      return `SPINS LEFT ${c.spins}\nSpins remaining this Deadline.\nTOKENS buy artifacts and wedges in the Prize Cabinet (look right).\nHolding Tokens when you pay earns +1 per 5 (max +5).`;
+    if (this.challenge && y >= 20 * k && y < 32 * k && x < 160 * k) {
+      const ch = this.challenge;
+      return `SPONSOR'S CHALLENGE: ${ch.name}\n${ch.text}\nDo it before the Deadline ends for bonus Tokens.`;
+    }
+    const bottom = h - 30 * k;
+    if (y > bottom && x < 100 * k)
+      return `VAULT $${c.vault} / DEBT $${c.debt}\nThe Vault is safe money. At the end of the Deadline it pays the Debt.\nWhat's left over becomes Tokens, and the Vault starts the next Deadline empty.`;
+    if (y > bottom && x > w - 100 * k)
+      return `AT RISK $${c.tray} / STREAK x${c.streak.toFixed(2)}\nWinnings in the Tray. A Bankrupt takes them all.\nDEPOSIT [ENTER] banks them in the Vault but resets the Streak.\nEvery spin you don't deposit raises the Streak multiplier.`;
+    if (y > h - 6 * k) return 'THE BAR\nHow much of the Debt the Vault covers; the ghost is what the Tray would add.';
+    return null;
+  }
+
   hitCancel(x: number, y: number): boolean {
     const r = this.cancelRect;
     return !!r && x >= r.x && x < r.x + r.w && y >= r.y && y < r.y + r.h;
