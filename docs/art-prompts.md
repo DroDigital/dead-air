@@ -218,6 +218,64 @@ scratch-off card with a coin), Payday (an envelope bursting with bills), plus tw
 horseshoe and a black cat.
 ```
 
+## 7b · New wedge icons: the horror and fun wedges (10)
+
+File: `assets-src/art/icons-wedges-2.png` · **1024×1024** · transparent
+
+Until this sheet exists the game draws these ten icons itself (`tools/horror-art.ts`). Drop the
+generated sheet in and run `npm run assets`, and the generated art replaces the drawn icons
+automatically. Order matters: left to right, top to bottom, in a 4 × 3 grid (the last two cells
+stay empty).
+
+These wedges are the gory side of the show, so for this sheet **replace the last sentence of the
+STYLE BLOCK ("Never gore.") with:** `Cartoon gore is allowed: bright red ink blood, drips and
+splats, never realistic wounds.`
+
+**The whole sheet in one go:**
+
+```
+[STYLE BLOCK, with the gore line above]
+A sheet of 10 small game icons in a 4 × 3 grid on a transparent background (the last two cells empty),
+each a single bold, simple object readable at small size, centered in its cell with empty space around
+it, no text:
+1 The Mouth: a pair of fat red cartoon lips peeled back over two rows of too many pointed teeth, a pink
+tongue lolling out with a drip of drool, a gold coin flying out of it.
+2 The Cleaver: a butcher's cleaver with a wooden handle, a mean little face on the blade (one eye, a
+crooked grin), red ink dripping off the edge.
+3 Stump: a severed cartoon limb seen end-on, a ring of red meat around a round cream bone, blood dripping
+down its pale side into a small red puddle.
+4 Bleeder: a green dollar bill with a worried grinning face, slashed diagonally with a red gash, three
+fat red drops falling from it.
+5 The Eye: a loose bloodshot eyeball with a red iris and tiny pupil staring straight out, red veins, its
+pink optic nerve trailing off like a tail.
+6 Stitches: a patch of pale cartoon skin sewn shut down the middle with black cross-stitches over a red
+seam, a sewing needle and thread still hanging off the end.
+7 Revolver: a snub-nosed cartoon revolver with a grinning face on its cylinder, one chamber glowing red,
+a small floating question mark above it.
+8 Hush Money: a fat cream envelope stuffed with green bills, its flap zipped shut like a mouth with a
+mustard zipper, a finger-to-lips "shh" glove beside it.
+9 Encore: a bouquet of red roses thrown onto a stage under a spotlight, a curly gold "rewind" arrow
+looping around it.
+10 Curtain Call: red velvet theatre curtains swinging shut on a dark stage, a gold pelmet on top and gold
+tassels, a tiny white glove waving goodbye through the gap.
+```
+
+**One wedge at a time** (if a cell comes back wrong, regenerate just that icon at **1024×1024**,
+transparent, and I'll scale it into the sheet):
+
+| Wedge | Prompt (after the STYLE BLOCK with the gore line) |
+|---|---|
+| The Mouth | `One game icon, centered, transparent background, no text: a pair of fat red cartoon lips peeled back over two rows of too many pointed cream teeth, a pink tongue lolling out with a drip of drool, a gold coin with a $ flying out of the mouth.` |
+| The Cleaver | `One game icon, centered, transparent background, no text: a heavy butcher's cleaver with a wooden handle and a round hole in the blade, a mean little face on the steel (one winking eye, a crooked grin), red ink dripping off the cutting edge.` |
+| Stump | `One game icon, centered, transparent background, no text: a severed cartoon limb seen end-on, a ring of red meat around a round cream bone, blood dripping down its pale side into a small red puddle.` |
+| Bleeder | `One game icon, centered, transparent background, no text: a green dollar bill with a worried, grinning face, slashed diagonally by a red gash, three fat red drops falling from the cut.` |
+| The Eye | `One game icon, centered, transparent background, no text: a loose bloodshot eyeball with a red iris and a tiny black pupil staring straight at the viewer, thin red veins, its pink optic nerve trailing off behind like a tail.` |
+| Stitches | `One game icon, centered, transparent background, no text: a patch of pale cartoon skin sewn shut down the middle with black cross-stitches over a red seam, a sewing needle with black thread still hanging off the end.` |
+| Revolver | `One game icon, centered, transparent background, no text: a snub-nosed cartoon revolver with a wooden grip, a grinning face on its six-chamber cylinder, one chamber glowing red, a small floating red question mark above the barrel.` |
+| Hush Money | `One game icon, centered, transparent background, no text: a fat cream envelope stuffed with green bills, its flap zipped shut like a mouth with a mustard-gold zipper, a white cartoon glove beside it holding one finger to where lips would be.` |
+| Encore | `One game icon, centered, transparent background, no text: a bouquet of red roses wrapped in green paper, lying on a stage in a cone of spotlight, a curly gold rewind arrow looping around it.` |
+| Curtain Call | `One game icon, centered, transparent background, no text: red velvet theatre curtains swinging shut on a dark stage, a gold pelmet across the top and gold tassels, a tiny white cartoon glove waving goodbye through the gap.` |
+
 ## 8 · Artifact icons (shelf items, 50)
 
 Files: `assets-src/art/icons-artifacts-1.png` and `-2.png` · **1024×1024** each · transparent

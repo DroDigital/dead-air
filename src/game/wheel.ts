@@ -156,7 +156,10 @@ export const PHYS = {
   frictionKnee: 25,
   omegaMin: 520,
   omegaRange: 980,
-  omegaJitter: 0.09,
+  /** Hand-feel: a little wobble so no two pulls are identical, small enough that force is what you get. */
+  omegaJitter: 0.025,
+  /** The fastest a hand can throw it (deg/s). */
+  omegaHandMax: 2400,
   fastThreshold: 260,
   fastPegLoss: 20,
   // Flapper
@@ -240,6 +243,11 @@ export interface SpinParams {
   mods?: PhysicsMods;
   /** Skip recording a trace (fast headless search). */
   noTrace?: boolean;
+  /**
+   * A hand throw: the wheel leaves the hand at exactly this angular speed (deg/s), no jitter.
+   * Without it, `power` (the lever) maps onto the launch speed.
+   */
+  omega0?: number;
 }
 
 /**
@@ -258,7 +266,10 @@ export function simulateSpin(p: SpinParams, rng: Rng): SpinSim {
     j2 = rng.float(),
     j3 = rng.float();
   const power = Math.min(1, Math.max(0, p.power));
-  const omega0 = (P.omegaMin + P.omegaRange * power) * (1 + P.omegaJitter * (j1 * 2 - 1));
+  const omega0 =
+    p.omega0 !== undefined && Number.isFinite(p.omega0)
+      ? Math.min(P.omegaHandMax, Math.max(0, p.omega0))
+      : (P.omegaMin + P.omegaRange * power) * (1 + P.omegaJitter * (j1 * 2 - 1));
   const gamma0 = -(P.ringOmegaMin + P.ringOmegaRange * power) * (1 + P.ringJitter * (j2 * 2 - 1));
 
   let theta = p.startAngle;

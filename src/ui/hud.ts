@@ -370,7 +370,29 @@ export class Hud {
       drawText(ctx, this.ticker, 34 * k, tickerY, { scale: TS, color: '#f0e0b0' });
       if (this.tickerRight) drawText(ctx, this.tickerRight, w - 3 * k, tickerY, { align: 'right', scale: TS, color: '#a0e0a0' });
     }
-    if (this.hint && !this.choice && !this.calm && (this.alwaysHints || this.quietFor > 5)) drawText(ctx, this.hint, w / 2, h - (this.chyron ? 12 : 21) * k, { align: 'center', scale: TS, color: 'rgba(255,240,200,0.8)', shadow: '#000' });
+    if (this.hint && !this.choice && !this.calm) {
+      // The keys that work right now, always on a dark bar so they read over anything. A hint too
+      // wide for the screen breaks at its last separator that fits and continues above.
+      const y = h - (this.chyron ? 12 : 21) * k;
+      // Clear of the Vault and At Risk readouts in the bottom corners.
+      const max = w - 130 * k;
+      let lines = [this.hint];
+      if (textWidth(this.hint, TS) > max) {
+        const parts = this.hint.split(' · ');
+        let first = parts.join(' · ');
+        let i = parts.length;
+        while (i > 1 && textWidth(parts.slice(0, i).join(' · '), TS) > max) i--;
+        first = parts.slice(0, i).join(' · ');
+        lines = [first, parts.slice(i).join(' · ')].filter(Boolean);
+      }
+      lines.forEach((l, n) => {
+        const ly = y - (lines.length - 1 - n) * (LINE_H * TS + k);
+        const lw = textWidth(l, TS) + 6 * k;
+        ctx.fillStyle = 'rgba(8,4,2,0.78)';
+        ctx.fillRect(w / 2 - lw / 2, ly - 2 * k, lw, 7 * TS + 3 * k);
+        drawText(ctx, l, w / 2, ly, { align: 'center', scale: TS, color: '#ffe8b0', shadow: '#000' });
+      });
+    }
 
     // ---- Banner (Deadline intro, SWEEPS, combos) ----
     if (this.banner) {

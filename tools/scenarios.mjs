@@ -106,7 +106,7 @@ await page.waitForTimeout(400);
 const tip = await page.evaluate(() => window.deadAir.hud.tooltip);
 const tipName = tip ? tip.split('\n')[0] : '';
 // Tooltip first line is the wedge's display name (upper case), e.g. "CASH $200".
-const NAMES = { cash: 'CASH', jackpot: 'JACKPOT', bankrupt: 'BANKRUPT', dud: 'DUD', respin: 'RESPIN', token: 'TOKEN', boost: 'BOOST', artifact: 'ARTIFACT', mystery: 'MYSTERY', tax: 'TAX', interest: 'INTEREST', thief: 'THIEF', haunted: 'HAUNTED', charge: 'CHARGE', overtime: 'OVERTIME', scratch: 'SCRATCHER', payday: 'PAYDAY', doubler: 'DOUBLER', vaultKey: 'VAULT KEY', ringJump: 'RING JUMP', wild: 'WILD', splitter: 'SPLITTER', cursedCash: 'CURSED CASH' };
+const NAMES = { cash: 'CASH', jackpot: 'JACKPOT', bankrupt: 'BANKRUPT', dud: 'DUD', respin: 'RESPIN', token: 'TOKEN', boost: 'BOOST', artifact: 'ARTIFACT', mystery: 'MYSTERY', tax: 'TAX', interest: 'INTEREST', thief: 'THIEF', haunted: 'HAUNTED', charge: 'CHARGE', overtime: 'OVERTIME', scratch: 'SCRATCHER', payday: 'PAYDAY', doubler: 'DOUBLER', vaultKey: 'VAULT KEY', ringJump: 'RING JUMP', wild: 'WILD', splitter: 'SPLITTER', cursedCash: 'CURSED CASH', mouth: 'THE MOUTH', stitches: 'STITCHES', roulette: 'REVOLVER', bleeder: 'BLEEDER', hushMoney: 'HUSH MONEY', encore: 'ENCORE', eye: 'THE EYE', cleaver: 'THE CLEAVER', stump: 'STUMP', curtainCall: 'CURTAIN CALL' };
 const want = NAMES[hover.expectedKind] ?? hover.expectedKind;
 check('tooltip on the wheel names the wedge under the pointer', !!tip && tipName.startsWith(want), `tooltip "${tipName}", wedge under flapper: ${want}`);
 

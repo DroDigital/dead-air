@@ -682,6 +682,100 @@ export const WEDGES: Record<WedgeKind, WedgeDef> = {
       }
     },
   },
+  // ------------------------------------------------------------------ Fun wedges --------
+  roulette: {
+    kind: 'roulette',
+    name: 'Revolver',
+    glyph: 'BANG?',
+    text: `Pays $${BALANCE.rouletteValue}. Counts as Cash. One chamber in six is loaded: BANG, it's a Bankrupt.`,
+    rarity: 'uncommon',
+    cost: 4,
+    shop: true,
+    cashLike: true,
+    gildable: true,
+    defaultValue: BALANCE.rouletteValue,
+    color: 0x3a2a3a,
+    ink: 0xffd0a0,
+    pattern: 'rings',
+    repeatable: false,
+    land: (l) => {
+      if (l.rng.loot.int(6) === 0) {
+        l.resolveAs('bankrupt', 0, 'BANG!');
+        return;
+      }
+      const v = l.cashValue(l.seg);
+      l.cash(v, `CLICK $${Math.round(v)}`);
+    },
+  },
+  hushMoney: {
+    kind: 'hushMoney',
+    name: 'Hush Money',
+    glyph: 'HUSH',
+    text: `Pays ${Math.round(BALANCE.hushShare * 100)}% of this Deadline's Debt. Counts as Cash. Nobody saw anything.`,
+    rarity: 'uncommon',
+    cost: 5,
+    shop: true,
+    cashLike: true,
+    gildable: false,
+    defaultValue: 0,
+    color: 0x2a4a3a,
+    ink: 0xf0e8c0,
+    pattern: 'stripes',
+    repeatable: false,
+    land: (l) => {
+      const v = Math.max(50, Math.round((l.run.debt * BALANCE.hushShare) / 25) * 25);
+      l.cash(v, `HUSH $${v}`);
+    },
+  },
+  encore: {
+    kind: 'encore',
+    name: 'Encore',
+    glyph: 'ENCORE',
+    text: 'Plays the wedge you landed last spin again (Cash, prize or Bankrupt).',
+    rarity: 'uncommon',
+    cost: 4,
+    shop: true,
+    cashLike: false,
+    gildable: false,
+    defaultValue: 0,
+    color: 0x8a2a4a,
+    ink: 0xffe8f0,
+    pattern: 'diag',
+    repeatable: false,
+    land: (l) => {
+      const prev = l.run.history[l.run.history.length - 1];
+      if (!prev || prev.kind === 'encore' || prev.kind === 'splitter') {
+        l.nothing('ENCORE: NOTHING TO REPEAT');
+        return;
+      }
+      const w = l.ops.wedgeByUid(prev.uid);
+      const value = prev.kind === 'jackpot' ? BALANCE.jackpotValue : (w?.value ?? WEDGES[prev.kind].defaultValue);
+      l.resolveAs(prev.kind, value, `ENCORE → ${WEDGES[prev.kind].name.toUpperCase()}`);
+    },
+  },
+  curtainCall: {
+    kind: 'curtainCall',
+    name: 'Curtain Call',
+    glyph: 'CURTAIN',
+    text: `Ends the Deadline now: the Tray grows ×${BALANCE.curtainBonus} and goes to the Vault. Any spins left are lost.`,
+    rarity: 'rare',
+    cost: 5,
+    shop: true,
+    cashLike: false,
+    gildable: false,
+    defaultValue: 0,
+    color: 0x7a1a1a,
+    ink: 0xffd860,
+    pattern: 'grid',
+    repeatable: false,
+    land: (l) => l.prize('curtainCall', 1, 'CURTAIN CALL'),
+    apply: (ops) => {
+      const bonus = Math.floor(ops.run.tray * (BALANCE.curtainBonus - 1));
+      if (bonus > 0) ops.addTray(bonus, 'curtain call');
+      if (ops.run.spinsLeft > 0) ops.addSpins(-ops.run.spinsLeft, 'curtain call');
+      ops.note(`CURTAIN CALL +$${bonus}`);
+    },
+  },
 };
 
 export const WEDGE_KINDS = Object.keys(WEDGES) as WedgeKind[];

@@ -197,14 +197,14 @@ export class RotView {
   update(dt: number, time: number): void {
     const rot = this.rot;
     // The pool spreads toward a size set by the rot (never shrinks within a run).
-    const target = rot < 0.25 ? 0 : 0.25 + (rot - 0.25) * 1.1;
+    const target = rot < 0.18 ? 0 : 0.22 + (rot - 0.18) * 1.1;
     this.poolSize = Math.max(this.poolSize * (target === 0 ? 0.9 : 1), this.poolSize + (target - this.poolSize) * Math.min(1, dt * 0.4));
     if (target === 0 && this.poolSize < 0.01) this.poolSize = 0;
     this.pool.scale.setScalar(Math.max(0.001, this.poolSize));
     this.pool.visible = this.poolSize > 0.01;
     // Drips from the rim once the show is going off.
-    if (rot > 0.3) {
-      this.dripT -= dt * (rot - 0.3) * 3;
+    if (rot > 0.18) {
+      this.dripT -= dt * (rot - 0.1) * 3;
       if (this.dripT <= 0) {
         this.dripT = 0.4 + Math.random() * 0.8;
         this.blood.drip(this.dripFrom.clone().add(new THREE.Vector3((Math.random() - 0.5) * 0.5, 0, 0)));
