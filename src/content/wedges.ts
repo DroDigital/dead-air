@@ -27,6 +27,18 @@ const MYSTERY_POOL: { kind: WedgeKind; value: number; w: number }[] = [
 ];
 const MYSTERY_BANKRUPT_CHANCE = 0.25;
 
+/** Rare reveals shared by Mystery and Haunted: 0.5% each of a pact, a blessing and the Gun. */
+const RARE_REVEALS: { below: number; kind: WedgeKind; name: string }[] = [
+  { below: 0.005, kind: 'crossroads', name: 'CROSSROADS' },
+  { below: 0.01, kind: 'angel', name: 'ANGEL' },
+  { below: 0.015, kind: 'gun', name: 'THE GUN' },
+];
+function rareReveal(l: LandCtx, roll: number, prefix: string): boolean {
+  const hit = RARE_REVEALS.find((r) => roll < r.below);
+  if (hit) l.resolveAs(hit.kind, 0, `${prefix} → ${hit.name}`);
+  return !!hit;
+}
+
 function cashLand(l: LandCtx): void {
   const v = l.cashValue(l.seg);
   l.cash(v, `$${Math.round(v)}`);
@@ -208,10 +220,7 @@ export const WEDGES: Record<WedgeKind, WedgeDef> = {
         l.resolveAs('bankrupt', 0, 'MYSTERY → BANKRUPT');
         return;
       }
-      const rare = r.float();
-      if (rare < 0.005) { l.resolveAs('crossroads', 0, 'MYSTERY → CROSSROADS'); return; }
-      if (rare < 0.01) { l.resolveAs('angel', 0, 'MYSTERY → ANGEL'); return; }
-      if (rare < 0.015) { l.resolveAs('gun', 0, 'MYSTERY → THE GUN'); return; }
+      if (rareReveal(l, r.float(), 'MYSTERY')) return;
       const pick = r.weighted(MYSTERY_POOL, (p) => p.w);
       l.resolveAs(pick.kind, pick.kind === 'jackpot' ? BALANCE.jackpotValue : pick.value, `MYSTERY → ${WEDGES[pick.kind].name.toUpperCase()}`);
     },
@@ -309,10 +318,7 @@ export const WEDGES: Record<WedgeKind, WedgeDef> = {
     pattern: 'dots',
     repeatable: false,
     land: (l) => {
-      const rare = l.rng.events.float();
-      if (rare < 0.005) { l.resolveAs('crossroads', 0, 'HAUNTED → CROSSROADS'); return; }
-      if (rare < 0.01) { l.resolveAs('angel', 0, 'HAUNTED → ANGEL'); return; }
-      if (rare < 0.015) { l.resolveAs('gun', 0, 'HAUNTED → THE GUN'); return; }
+      if (rareReveal(l, l.rng.events.float(), 'HAUNTED')) return;
       const pick = l.rng.events.weighted(HAUNTED_POOL, (p) => p.w);
       l.resolveAs(pick.kind, pick.kind === 'jackpot' ? BALANCE.jackpotValue : pick.value, `HAUNTED → ${WEDGES[pick.kind].name.toUpperCase()}`);
     },

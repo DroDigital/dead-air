@@ -306,7 +306,7 @@ export interface RunState {
 
 /** Horror beats the stage acts out (wedge models, the collateral cutscene, the audience). */
 export type HorrorEvent =
-  | { type: 'gunshot'; hit: boolean; nested: boolean; afterJump: boolean }
+  | { type: 'gunshot'; hit: boolean; afterJump: boolean }
   | { type: 'mouthEat'; uid: number; amount: number }
   | { type: 'mouthVomit'; uid: number; amount: number }
   | { type: 'cleave'; uid: number; target: number }

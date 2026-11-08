@@ -18,7 +18,7 @@ describe('the gun', () => {
     g.bus.on('horror', (e) => events.push(e));
     g.rng.events.float = () => 0;
     g.spinForced(0, RING.x1);
-    expect(events).toContainEqual({ type: 'gunshot', hit: true, nested: false, afterJump: false });
+    expect(events).toContainEqual({ type: 'gunshot', hit: true, afterJump: false });
     expect(g.run.phase).toBe('GameOver');
     expect(g.run.endedAt).toBe(g.run.deadline);
     expect(g.run.deadlines).toHaveLength(0);
@@ -30,7 +30,7 @@ describe('the gun', () => {
     g.bus.on('horror', (e) => events.push(e));
     g.rng.events.float = () => 1 / 6;
     g.spinForced(0, RING.x1);
-    expect(events).toContainEqual({ type: 'gunshot', hit: false, nested: false, afterJump: false });
+    expect(events).toContainEqual({ type: 'gunshot', hit: false, afterJump: false });
     expect(g.run.phase).toBe('AwaitAction');
   });
 
@@ -66,13 +66,13 @@ describe('the gun', () => {
     expect(g.run.flags.doubler).toBe(1);
   });
 
-  it('marks a Ring Jump shot as nested for presentation ordering', () => {
+  it('marks a Ring Jump shot as after the jump for presentation ordering', () => {
     const g = makeGame(wheelWith(k('gun'), k('ringJump')));
     g.rng.events.float = () => 0.9;
     const events: unknown[] = [];
     g.bus.on('horror', (e) => events.push(e));
     g.spinForced(0, RING.x1);
     g.spinForced(1, RING.x1);
-    expect(events).toContainEqual({ type: 'gunshot', hit: false, nested: true, afterJump: true });
+    expect(events).toContainEqual({ type: 'gunshot', hit: false, afterJump: true });
   });
 });
