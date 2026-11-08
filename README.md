@@ -140,7 +140,7 @@ src/
   main.ts, app.ts          entry + app controller (FSM, flow, input routing, autosave)
   core/                    rng (sfc32 streams), fsm, events, save (versioned + migrations), config, desktop bridge
   game/                    rules core — no DOM/Three: wheel physics, payout, combos, run, shop, hooks, balance, meta
-  content/                 wedges (29), artifacts (50), scratch cards (12), bargains (37 + 2 collateral), mutators (8), host lines (102), lore (22), starting wheels (4), stakes (4)
+  content/                 wedges (33), artifacts (50), scratch cards (12), bargains (37 + 2 collateral), mutators (8), host lines (102), lore (22), starting wheels (4), stakes (4)
   assets/                  id-based loader with procedural fallbacks; generated runtime manifest
   render/                  PSX material, post chain, camera rig, VFX, stage, scene/* (studio, wheel, tray, vault, shelf, cabinet, host, phone, lever, props)
   audio/                   mixer (buses), SFX, music (context tracks with tape wear), voice-over player with per-speaker effect chains, gibberish fallback voice

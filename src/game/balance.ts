@@ -75,11 +75,18 @@ export const BALANCE = {
   /** ...and tears open into a Bankrupt on this landing. */
   stitchLife: 3,
 
+  // ---- Fun wedges ------------------------------------------------------------------------
+  rouletteValue: 350,
+  /** Hush Money pays this share of the current Debt. */
+  hushShare: 0.07,
+  /** Curtain Call multiplies the Tray by this before ending the Deadline. */
+  curtainBonus: 1.5,
+
   // ---- Collateral (paying a missed Debt with your body) ---------------------------------
   /** At most this many collateral payments per run: a finger, then an eye. */
   collateralMax: 2,
   /** The most of the Debt each part can cover: a near miss only (finger, then eye). */
-  collateralCover: [0.2, 0.35] as readonly number[],
+  collateralCover: [0.25, 0.4] as readonly number[],
 
   // ---- Wheel geometry -----------------------------------------------------------------
   baseWidth: 15,
