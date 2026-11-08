@@ -52,7 +52,7 @@ export function tooltipFor(hit: PickHit, g: Game | null): string | null {
     return `INNER RING ×${ring[i]}\nMultiplies Cash (with Boost) before the Streak.\nRING: ${ring.map((m) => `×${m}`).join(' ')}`;
   }
   if (id === 'tray') return `THE TRAY $${r.tray}\nAt-risk winnings. A Bankrupt empties it.\nSTREAK ×${r.streak.toFixed(2)} (cash only)${(r.marks.supernaturalCashMult ?? 1) > 1 ? `\nOTHERWORLDLY CASH ×${r.marks.supernaturalCashMult}` : ''}`;
-  if (id === 'vault') return `THE VAULT $${r.vault}\nSafe money. Pays the Debt.\nDEBT DUE $${r.debt}`;
+  if (id === 'vault') return `THE VAULT $${r.vault}\nSafe money. Pays the Debt at the end of the Deadline.\nWhat's left after paying becomes Tokens; the Vault starts empty again.\nDEBT DUE $${r.debt}`;
   if (id === 'deposit') return `DEPOSIT [ENTER]\nSweep the Tray into the Vault.\nFree, costs no spin — resets your Streak.${r.marks.pactCurse ? '\nTHE PACT TAKES 25% OF EVERY DEPOSIT.' : ''}`;
   if (id.startsWith('scratch:')) {
     const i = Number(id.split(':')[1]);

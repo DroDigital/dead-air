@@ -1,11 +1,24 @@
 import { describe, expect, it } from 'vitest';
-import { BALANCE, baseDebt } from '../src/game/balance';
+import { BALANCE, baseDebt, round50 } from '../src/game/balance';
+import type { DeadlineEndResult } from '../src/game/run';
 import { Game } from '../src/game/run';
 import { RING, cash, makeGame, wheelWith } from './helpers';
 
 describe('debt & run structure', () => {
-  it('Debt(d) = round50(450 × 1.7^(d−1))', () => {
-    expect([1, 2, 3, 4, 5, 6, 7, 8].map(baseDebt)).toEqual([450, 750, 1300, 2200, 3750, 6400, 10850, 18450]);
+  it('Debt(d) = round50(450 × 1.44^(d−1)), and from Deadline 5 it grows faster', () => {
+    expect([1, 2, 3, 4, 5, 6, 7, 8].map(baseDebt)).toEqual([1, 2, 3, 4, 5, 6, 7, 8].map((d) => round50(450 * Math.pow(BALANCE.debtGrowth, d - 1))));
+    const g = Game.newRun({ seed: 'late', stake: 0, startWheel: 'standard' });
+    expect(g.computeDebt(4)).toBe(baseDebt(4));
+    expect(g.computeDebt(6)).toBe(round50(baseDebt(6) * Math.pow(BALANCE.lateDebtGrowth, 2)));
+  });
+
+  it('the late show widens the Bankrupts every Deadline past the fourth', () => {
+    const g = Game.newRun({ seed: 'late', stake: 0, startWheel: 'standard' });
+    const width = () => g.layout().segments.filter((s) => s.kind === 'bankrupt').reduce((n, s) => n + (s.end - s.start), 0);
+    g.run.deadline = 4;
+    const w4 = width();
+    g.run.deadline = 7;
+    expect(width()).toBeGreaterThan(w4);
   });
 
   it('a run starts at Deadline 1 in package select with the starting wheel', () => {
@@ -15,17 +28,18 @@ describe('debt & run structure', () => {
     expect(g.run.debt).toBe(450);
     expect(g.run.wheel).toHaveLength(24);
     const count = (kind: string) => g.run.wheel.filter((w) => w.kind === kind).length;
-    expect(count('cash')).toBe(10);
-    expect(count('respin')).toBe(3);
+    expect(count('cash')).toBe(8);
+    expect(count('respin')).toBe(1);
+    for (const k of ['stitches', 'mouth', 'roulette', 'bleeder', 'hushMoney', 'encore']) expect(count(k)).toBe(1);
     expect(count('bankrupt')).toBe(2);
     expect(count('jackpot')).toBe(1);
     expect(g.run.ring).toEqual([1, 2, 1, 0, 1, 3, 1, 2]);
   });
 
-  it('starting cash values match the brief', () => {
+  it('starting cash values (the House Wheel trades two small Cash wedges for horror wedges)', () => {
     const g = Game.newRun({ seed: 'a', stake: 0, startWheel: 'standard' });
     const vals = g.run.wheel.filter((w) => w.kind === 'cash').map((w) => w.value).sort((a, b) => a - b);
-    expect(vals).toEqual([25, 25, 50, 50, 75, 75, 100, 100, 150, 200]);
+    expect(vals).toEqual([25, 50, 75, 75, 100, 100, 150, 200]);
   });
 
   it('jackpot is a 6° sliver of the layout (before normalisation)', () => {
@@ -61,7 +75,8 @@ describe('debt & run structure', () => {
     for (let i = 0; i < 5; i++) g.spinForced(0, RING.x1);
     expect(g.run.phase).toBe('AwaitAction');
     g.spinForced(0, RING.x1);
-    expect(g.run.phase).toBe('Conversion');
+    // Nothing to convert any more: straight to the Prize Cabinet.
+    expect(g.run.phase).toBe('Shop');
     expect(g.run.tray).toBe(0);
     expect(g.run.deadlines[0].paid).toBe(true);
   });
@@ -84,22 +99,39 @@ describe('debt & run structure', () => {
     expect(g.run.endedAt).toBe(1);
   });
 
-  it('conversion: $50 per Token, remainder earns 10% interest (capped)', () => {
-    const g = makeGame(wheelWith(cash(1000)), { pkg: 'short' });
+  it('the Vault does not carry over: leftover cash becomes Tokens at this Deadline\'s rate', () => {
+    const g = makeGame(wheelWith(cash(100)), { pkg: 'short' });
+    let end: DeadlineEndResult | null = null;
+    g.bus.on('deadlineEnd', (e) => (end = e));
     for (let i = 0; i < 6; i++) g.spinForced(0, RING.x1);
-    const vault = g.run.vault;
-    const res = g.convert(4);
-    expect(res.tokens).toBe(4);
-    const left = vault - 200;
-    expect(res.interest).toBe(Math.min(BALANCE.interestCap(1), Math.floor(left * 0.1)));
-    expect(g.run.phase).toBe('Shop');
+    const r = end as unknown as DeadlineEndResult;
+    const leftover = r.vaultBefore - r.debt;
+    const rate = Math.max(BALANCE.surplusTokenFloor, Math.round(450 / BALANCE.surplusTokenDivisor));
+    expect(g.run.vault).toBe(0);
+    expect(r.surplusTokens).toBe(Math.min(BALANCE.surplusTokenCap, Math.floor(leftover / rate)));
   });
 
-  it('cannot convert more than the Vault allows', () => {
-    const g = makeGame(wheelWith(cash(100)), { pkg: 'short' });
+  it('leftover Tokens are capped per Deadline', () => {
+    const g = makeGame(wheelWith(cash(1000)), { pkg: 'short' });
+    let end: DeadlineEndResult | null = null;
+    g.bus.on('deadlineEnd', (e) => (end = e));
     for (let i = 0; i < 6; i++) g.spinForced(0, RING.x1);
-    const max = g.maxConvertible();
-    expect(g.convert(9999).tokens).toBe(max);
+    expect(g.run.vault).toBe(0);
+    expect((end as unknown as DeadlineEndResult).surplusTokens).toBe(BALANCE.surplusTokenCap);
+  });
+
+  it('Tokens held when a Debt is paid earn interest: +1 per 5, at most 5', () => {
+    const g = makeGame(wheelWith(), { pkg: 'short' });
+    g.run.vault = g.run.debt;
+    g.run.tokens = 17;
+    let end: DeadlineEndResult | null = null;
+    g.bus.on('deadlineEnd', (e) => (end = e));
+    while (g.run.phase === 'AwaitAction') g.spinForced(0, RING.x1);
+    // Interest counts the Tokens held at payment (17, plus any the Deadline paid out on the way).
+    const r = end as unknown as DeadlineEndResult;
+    expect(r.interestTokens).toBeGreaterThanOrEqual(3);
+    expect(r.interestTokens).toBeLessThanOrEqual(BALANCE.tokenInterestCap);
+    expect(g.tokenInterest(60)).toBe(BALANCE.tokenInterestCap);
   });
 
   it('Deadlines 4 and 8 are Sweeps with a mutator', () => {
@@ -119,12 +151,11 @@ describe('debt & run structure', () => {
     while (g.run.phase === 'AwaitAction') g.spinForced(0, RING.x1);
     expect(g.run.phase).toBe('Victory');
     g.continueEndless();
-    expect(g.run.phase).toBe('Conversion');
-    g.convert(0);
+    expect(g.run.phase).toBe('Shop');
     g.leaveShop();
     if (g.run.phase === 'PhoneCall') g.phoneHangUp();
     expect(g.run.deadline).toBe(9);
-    expect(g.run.debt).toBe(baseDebt(9));
+    expect(g.run.debt).toBe(round50(baseDebt(9) * Math.pow(BALANCE.lateDebtGrowth, 5)));
   });
 
   it('stakes raise the Debt', () => {
@@ -219,7 +250,8 @@ describe('real spins', () => {
     const s = g.run.spinsLeft;
     const o = g.spin(0.5);
     expect(o.free).toBe(true);
-    const kind = o.resolution?.seg.kind;
-    if (kind !== 'respin' && kind !== 'overtime') expect(g.run.spinsLeft).toBe(s);
+    // Only the spin itself is free; a landing that grants spins (Respin, Overtime, a Stitches neighbour) still adds them.
+    const granted = (o.resolution?.payout.prizes ?? []).some((p) => p.kind === 'respin' || p.kind === 'overtime');
+    if (!granted) expect(g.run.spinsLeft).toBe(s);
   });
 });

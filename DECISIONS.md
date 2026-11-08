@@ -133,7 +133,43 @@ The only library over ~100 kB gz is three.js. GSAP measures ~28 kB gz. Built app
 - **Voices.** The new lines are short so they can be recorded cheaply, but the game's custom ElevenLabs voices were not in the workspace available here, so they use the gibberish voice and captions for now. `npx tsx tools/vo.ts pending` batches exactly these lines.
 - **Uncut by default.** The game is a horror game; *Uncut Broadcast (gore)* is on by default and is a single switch away. Off, blood renders as ink and the cutscenes cut to snow.
 
+## Feel pass (fill, voice, ticks, juice, HUD)
+
+- **The picture takes the window's shape.** The internal height stays 180 × scale; the width follows the window (clamped between 4:3 and 21:9) and the image is scaled fractionally to fill it. The CRT bulge is gentler and holds its edges instead of cutting black corners. On windows narrower than 16:9 the lens widens so the shot keeps its width.
+- **Shop wedges say what they are.** The price tags were mirrored relative to the slots (the tag panel faces the chair, so its left edge is the cabinet's far end); they now sit under their items, and wedges and cards are labelled. Buying a wedge still goes to the wheel to place it, but with a PLACE YOUR WEDGE banner and an on-screen CANCEL · BACK TO SHOP; a right click or a click off the wheel also goes back.
+- **The host waits his turn.** Lines have a priority (3: the show's beats, may cut in; 2: worth saying; 1: small talk). A line never cuts off one of equal or higher priority, small talk needs a 4.5 s breath after the last line (9 s in fast mode, and is dropped 60% of the time there), and the Producer's calls hold the floor.
+- **The flapper is layered and humanised.** Each tick layers the recording with one of three synthesised clacks, with wandering pitch, level, micro-timing and stereo position, through a filter that keeps a fast wheel soft and the last ticks crisp, plus a short dark room echo. Ticks closer than 40 ms mostly drop out and a filtered whirr carries the speed instead.
+- **Big wins get 3D juice by tier** (`src/render/winJuice.ts`): big = shockwave rings and pointer sparks; huge (≥ the Debt) = plus banknotes fluttering down through the shot, light rays behind the wheel and a coin fountain; jackpot = more of all of it, the rays turning.
+- **The HUD steps back.** During a spin or payout the sponsor line, hints and arrows hide; hints show on the first runs or after five idle seconds; arrows appear when the mouse nears their edge; the sponsor block is one line; the payout line is just the "+$" count (the breakdown stays on the studio marquee); toasts merge duplicates and cap at two.
+
+## Round economy (the game was too easy)
+
+- **Why.** Players (and an itch commenter) found that hoarding cash and never converting won almost every time. The simulator agreed: a never-convert bot won 13.3%, a convert-everything bot 6.9%. The Vault snowballed across Deadlines and Tokens were a trap.
+- **The Vault resets after every payment.** Cash is the score for this Deadline only. Leftovers become Tokens at this Deadline's rate (one per Debt ÷ 8 dollars, never cheaper than $25, at most 20 per Deadline), so beating a Debt by a lot still pays, in the currency that buys power rather than safety. The conversion screen is gone; `convert()` stays for saves made mid-conversion.
+- **Tokens are worth keeping.** Interest moved from cash to Tokens: +1 per 5 held when a Debt is paid, at most +5 (counted before this Deadline's leftovers arrive). Artifacts cost 2 less.
+- **The late show is meaner.** From Deadline 5 the Debt is multiplied by 1.14 per Deadline past the fourth, and Bankrupt wedges widen 10% per Deadline past the fourth.
+- **The Debt curve was retuned** from 1.7 to 1.44 (a deviation from the brief's 1.7): without carry-over, 1.7 left the EV bot at 1.1%. With 1.44 it wins 14.0% (target 8–20%), blind depositing 4%, blind riding 5–6%. Blind depositors' median death moved from D5 to D6; accepted, because the early Deadlines are now fair to everyone and the gap between judgement and autopilot is wider than before.
+- **Phone deals that cost Vault cash** are simply not offered between Deadlines (the Vault is empty then); they still appear on DEAD AIR calls mid-Deadline.
+
+## No title screen
+
+- The intro's curtain reveal now leads straight into the studio: the camera glides in from the back of the room (`CameraRig.flyIn`) while the lights power on, and the show starts. A saved broadcast resumes by itself; otherwise a new run starts at the default Stake and wheel.
+- The pause menu is the hub (Resume / Next Contestant, New Broadcast…, the Prop Room, Settings, Credits, Abandon, Quit to Desktop). Starting a new broadcast mid-run ends the current one as a loss (the New Broadcast page says so) and waits for a spin in flight to finish. The end-of-run card offers Next Contestant and The Menu.
+
+## Tooltips for new players
+
+- Every menu control explains itself in a tip bar pinned to the bottom of the screen, on hover and on keyboard / pad focus (`BUTTON_TIPS`, `SETTING_TIPS`, `FIELD_TIPS` in `src/ui/menus.ts`).
+- The on-screen readouts (Deadline, spins and Tokens, the sponsor goal, Vault and Debt, At Risk and the Streak, the bar) have hover tooltips too (`Hud.hudTipAt`), alongside the existing tooltips on every object in the studio.
+
+## Horror up front, fun wedges, honest spins
+
+- **The horror shows from the first night.** Players never saw most of it: the Rot started at zero, Collateral needed a very narrow miss, the stands were empty on a fresh profile, Dead Air waited for Deadline 5, and the horror wedges only came through the shop. Now the Rot starts at 0.2 (the pool, drips and mask slips begin on Deadline 1), Dead Air silence counts from Deadline 3, three previous contestants are always in the stands, and Collateral covers a shortfall of up to 25% (finger) / 40% (eye) of the Debt.
+- **The House Wheel carries the new wedges**: Stitches, The Mouth, Revolver, Bleeder, Hush Money and Encore replace a $25 and a $50 Cash, the Dud, two Respins and a Token. The Eye, The Cleaver and Curtain Call stay in the shop.
+- **Four fun wedges**: Revolver ($350, one chamber in six is a Bankrupt), Hush Money (7% of this Debt as Cash), Encore (replays your last wedge), Curtain Call (ends the Deadline now, Tray ×1.5). Icons are drawn in `tools/horror-art.ts`; `docs/art-prompts.md` §7b has a GPT image prompt for each of the ten newer wedges and for the whole sheet, which replaces the drawn icons when it exists.
+- **Balance after both changes** (1500 runs): EV bot 15.6% (target 8–20%), D1 97%, max artifact 36%. Blind depositors win 7.3% (median death D7): Hush Money pays everyone, so autopilot is kinder than before, but judgement still wins twice as often.
+- **Spins follow the force you give them.** A hand throw used to be squashed into a 0–1 power and re-mapped onto a fixed 520–1500 °/s range with ±9% random jitter, so a gentle flick launched the wheel much faster than the hand moved and a hard one was capped. Now a throw leaves at exactly the hand's angular speed (up to 2400 °/s, no jitter), and the lever's power maps onto launch speed with only ±2.5% wobble. Tests check that harder throws and stronger pulls always travel further / launch faster.
+
 ## The Gun on the House Wheel
 
-- **The Gun replaces the House Wheel's Dud.** The wheel stays at 24 wedges; the Dud slot becomes a 6° Gun, so it is live from the first spin of every run. A 6° wedge is hit about 1 spin in 60 and the chamber is loaded 1 time in 6, so roughly 0.3% of House Wheel spins end the run. With no Dud on the wheel, the stake's extra Bankrupts now replace Cash wedges only. BALANCE.md's simulator tables predate the Gun and should be re-run.
+- **The Gun replaces one of the House Wheel's two Boosts.** The wheel stays at 24 wedges and keeps its eight Cash wedges, so it is live from the first spin of every run. A 6° wedge is hit about 1 spin in 60 and the chamber is loaded 1 time in 6, so roughly 0.3% of House Wheel spins end the run. BALANCE.md's simulator tables predate the Gun and should be re-run.
 - **Rare reveals.** Mystery and Haunted each have a 0.5% chance to reveal the Crossroads (a pact), an Angel (a blessing) or the Gun, before their usual pools.

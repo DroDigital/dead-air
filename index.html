@@ -446,6 +446,23 @@
         grid-template-columns: 1fr 1fr;
         gap: 2px 18px;
       }
+      /* New-player tips: what the hovered / focused control does. */
+      #menus .tipbar {
+        position: fixed;
+        left: 50%;
+        bottom: 2vh;
+        transform: translateX(-50%);
+        width: min(90vw, 760px);
+        padding: 8px 12px;
+        border: 1px solid rgba(255, 190, 90, 0.45);
+        background: rgba(10, 4, 2, 0.88);
+        color: #f3dfb0;
+        font-size: 15px;
+        line-height: 1.35;
+        text-align: center;
+        z-index: 5;
+        pointer-events: none;
+      }
       #menus .small {
         font-size: 11px;
         color: #6a4a2a;

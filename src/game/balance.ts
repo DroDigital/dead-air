@@ -6,7 +6,7 @@
 export const BALANCE = {
   // ---- Debt ---------------------------------------------------------------------------
   debtBase: 450, // [BRIEF]
-  debtGrowth: 1.7, // [BRIEF]
+  debtGrowth: 1.44, // [BRIEF] was 1.7; lowered for the round economy (the Vault no longer carries over), see BALANCE.md
   deadlinesPerRun: 8, // [BRIEF]
   sweepDeadlines: [4, 8] as readonly number[], // [BRIEF]
   /** Endless: a Sweep every Nth deadline after 8. */
@@ -39,6 +39,25 @@ export const BALANCE = {
   gildMult: 0.5, // +50% per gild [BRIEF]
   houseEdgeRespinCash: 25, // [BRIEF]
 
+  // ---- Round economy: cash is this Deadline's score, Tokens are what you keep ------------
+  /** The Vault empties after every payment; what was left over becomes Tokens. */
+  vaultResets: true,
+  /** Leftover cash buys one Token per (this Debt ÷ divisor) dollars, never cheaper than the floor. */
+  surplusTokenDivisor: 8,
+  surplusTokenFloor: 25,
+  /** At most this many Tokens from one Deadline's leftovers. */
+  surplusTokenCap: 20,
+  /** Tokens held when a Debt is paid earn interest: +1 per this many held… */
+  tokenInterestPer: 5,
+  /** …up to this many. */
+  tokenInterestCap: 5,
+
+  // ---- The late show gets meaner (from Deadline 5) ---------------------------------------
+  /** Debt grows by this extra factor for every Deadline past the fourth. */
+  lateDebtGrowth: 1.14,
+  /** Bankrupt wedges widen by this share for every Deadline past the fourth. */
+  lateBankruptWidth: 0.1,
+
   // ---- Horror wedges --------------------------------------------------------------------
   /** The Mouth eats this share of the Tray on every spin that misses it. */
   mouthBite: 0.1,
@@ -56,11 +75,18 @@ export const BALANCE = {
   /** ...and tears open into a Bankrupt on this landing. */
   stitchLife: 3,
 
+  // ---- Fun wedges ------------------------------------------------------------------------
+  rouletteValue: 350,
+  /** Hush Money pays this share of the current Debt. */
+  hushShare: 0.07,
+  /** Curtain Call multiplies the Tray by this before ending the Deadline. */
+  curtainBonus: 1.5,
+
   // ---- Collateral (paying a missed Debt with your body) ---------------------------------
   /** At most this many collateral payments per run: a finger, then an eye. */
   collateralMax: 2,
   /** The most of the Debt each part can cover: a near miss only (finger, then eye). */
-  collateralCover: [0.2, 0.35] as readonly number[],
+  collateralCover: [0.25, 0.4] as readonly number[],
 
   // ---- Wheel geometry -----------------------------------------------------------------
   baseWidth: 15,
@@ -76,7 +102,7 @@ export const BALANCE = {
 
   // ---- Shop ---------------------------------------------------------------------------
   /** Added to every artifact's listed cost in the Prize Cabinet. */
-  artifactPriceAdd: 3,
+  artifactPriceAdd: 1,
   rarityWeights: { common: 50, uncommon: 30, rare: 12, cursed: 10 } as Record<string, number>,
   wedgeCostBase: 3,
   scratchCost: 2,

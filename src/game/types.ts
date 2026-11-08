@@ -33,6 +33,10 @@ export type WedgeKind =
   | 'bleeder'
   | 'eye'
   | 'stitches'
+  | 'roulette'
+  | 'hushMoney'
+  | 'encore'
+  | 'curtainCall'
   | 'crossroads'
   | 'angel'
   | 'gun';

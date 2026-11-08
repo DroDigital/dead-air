@@ -127,7 +127,6 @@ export const HOST_LINES: Record<HostTrigger, readonly string[]> = {
     'Look at those numbers go! Up! Mostly up!',
     'A combo! I felt that one in my vacuum tubes!',
     "ECHO-echo-echo! That's a little joke! It's also a combo!",
-    'Hat trick! Where did you get that hat! Give it back!',
   ],
   phone: [
     "Oh! That's the Producer! You should take it! You must take it!",
@@ -222,6 +221,7 @@ export const HOST_LINES: Record<HostTrigger, readonly string[]> = {
   hatTrick: [
     'HAT TRICK! Three in a row! Somebody give this contestant a hat!',
     "Three cash in a row! The tokens! The tokens are raining! Indoors!",
+    'Hat trick! Where did you get that hat! Give it back!',
   ],
   title: [
     'Dead Air! Starring you! Live, from the only studio left!',

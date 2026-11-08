@@ -204,3 +204,34 @@ describe('lever power meter', () => {
     expect(meterValue(1.5)).toBeCloseTo(0);
   });
 });
+
+describe('force in, speed out', () => {
+  it('a hand throw leaves at the hand speed, and a harder throw always spins further', async () => {
+    const { simulateSpin } = await import('../src/game/wheel');
+    const { Game } = await import('../src/game/run');
+    const g = Game.newRun({ seed: 'throw', stake: 0, startWheel: 'standard' });
+    const layout = g.layout();
+    const { Rng } = await import('../src/core/rng');
+    const travel = (omega0: number) => {
+      const s = simulateSpin({ layout, ringLen: 8, power: 0.5, startAngle: 0, ringStartAngle: 0, omega0 }, new Rng('x'));
+      expect(s.omega0).toBe(omega0);
+      return s.finalAngle;
+    };
+    const a = travel(400),
+      b = travel(900),
+      c = travel(1800);
+    expect(b).toBeGreaterThan(a);
+    expect(c).toBeGreaterThan(b);
+  });
+
+  it('the lever: more power, more launch speed (jitter stays small)', async () => {
+    const { simulateSpin, PHYS } = await import('../src/game/wheel');
+    const { Game } = await import('../src/game/run');
+    const { Rng } = await import('../src/core/rng');
+    const g = Game.newRun({ seed: 'lever', stake: 0, startWheel: 'standard' });
+    const layout = g.layout();
+    const w = (p: number, seed: string) => simulateSpin({ layout, ringLen: 8, power: p, startAngle: 0, ringStartAngle: 0 }, new Rng(seed)).omega0;
+    for (const seed of ['a', 'b', 'c']) expect(w(0.6, seed)).toBeGreaterThan(w(0.4, seed + 'x'));
+    expect(PHYS.omegaJitter).toBeLessThanOrEqual(0.03);
+  });
+});

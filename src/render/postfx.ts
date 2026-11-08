@@ -115,8 +115,8 @@ void main() {
     gl_FragColor = vec4(texture2D(tLow, uv).rgb, 1.0);
     return;
   }
-  uv = barrel(uv, 0.06 + uShock * 0.05);
-  if (uv.x < 0.0 || uv.x > 1.0 || uv.y < 0.0 || uv.y > 1.0) { gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0); return; }
+  // A gentle bulge with the edges held (no black corners): the picture fills the screen.
+  uv = clamp(barrel(uv, 0.025 + uShock * 0.05), 0.0, 1.0);
   // Tracking roll: a band that drifts down and shears lines sideways.
   float band = 0.0;
   if (uRoll > 0.0) {
@@ -254,11 +254,22 @@ export class PostFx {
     this.fsScene.add(this.quad);
   }
 
-  /** 1 = 320×180, 2 = 640×360. */
+  /** Width ÷ height of the internal picture: follows the window, so the game fills the screen. */
+  aspect = INTERNAL_W / INTERNAL_H;
+
+  /** Match the window's shape (clamped between 4:3 and 21:9); the height stays 180 × scale. */
+  setAspect(a: number): void {
+    const next = Math.min(21 / 9, Math.max(4 / 3, a));
+    if (Math.abs(next - this.aspect) < 1e-3) return;
+    this.aspect = next;
+    this.setScale(this.scale);
+  }
+
+  /** 1 = 180 lines, 2 = 360 lines (the width follows the aspect). */
   setScale(s: number): void {
     this.scale = s;
-    const w = INTERNAL_W * s,
-      h = INTERNAL_H * s;
+    const w = this.width,
+      h = this.height;
     this.rtScene.setSize(w, h);
     this.rtLow.setSize(w, h);
     this.uiCanvas.width = w;
@@ -274,7 +285,8 @@ export class PostFx {
   }
 
   get width(): number {
-    return INTERNAL_W * this.scale;
+    // Even widths keep the dither and scanline grids aligned.
+    return Math.round((INTERNAL_H * this.scale * this.aspect) / 2) * 2;
   }
   get height(): number {
     return INTERNAL_H * this.scale;
@@ -282,8 +294,9 @@ export class PostFx {
 
   /** Screen rectangle (CSS px) the internal image occupies: integer scale, letterboxed. */
   viewport(cssW: number, cssH: number): { x: number; y: number; w: number; h: number; k: number } {
-    const k0 = Math.min(cssW / this.width, cssH / this.height);
-    const k = k0 >= 1 ? Math.floor(k0) : k0;
+    // Fill the window: the picture already has the window's shape, so scale it to fit exactly
+    // (fractional scale; only a window beyond 4:3–21:9 gets thin bars).
+    const k = Math.min(cssW / this.width, cssH / this.height);
     const w = Math.round(this.width * k),
       h = Math.round(this.height * k);
     return { x: Math.floor((cssW - w) / 2), y: Math.floor((cssH - h) / 2), w, h, k };
@@ -348,13 +361,12 @@ export class PostFx {
       const cx = u * 2 - 1;
       const cy = v * 2 - 1;
       // The barrel strength follows the shader's impact kick (uShock), so the pointer stays on the picture during a shock.
-      const bend = 1 + (0.06 + (this.shock || 0) * 0.05) * (cx * cx + cy * cy);
-      u = (cx * bend + 1) * 0.5;
-      v = (cy * bend + 1) * 0.5;
+      const bend = 1 + (0.025 + (this.shock || 0) * 0.05) * (cx * cx + cy * cy);
+      u = Math.min(1, Math.max(0, (cx * bend + 1) * 0.5));
+      v = Math.min(1, Math.max(0, (cy * bend + 1) * 0.5));
     }
-    const x = u * this.width;
-    const y = v * this.height;
-    if (x < 0 || y < 0 || x >= this.width || y >= this.height) return null;
+    const x = Math.min(this.width - 1, u * this.width);
+    const y = Math.min(this.height - 1, v * this.height);
     return { x, y };
   }
 }

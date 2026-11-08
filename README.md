@@ -88,7 +88,11 @@ A standard gamepad is supported: use the **D-pad / left stick** to look and navi
 
 All four Stakes are available when starting a run. Choose a higher Stake for more Debt, extra Bankrupt wedges, and higher shop prices; the setup screen lists the exact changes.
 
-**A run:** 8 Deadlines (Debt = round50(450 × 1.7^(d−1))), Sweeps at 4 and 8. Pick a Broadcast Package (Short 6 spins +4 Tokens / Standard 8 +2 / Marathon 11 +0 and a temporary Bankrupt). When spins run out the Tray auto-deposits and the Vault pays. Surplus can become Tokens ($50 each) or earn interest. Then the Prize Cabinet opens, and the phone may ring.
+**A run:** 8 Deadlines (Debt = round50(450 × 1.44^(d−1)), ×1.14 more per Deadline from the fifth), Sweeps at 4 and 8. Pick a Broadcast Package (Short 6 spins +4 Tokens / Standard 8 +2 / Marathon 11 +0 and a temporary Bankrupt). When spins run out the Tray auto-deposits and the Vault pays.
+
+**Cash is this Deadline's score; Tokens are what you keep.** After paying, whatever is left in the Vault becomes Tokens (one per Debt ÷ 8 dollars, at most 20) and the Vault starts the next Deadline empty, so a big early lead can't carry you. Tokens held when you pay earn interest (+1 per 5, at most +5), so saving them is a real choice. From Deadline 5 the show gets meaner: the Debt grows faster and the Bankrupts widen 10% every Deadline. Then the Prize Cabinet opens, and the phone may ring.
+
+**No title screen.** After the intro the camera comes into the studio and the show starts (your saved broadcast resumes by itself). **ESC** opens the pause menu, which is the hub: Resume, New Broadcast (seed, Stake, wheel), the Prop Room, Settings, Credits, Abandon, and Quit to Desktop on the desktop build. Every menu option and every on-screen readout has a tooltip: hover it (or select it with the keyboard or a pad).
 
 **Combos:** ECHO (same type twice, ×2), HAT TRICK (3 cash in a row, +3 Tokens), NEIGHBORS (within 2° of a boundary, both wedges at 50%), DEAD AIR (Bankrupt with Tray > Debt — the Producer calls).
 
@@ -136,7 +140,7 @@ src/
   main.ts, app.ts          entry + app controller (FSM, flow, input routing, autosave)
   core/                    rng (sfc32 streams), fsm, events, save (versioned + migrations), config, desktop bridge
   game/                    rules core — no DOM/Three: wheel physics, payout, combos, run, shop, hooks, balance, meta
-  content/                 wedges (29), artifacts (50), scratch cards (12), bargains (37 + 2 collateral), mutators (8), host lines (102), lore (22), starting wheels (4), stakes (4)
+  content/                 wedges (33), artifacts (50), scratch cards (12), bargains (37 + 2 collateral), mutators (8), host lines (102), lore (22), starting wheels (4), stakes (4)
   assets/                  id-based loader with procedural fallbacks; generated runtime manifest
   render/                  PSX material, post chain, camera rig, VFX, stage, scene/* (studio, wheel, tray, vault, shelf, cabinet, host, phone, lever, props)
   audio/                   mixer (buses), SFX, music (context tracks with tape wear), voice-over player with per-speaker effect chains, gibberish fallback voice

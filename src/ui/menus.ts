@@ -20,11 +20,13 @@ export interface NewRunChoice {
 }
 
 export interface MenuCallbacks {
-  onContinue(): void;
   onNewRun(c: NewRunChoice): void;
   onResume(): void;
   onAbandon(): void;
-  onQuitToTitle(): void;
+  /** Start the next run straight away (the camera flies back in). */
+  onNextContestant(): void;
+  /** A broadcast is in progress (RESUME / ABANDON make sense). */
+  hasGame(): boolean;
   onSettings(s: Settings): void;
   onEndlessContinue(): void;
   onRetire(): void;
@@ -40,9 +42,56 @@ export interface MenuCallbacks {
   artifactIcon(id: string, drawnOnly?: boolean): string | null;
 }
 
-type Page = 'title' | 'new' | 'settings' | 'collection' | 'credits' | 'pause' | 'abandon' | 'summary' | null;
+/** There is no title screen: the pause menu is the hub (new broadcast, prop room, settings, credits). */
+type Page = 'new' | 'settings' | 'collection' | 'credits' | 'pause' | 'abandon' | 'summary' | null;
 
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
+
+/**
+ * What every menu control does, for new players: shown in the tip bar under the panel when the
+ * control is hovered or has keyboard / gamepad focus. Buttons are matched by their label.
+ */
+const BUTTON_TIPS: Record<string, string> = {
+  RESUME: 'Back to the wheel. The broadcast saves itself after every action.',
+  'NEXT CONTESTANT': 'Start a fresh run right now: Deadline 1, a new wheel, a new seed.',
+  'NEW BROADCAST…': 'Pick a seed, a Stake (difficulty) and a starting wheel, then go live.',
+  'THE PROP ROOM': 'Your collection: every artifact you have seen, what Ratings unlock, and lore notes (some read aloud).',
+  SETTINGS: 'Picture, sound, accessibility and how gory the broadcast is.',
+  CREDITS: 'Who made the art, music, voices, models and sounds.',
+  'ABANDON BROADCAST': 'End this run now. It counts as a loss, but you keep the Ratings you earned.',
+  'KEEP BROADCASTING': 'Never mind: back to the pause menu.',
+  'QUIT TO DESKTOP (SAVED)': 'Close the game. Your run is saved and resumes when you come back.',
+  'GO LIVE': 'Start the run with the choices above.',
+  BACK: 'Back to the previous menu.',
+  DONE: 'Save these settings and go back.',
+  'THE MENU': 'Open the menu (new broadcast, Prop Room, settings, credits).',
+  'KEEP BROADCASTING (ENDLESS)': 'Carry on past Deadline 8. The Debt keeps growing until the floor opens.',
+  'RETIRE A WINNER': 'Bank this win and start the next contestant.',
+  'FULLSCREEN (F11)': 'Fill the whole screen.',
+  'WINDOWED (F11)': 'Play in a window.',
+};
+const SETTING_TIPS: Record<string, string> = {
+  resolutionScale: 'Internal resolution. 320×180 is chunkier and lighter on the machine; 640×360 is sharper (default).',
+  warp: 'The PS1 texture wobble. 0 keeps textures straight; higher values swim more.',
+  crt: 'An old TV picture: a slight bulge, scanlines and colour fringing.',
+  dither: 'Old-hardware colour: 15-bit colour with an ordered dither pattern.',
+  reducedFlashing: 'Softens strobes, lights-out moments, flashes and the red veil.',
+  screenShake: 'Camera shake on impacts, Bankrupts and cutscenes.',
+  fastMode: 'Everything plays three times faster and the host talks less. Toggle in play with F.',
+  colorblind: 'Draws a pattern on every wedge so you never have to tell them apart by colour.',
+  captions: 'Subtitles for the host, the Producer and every other voice.',
+  uncut: 'Shows blood and gore. Off: blood is ink, the dead are clean bone, and the worst moments cut to static.',
+  masterVolume: 'Overall loudness.',
+  music: 'The score.',
+  sfx: 'The wheel, the coins, the machinery and everything else.',
+  voice: 'The host, the Producer and the other voices.',
+  ambience: 'The room tone of the empty studio.',
+};
+const FIELD_TIPS: Record<string, string> = {
+  seed: 'The same seed gives the same wheel, shop stock and phone calls. Share it to race a friend.',
+  stake: 'Difficulty. Higher Stakes mean bigger Debts, extra Bankrupt wedges and a pricier Prize Cabinet. Unlocked with Ratings.',
+  wheel: 'The wheel you start with. More wheels unlock with Ratings.',
+};
 
 /** Game-over timing (keep in step with the CSS in index.html): GAME OVER lands, then the card rises. */
 const GAMEOVER_TITLE_LANDS_MS = 2250;
@@ -135,7 +184,7 @@ export class Menus {
       if (active instanceof HTMLButtonElement || active instanceof HTMLInputElement && active.type === 'checkbox' || active?.tagName === 'SUMMARY') active.click();
     } else if (a.type === 'back' || a.type === 'pause') {
       if (this.page === 'pause') this.cb.onResume();
-      else if (this.back) this.show(this.back, this.back === 'pause' ? null : 'title');
+      else if (this.back) this.show(this.back);
       else return;
       this.cb.onUiSound('back');
     }
@@ -157,8 +206,37 @@ export class Menus {
       e.stopPropagation();
       this.cb.onUiSound('back');
       if (this.page === 'pause') this.cb.onResume();
-      else if (this.back) this.show(this.back, this.back === 'pause' ? null : 'title');
+      else if (this.back) this.show(this.back);
     }
+  }
+
+  /** A tip bar under the panel that explains whatever is hovered or focused. */
+  private attachTips(): void {
+    const panel = this.root.querySelector<HTMLElement>('.panel');
+    if (!panel) return;
+    const tip = (el: Element): string | null => {
+      const k = (el as HTMLElement).dataset?.k;
+      if (k && SETTING_TIPS[k]) return SETTING_TIPS[k];
+      if (el.id && FIELD_TIPS[el.id]) return FIELD_TIPS[el.id];
+      if (el instanceof HTMLButtonElement) return BUTTON_TIPS[(el.textContent ?? '').trim()] ?? null;
+      return null;
+    };
+    // Pinned to the bottom of the screen so a tall panel never pushes it out of view.
+    const bar = document.createElement('div');
+    bar.className = 'tipbar';
+    bar.setAttribute('role', 'status');
+    bar.textContent = 'Hover or select anything to see what it does.';
+    this.root.appendChild(bar);
+    panel.querySelectorAll<HTMLElement>('button, input, select').forEach((el) => {
+      const t = tip(el);
+      if (!t) return;
+      // The label wrapping a setting is the hover target players actually point at.
+      const target = el.closest('label') ?? el;
+      target.setAttribute('title', t);
+      const show = () => (bar.textContent = t);
+      target.addEventListener('mouseenter', show);
+      el.addEventListener('focus', show);
+    });
   }
 
   private btn(label: string, fn: () => void, attrs = ''): string {
@@ -182,21 +260,7 @@ export class Menus {
     }
     let html = '';
     const meta = this.cb.getMeta();
-    if (p === 'title') {
-      html = `<div class="panel title">
-        <div class="logo"><img src="assets/art/title/lettered.png" alt="DEAD AIR" onerror="this.parentElement.innerHTML='DEAD<span>AIR</span>'"></div>
-        <div class="tag">a prize-wheel gambling roguelite</div>
-        <div class="col">
-          ${this.cb.hasSave() ? this.btn('CONTINUE BROADCAST', () => this.cb.onContinue()) : ''}
-          ${this.btn('NEW BROADCAST', () => this.show('new', 'title'))}
-          ${this.btn('THE PROP ROOM', () => this.show('collection', 'title'))}
-          ${this.btn('SETTINGS', () => this.show('settings', 'title'))}
-          ${this.btn('CREDITS', () => this.show('credits', 'title'))}
-          ${desktop ? this.btn('QUIT TO DESKTOP', () => void desktop!.quit()) : ''}
-        </div>
-        <div class="foot">RATINGS ${meta.ratings} · BROADCASTS ${meta.runs} · PAID OFF ${meta.wins}</div>
-      </div>`;
-    } else if (p === 'new') {
+    if (p === 'new') {
       const wheels = unlockedWheels(meta);
       const ms = maxStake(meta);
       html = `<div class="panel">
@@ -212,8 +276,9 @@ export class Menus {
             const startWheel = (document.getElementById('wheel') as HTMLSelectElement).value;
             this.cb.onNewRun({ seed, stake: Math.min(stake, ms), startWheel: wheels.includes(startWheel) ? startWheel : 'standard' });
           })}
-          ${this.btn('BACK', () => this.show('title'))}
+          ${this.btn('BACK', () => this.show('pause'))}
         </div>
+        ${this.cb.hasGame() ? '<p class="small">GOING LIVE ENDS THE CURRENT BROADCAST (IT COUNTS AS A LOSS).</p>' : ''}
         <p class="small">ENDLESS: ${endlessUnlocked(meta) ? 'unlocked — offered after you pay Deadline 8.' : 'locked (100 Ratings).'}</p>
       </div>`;
       queueMicrotask(() => {
@@ -249,7 +314,7 @@ export class Menus {
           ${slider('voice', 'VOICE')}
           ${slider('ambience', 'AMBIENCE')}
         </div>
-        <div class="row">${this.btn('DONE', () => this.show(this.back ?? 'title', this.back === 'pause' ? null : 'title'))}${
+        <div class="row">${this.btn('DONE', () => this.show(this.back ?? 'pause'))}${
           desktop ? this.btn(this.fullscreenLabel(), () => void desktop!.setFullscreen(!this.fullscreen), 'data-fs') : ''
         }</div>
         <p class="small">KEYS: ARROWS/WASD look · SPACE hold/release to spin · ENTER deposit/confirm · 1-6 cards/artifacts/choices · F fast · ESC pause</p>
@@ -293,7 +358,7 @@ export class Menus {
         <div class="notes">${lore}</div>
         <h3>UNLOCKS</h3>
         <ul class="unlocks">${unl}</ul>
-        <div class="row">${this.btn('BACK', () => this.show('title'))}</div>
+        <div class="row">${this.btn('BACK', () => this.show('pause'))}</div>
       </div>`;
     } else if (p === 'credits') {
       const idx = (runtimeIndex as { assets: Record<string, unknown> }).assets;
@@ -305,17 +370,24 @@ export class Menus {
         <p>DEAD AIR — design, code, writing, procedural art, sound and music made for this project.</p>
         <table class="credits"><tr><th>ASSET</th><th>AUTHOR</th><th>LICENCE</th><th>SOURCE</th></tr>${rows}</table>
         <p class="small">Libraries: three.js (MIT), GSAP. Fonts: Silkscreen (Jason Kottke, OFL), VT323 (Peter Hull, OFL). Full list in CREDITS.md.</p>
-        <div class="row">${this.btn('BACK', () => this.show('title'))}</div>
+        <div class="row">${this.btn('BACK', () => this.show('pause'))}</div>
       </div>`;
     } else if (p === 'pause') {
-      html = `<div class="panel">
-        <h2>STAND BY</h2>
+      // The hub: everything the old title screen had, without leaving the studio.
+      const live = this.cb.hasGame();
+      html = `<div class="panel title">
+        <div class="logo"><img src="assets/art/title/lettered.png" alt="DEAD AIR" onerror="this.parentElement.innerHTML='DEAD<span>AIR</span>'"></div>
+        <div class="tag">${live ? 'STAND BY — THE BROADCAST IS PAUSED' : 'BETWEEN CONTESTANTS'}</div>
         <div class="col">
-          ${this.btn('RESUME', () => this.cb.onResume())}
+          ${live ? this.btn('RESUME', () => this.cb.onResume()) : this.btn('NEXT CONTESTANT', () => this.cb.onNextContestant())}
+          ${this.btn('NEW BROADCAST…', () => this.show('new', 'pause'))}
+          ${this.btn('THE PROP ROOM', () => this.show('collection', 'pause'))}
           ${this.btn('SETTINGS', () => this.show('settings', 'pause'))}
-          ${this.btn('QUIT TO TITLE (SAVED)', () => this.cb.onQuitToTitle())}
-          ${this.btn('ABANDON BROADCAST', () => this.show('abandon', 'pause'))}
+          ${this.btn('CREDITS', () => this.show('credits', 'pause'))}
+          ${live ? this.btn('ABANDON BROADCAST', () => this.show('abandon', 'pause')) : ''}
+          ${desktop ? this.btn('QUIT TO DESKTOP (SAVED)', () => void desktop!.quit()) : ''}
         </div>
+        <div class="foot">RATINGS ${meta.ratings} · BROADCASTS ${meta.runs} · PAID OFF ${meta.wins}</div>
       </div>`;
     } else if (p === 'abandon') {
       html = `<div class="panel">
@@ -343,12 +415,14 @@ export class Menus {
         ${s.unlocks.length ? `<h3>NEW IN THE PROP ROOM</h3><ul>${s.unlocks.map((u) => `<li>${esc(u.kind.toUpperCase())}: ${esc(u.name)}</li>`).join('')}</ul>` : ''}
         <div class="col">
           ${s.won && s.canEndless ? this.btn('KEEP BROADCASTING (ENDLESS)', () => this.cb.onEndlessContinue()) : ''}
-          ${s.won ? this.btn('RETIRE A WINNER', () => this.cb.onRetire()) : this.btn('BACK TO TITLE', () => this.cb.onQuitToTitle())}
+          ${s.won ? this.btn('RETIRE A WINNER', () => this.cb.onRetire()) : this.btn('NEXT CONTESTANT', () => this.cb.onNextContestant())}
+          ${this.btn('THE MENU', () => this.show('pause'))}
         </div>
       </div>`;
     }
     this.cb.onLoreNote?.(null);
     this.root.innerHTML = html;
+    this.attachTips();
     this.root.querySelectorAll<HTMLDetailsElement>('details[data-lore]').forEach((d) =>
       d.addEventListener('toggle', () => {
         if (d.open) this.root.querySelectorAll<HTMLDetailsElement>('details[data-lore]').forEach((o) => o !== d && (o.open = false));

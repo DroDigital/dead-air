@@ -107,9 +107,14 @@ describe('choices on the final spin', () => {
     const g = makeGame(wheelWith(k('crossroads')));
     g.run.spinsLeft = 1;
     g.run.tray = 1000;
+    const ends: { paid: boolean; vaultBefore: number; deposit: { lost: number } | null }[] = [];
+    g.bus.on('deadlineEnd', (e) => ends.push(e));
     g.spinForced(0, RING.x1);
     expect(g.chooseSupernatural('fortune')).toBe(true);
-    expect(g.run.deadlines[0].vaultAfter).toBe(5300); // 5000 + 750 − first Debt 450
+    expect(ends).toHaveLength(1);
+    expect(ends[0].deposit?.lost).toBe(250); // the pact takes 25% of the $1000 auto-deposit
+    expect(ends[0].vaultBefore).toBe(5750); // 5000 + 750, before the first Debt is paid
+    expect(ends[0].paid).toBe(true);
   });
 });
 

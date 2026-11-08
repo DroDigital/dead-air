@@ -60,6 +60,10 @@ All bots use the public Game API with real physics; a "player" releases in the s
 | 13 | Collateral covering any miss (finger, then eye) | 96% | 49.3% | D6 | Two extra lives: far too generous |
 | 14 | Collateral only for near misses: within 30% / 50% of the Debt | 96% | 21.5% | D6 | Still above target |
 | 15 | **Near misses within 20% / 35%** | 96.3% | 17.7% | D6 | Targets met (1000 runs); blind depositors live a Deadline longer on the finger |
+| 16 | Players found it easy: hoarding cash beats converting (sim: hoard 13.3% vs spend-all 6.9%) | — | — | — | The Vault snowballs; Tokens were a trap |
+| 17 | **Round economy**: the Vault resets after each payment, leftovers → Tokens (Debt/12, cap 15), Token interest +1/5 (max 5); late Debt ×1.08/Deadline and Bankrupts +15%/Deadline from D5; growth 1.7 | 95.4% | 1.1% | D4 | Far too hard without carry-over |
+| 18 | Growth 1.5 / 1.45 / 1.55, leftovers Debt/8 (cap 20), artifacts 2 cheaper | 95.4% | 10.7% / 18.0% / 6.2% | D5–6 | Curve found |
+| 19 | **Growth 1.44, late ×1.14, Bankrupts +10%/Deadline** (2000 runs) | 95.8% | **14.0%** | D6 | Targets met. Riding with judgement wins 14%, blind depositing 4%, blind riding 5–6%. Hoarding no longer exists |
 
 ## Tuned values (vs. brief)
 

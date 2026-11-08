@@ -25,7 +25,8 @@ const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
 page.on('pageerror', (e) => pageErrors.push(e.message));
 page.on('dialog', (d) => d.accept());
 await page.goto(url.includes('?') ? `${url}&skipintro` : `${url}?skipintro`);
-await page.waitForFunction(() => window.deadAir && window.deadAir.stage && window.deadAir.fsm.state === 'Menu', null, { timeout: 90000 });
+// No title screen: the camera flies in and a broadcast starts by itself (package choice up).
+await page.waitForFunction(() => window.deadAir && window.deadAir.game && window.deadAir.hud.choice, null, { timeout: 90000 });
 
 const idle = (ms = 15000) =>
   // Settled: nothing presenting, the wheel still, and no cinematic camera shot still easing back.
@@ -33,6 +34,16 @@ const idle = (ms = 15000) =>
 const menuPage = () => page.evaluate(() => window.deadAir.menus.page);
 // Generous timeout: the game-over card only rises after its intro (about 3.6 s).
 const clickMenu = (label) => page.locator('#menus button', { hasText: label }).first().click({ timeout: 12000 });
+/** The pause menu is the hub (new broadcast, prop room, settings, credits). */
+const openHub = async () => {
+  if ((await menuPage()) !== 'pause') await page.evaluate(() => window.deadAir.menus.show('pause'));
+  await page.waitForTimeout(150);
+};
+await openHub();
+const hubText = await page.locator('#menus').innerText();
+check('the pause menu is the hub: resume, new broadcast, prop room, settings, credits', ['RESUME', 'NEW BROADCAST', 'THE PROP ROOM', 'SETTINGS', 'CREDITS'].every((l) => hubText.includes(l)), hubText.split('\n').slice(0, 9).join(' / '));
+const tipShown = await page.locator('#menus button', { hasText: 'THE PROP ROOM' }).first().hover().then(() => page.locator('#menus .tipbar').innerText());
+check('menu tooltips explain the hovered option', /collection/i.test(tipShown), tipShown);
 
 // ---- 1. Prize Room and Credits render without undefined/NaN text ----------------------
 await page.locator('#menus button', { hasText: 'THE PROP ROOM' }).first().click();
@@ -60,6 +71,7 @@ check('settings persist', settings.resolutionScale === 2 && settings.crt === fal
 await page.locator('#menus input[data-k="colorblind"]').count(); // settings page closed; reopen check below
 
 // ---- 3. Start a run at 2× resolution with colourblind patterns ----------------------
+await openHub();
 await page.locator('#menus button', { hasText: 'NEW BROADCAST' }).first().click();
 await page.waitForTimeout(150);
 await clickMenu('GO LIVE');
@@ -94,7 +106,7 @@ await page.waitForTimeout(400);
 const tip = await page.evaluate(() => window.deadAir.hud.tooltip);
 const tipName = tip ? tip.split('\n')[0] : '';
 // Tooltip first line is the wedge's display name (upper case), e.g. "CASH $200".
-const NAMES = { cash: 'CASH', jackpot: 'JACKPOT', bankrupt: 'BANKRUPT', dud: 'DUD', respin: 'RESPIN', token: 'TOKEN', boost: 'BOOST', artifact: 'ARTIFACT', mystery: 'MYSTERY', tax: 'TAX', interest: 'INTEREST', thief: 'THIEF', haunted: 'HAUNTED', charge: 'CHARGE', overtime: 'OVERTIME', scratch: 'SCRATCHER', payday: 'PAYDAY', doubler: 'DOUBLER', vaultKey: 'VAULT KEY', ringJump: 'RING JUMP', wild: 'WILD', splitter: 'SPLITTER', cursedCash: 'CURSED CASH' };
+const NAMES = { cash: 'CASH', jackpot: 'JACKPOT', bankrupt: 'BANKRUPT', dud: 'DUD', respin: 'RESPIN', token: 'TOKEN', boost: 'BOOST', artifact: 'ARTIFACT', mystery: 'MYSTERY', tax: 'TAX', interest: 'INTEREST', thief: 'THIEF', haunted: 'HAUNTED', charge: 'CHARGE', overtime: 'OVERTIME', scratch: 'SCRATCHER', payday: 'PAYDAY', doubler: 'DOUBLER', vaultKey: 'VAULT KEY', ringJump: 'RING JUMP', wild: 'WILD', splitter: 'SPLITTER', cursedCash: 'CURSED CASH', mouth: 'THE MOUTH', stitches: 'STITCHES', roulette: 'REVOLVER', bleeder: 'BLEEDER', hushMoney: 'HUSH MONEY', encore: 'ENCORE', eye: 'THE EYE', cleaver: 'THE CLEAVER', stump: 'STUMP', curtainCall: 'CURTAIN CALL' };
 const want = NAMES[hover.expectedKind] ?? hover.expectedKind;
 check('tooltip on the wheel names the wedge under the pointer', !!tip && tipName.startsWith(want), `tooltip "${tipName}", wedge under flapper: ${want}`);
 
@@ -132,7 +144,7 @@ const flicked = await page.waitForFunction((n) => window.deadAir.game.run.stats.
 check('grabbing the wheel: a feeble drag springs back, a clockwise flick spins it', geo.phase === 'AwaitAction' && afterFeeble === geo.spins && flicked, `spins before ${geo.spins}, after feeble drag ${afterFeeble}, flick spun: ${flicked}`);
 await idle(30000);
 
-// ---- 5. Quitting during a spin waits for the spin, then quits cleanly -------------------
+// ---- 5. A new broadcast from the hub during a spin waits for the spin, then starts clean --
 await idle(20000);
 await page.keyboard.down(' ');
 await page.waitForTimeout(300);
@@ -140,26 +152,27 @@ await page.keyboard.up(' ');
 await page.waitForTimeout(300);
 await page.keyboard.press('Escape');
 await page.waitForTimeout(200);
-await clickMenu('QUIT TO TITLE');
-await page.waitForFunction(() => window.deadAir.menus.page === 'title', null, { timeout: 40000 }).then(() => true, () => false);
-const quitOk = (await menuPage()) === 'title' && (await page.evaluate(() => !window.deadAir.game || window.deadAir.game.run.phase !== undefined));
-check('quit during a spin waits for the spin, then returns to title', quitOk && pageErrors.length === 0, `menu=${await menuPage()}`);
+await clickMenu('NEW BROADCAST');
+await page.waitForTimeout(150);
+await clickMenu('GO LIVE');
+const fresh = await page.waitForFunction(() => window.deadAir.game && window.deadAir.game.run.stats.spins === 0 && window.deadAir.hud.choice, null, { timeout: 40000 }).then(() => true, () => false);
+check('a new broadcast during a spin waits for the spin, then starts Deadline 1', fresh && pageErrors.length === 0, `deadline ${await page.evaluate(() => window.deadAir.game?.run.deadline)}`);
 
-// ---- 6. Continue the saved run, then abandon it -----------------------------------------
-await page.locator('#menus button', { hasText: 'CONTINUE' }).first().click({ timeout: 5000 }).catch(() => {});
-await page.waitForFunction(() => window.deadAir.game && window.deadAir.game.run, null, { timeout: 20000 }).then(() => true, () => false);
-const continued = await page.evaluate(() => !!window.deadAir.game);
-check('continue restores the saved run', continued);
+// ---- 6. Reloading resumes the saved run by itself, then abandon it ------------------------
+await page.keyboard.press('2');
+await page.waitForFunction(() => window.deadAir.game?.run.phase === 'AwaitAction', null, { timeout: 30000 }).catch(() => {});
+const savedSeed = await page.evaluate(() => window.deadAir.game.run.seed);
+await page.reload();
+await page.waitForFunction(() => window.deadAir && window.deadAir.game && window.deadAir.busy === 0, null, { timeout: 90000 }).then(() => true, () => false);
+const continued = await page.evaluate((seed) => window.deadAir.game?.run.seed === seed, savedSeed);
+check('reloading resumes the saved run (no title screen)', continued, savedSeed);
 await page.evaluate(() => window.deadAir.abandon());
 await page.waitForFunction(() => window.deadAir.menus.page === 'summary', null, { timeout: 20000 }).then(() => true, () => false);
 const summaryTitle = await page.locator('#menus h2').first().textContent().catch(() => '');
 check('abandon shows the end-of-run summary and records Ratings', /THAT'S OUR SHOW/.test(summaryTitle), summaryTitle);
-await clickMenu('BACK TO TITLE');
+await clickMenu('NEXT CONTESTANT');
 
 // ---- 7. Fast mode toggles from the keyboard and shows its tag ----------------------------
-await page.locator('#menus button', { hasText: 'NEW BROADCAST' }).first().click();
-await page.waitForTimeout(150);
-await clickMenu('GO LIVE');
 await page.waitForFunction(() => window.deadAir.game && window.deadAir.hud.choice, null, { timeout: 30000 });
 await page.evaluate(() => window.deadAir.applySettings({ ...window.deadAir.settings, fastMode: false }));
 await page.keyboard.press('f');
@@ -169,9 +182,7 @@ check('F toggles fast mode', fastOn);
 
 // ---- 8. Paying Deadline 8 offers Endless, and Endless starts Deadline 9 ---------------
 await page.evaluate(() => { window.deadAir.meta.totalRatings = 600; });
-await clickMenu('BACK TO TITLE').catch(() => {});
-await page.waitForFunction(() => window.deadAir.menus.page === 'title' || window.deadAir.menus.page === null, null, { timeout: 20000 }).catch(() => {});
-await page.evaluate(() => window.deadAir.menus.show('title'));
+await openHub();
 await page.locator('#menus button', { hasText: 'NEW BROADCAST' }).first().click();
 await page.waitForTimeout(150);
 await clickMenu('GO LIVE');
@@ -198,10 +209,6 @@ const endlessButton = await page.locator('#menus button', { hasText: 'KEEP BROAD
 check('paying Deadline 8 shows the victory summary with Endless on offer', victory && /PAID/.test(winTitle) && endlessButton === 1, `title "${winTitle}", endless button ${endlessButton}`);
 if (victory && endlessButton) {
   await clickMenu('KEEP BROADCASTING');
-  await page.waitForFunction(() => window.deadAir.game && window.deadAir.game.run.phase === 'Conversion', null, { timeout: 20000 }).then(() => true, () => false);
-  await page.waitForFunction(() => window.deadAir.hud.choice, null, { timeout: 20000 }).catch(() => {});
-  await page.keyboard.press('4');
-  await page.waitForTimeout(700);
   await page.waitForFunction(() => window.deadAir.game && window.deadAir.game.run.phase === 'Shop', null, { timeout: 20000 }).then(() => true, () => false);
   await page.keyboard.press('n');
   await page.waitForTimeout(900);

@@ -79,6 +79,7 @@ describe('HUD readability', () => {
     const hud = new Hud();
     hud.chyron = { deadline: '1', spins: 4, spinsMax: 4, tray: 0, streak: 1, vault: 0, debt: 300 };
     hud.hint = 'HOLD SPACE';
+    hud.alwaysHints = true;
     hud.caption('HOST', 'A LINE OF CAPTION TEXT', '#fff', 10);
     hud.update(5);
     hud.draw(canvas(), 320, 180, 1, { x: 0, y: 0, inside: false }, 0);
@@ -116,6 +117,8 @@ describe('HUD readability', () => {
     hud.chyron = { deadline: '1', spins: 4, spinsMax: 4, tray: 0, streak: 1, vault: 0, debt: 300 };
     hud.hint = 'HOLD SPACE';
     hud.arrows = ['down'];
+    // Hints and arrows show once the player pauses.
+    hud.quietFor = 10;
     hud.draw(canvas(), 320, 180, 1, { x: 0, y: 0, inside: false }, 0);
     const calls = vi.mocked(drawText).mock.calls;
     const arrow = calls.find(([, s]) => s === '↓')!;

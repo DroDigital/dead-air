@@ -149,6 +149,26 @@
   "w": 128,
   "h": 128
  },
+ "wedge.roulette": {
+  "url": "assets/art/wedge/roulette.png",
+  "w": 128,
+  "h": 128
+ },
+ "wedge.hushMoney": {
+  "url": "assets/art/wedge/hushMoney.png",
+  "w": 128,
+  "h": 128
+ },
+ "wedge.encore": {
+  "url": "assets/art/wedge/encore.png",
+  "w": 128,
+  "h": 128
+ },
+ "wedge.curtainCall": {
+  "url": "assets/art/wedge/curtainCall.png",
+  "w": 128,
+  "h": 128
+ },
  "artifact.lucky_penny": {
   "url": "assets/art/artifact/lucky_penny.png",
   "w": 125,

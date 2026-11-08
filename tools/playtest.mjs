@@ -183,7 +183,7 @@ if (opt.unlock) {
   await page.addInitScript((m) => { try { if (!localStorage.getItem('deadair.meta')) localStorage.setItem('deadair.meta', JSON.stringify(m)); } catch { /* storage blocked */ } }, meta);
 }
 await page.goto(opt.url.includes('?') ? `${opt.url}&skipintro` : `${opt.url}?skipintro`);
-await page.waitForFunction(() => window.deadAir && window.deadAir.stage && window.deadAir.fsm.state === 'Menu', null, { timeout: 90000 });
+await page.waitForFunction(() => window.deadAir && window.deadAir.stage && window.deadAir.game, null, { timeout: 90000 });
 await page.evaluate(HOOKS);
 
 // Frame pacing in this environment (CPU-rendered; not representative of a GPU laptop).
@@ -244,19 +244,18 @@ while (Date.now() < deadline) {
   // ---- Menus -------------------------------------------------------------------------
   if (s.menu) {
     counts.menus++;
-    if (s.menu === 'title') {
-      if (s.menu && (await page.locator('#menus button', { hasText: 'CONTINUE' }).count()) && Math.random() < 0.3) await click(page, 'CONTINUE');
-      else await click(page, 'NEW BROADCAST');
-    } else if (s.menu === 'new') {
+    if (s.menu === 'new') {
       if (Math.random() < 0.5) await page.locator('#stake').selectOption({ index: Math.floor(Math.random() * 2) }).catch(() => {});
       await click(page, 'GO LIVE');
       counts.games++;
     } else if (s.menu === 'pause') {
+      // The pause menu is the hub: no title screen to quit to.
       const r = Math.random();
       if (r < 0.12) await click(page, 'SETTINGS');
-      else if (r < 0.2) await click(page, 'QUIT TO TITLE');
+      else if (r < 0.17) await click(page, 'THE PROP ROOM');
+      else if (r < 0.2) await click(page, 'NEW BROADCAST');
       else if (r < 0.23) await click(page, 'ABANDON BROADCAST');
-      else await click(page, 'RESUME');
+      else (await click(page, 'RESUME')) || (await click(page, 'NEXT CONTESTANT'));
     } else if (s.menu === 'summary') {
       const title = (await page.locator('#menus h2').first().textContent().catch(() => '')) || '';
       if (!summaryCounted) {
@@ -267,7 +266,7 @@ while (Date.now() < deadline) {
       let clicked = false;
       if (title.includes('PAID') && Math.random() < 0.8) clicked = await click(page, 'KEEP BROADCASTING');
       if (clicked) counts.endless = (counts.endless ?? 0) + 1;
-      else await click(page, 'RETIRE A WINNER') || await click(page, 'BACK TO TITLE') || await click(page, 'KEEP BROADCASTING');
+      else await click(page, 'RETIRE A WINNER') || await click(page, 'NEXT CONTESTANT') || await click(page, 'KEEP BROADCASTING');
       summaryCounted = false;
     } else if (s.menu === 'settings') {
       const boxes = page.locator('#menus input[type=checkbox]');
@@ -308,12 +307,12 @@ while (Date.now() < deadline) {
     const before = { phase: s.phase, deadline: s.deadline, tray: s.tray, vault: s.vault, spins: s.spins, streak: s.streak, debt: s.debt, arts: s.arts.join(',') };
     counts.reloads++;
     await page.reload();
-    await page.waitForFunction(() => window.deadAir && window.deadAir.stage && window.deadAir.fsm.state === 'Menu', null, { timeout: 90000 });
+    // No title screen: the saved run resumes by itself after the fly-in.
+    const resumed = await page.waitForFunction(() => window.deadAir && window.deadAir.game && window.deadAir.busy === 0, null, { timeout: 90000 }).then(() => true, () => false);
     await page.evaluate(HOOKS);
-    if (!(await page.locator('#menus button', { hasText: 'CONTINUE' }).count())) {
-      note('save', 'no CONTINUE button after reloading mid-run');
+    if (!resumed) {
+      note('save', 'the saved run did not resume after reloading mid-run');
     } else {
-      await click(page, 'CONTINUE');
       await page.waitForTimeout(600);
       const after = await page.evaluate(SNAP);
       const diffs = Object.keys(before).filter((k) => String(before[k]) !== String(after[k] ?? '')).map((k) => `${k}: ${before[k]} -> ${after[k]}`);
