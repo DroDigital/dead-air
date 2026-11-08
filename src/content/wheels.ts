@@ -31,12 +31,12 @@ export const STARTING_WHEELS: readonly StartingWheelDef[] = [
   {
     id: 'standard',
     name: 'House Wheel',
-    text: 'The wheel as the Network intended. 24 wedges, 2 Bankrupts, one 6° Jackpot.',
+    text: 'The wheel as the Network intended. 24 wedges, 2 Bankrupts, a 6° Jackpot and a 6° Gun.',
     unlockAt: 0,
     ring: BASE_RING,
     wedges: [
       C(100), K('respin'), C(25), K('bankrupt'), C(150), K('token'), C(50), K('boost'),
-      C(75), K('mystery'), C(200), K('dud'), J, C(25), K('respin'), C(100),
+      C(75), K('mystery'), C(200), { kind: 'gun', width: BALANCE.jackpotWidth }, J, C(25), K('respin'), C(100),
       K('tax'), C(50), K('artifact'), C(75), K('bankrupt'), K('token'), K('boost'), K('respin'),
     ],
   },

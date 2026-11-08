@@ -41,12 +41,13 @@ const note = (kind, msg, extra = {}) => {
 };
 const counts = { steps: 0, spins: 0, deposits: 0, choices: 0, shopActions: 0, buys: 0, services: 0, scratch: 0, clicks: 0, menus: 0, games: 0, gameOvers: 0, victories: 0, phones: 0, reloads: 0, stuck: 0, shots: 0 };
 
-const CHOICE_PHASES = ['PackageSelect', 'ArtifactPick', 'Nudge', 'Conversion', 'PhoneCall'];
+const CHOICE_PHASES = ['PackageSelect', 'ArtifactPick', 'SupernaturalChoice', 'Nudge', 'Conversion', 'PhoneCall'];
 const FSM_FOR_PHASE = {
   PackageSelect: ['PackageSelect', 'DeadlineIntro'],
   AwaitAction: ['AwaitAction', 'Charging', 'Spinning', 'Resolving'],
   Nudge: ['Resolving'],
   ArtifactPick: ['Resolving'],
+  SupernaturalChoice: ['Resolving'],
   WedgeReplace: ['Shop'],
   Shop: ['Shop'],
   Conversion: ['Conversion'],
@@ -433,7 +434,7 @@ while (Date.now() < deadline) {
 
   // ---- Anything else (intro, nudge without choice, unexpected) ----------------------
   await page.waitForTimeout(300);
-  if (s.phase === 'Nudge' || s.phase === 'ArtifactPick') await page.keyboard.press('Enter');
+  if (s.phase === 'Nudge' || s.phase === 'ArtifactPick' || s.phase === 'SupernaturalChoice') await page.keyboard.press('Enter');
   if (s.phase === 'GameOver' || s.phase === 'Victory') await waitIdle(page, 8000);
 }
 

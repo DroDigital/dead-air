@@ -33,6 +33,30 @@ function cashLand(l: LandCtx): void {
 }
 
 export const WEDGES: Record<WedgeKind, WedgeDef> = {
+  gun: {
+    kind: 'gun', name: 'The Gun', glyph: 'GUN',
+    text: 'One chamber in six is loaded. A shot ends the run.', rarity: 'cursed', cost: 0, shop: false,
+    cashLike: false, gildable: false, defaultValue: 0, color: 0x302a27, ink: 0xe9d6bd,
+    pattern: 'stripes', repeatable: false,
+    land: (l) => l.prize('gun', 1, 'THE GUN'),
+    apply: (ops) => ops.fireGun(),
+  },
+  crossroads: {
+    kind: 'crossroads', name: 'Crossroads', glyph: 'PACT',
+    text: 'A wish, at a permanent price.', rarity: 'cursed', cost: 0, shop: false,
+    cashLike: false, gildable: false, defaultValue: 0, color: 0x391018, ink: 0xe6c2a8,
+    pattern: 'cross', repeatable: false,
+    land: (l) => l.prize('crossroads', 1, 'THE CROSSROADS'),
+    apply: (ops) => ops.queueSupernatural('pact'),
+  },
+  angel: {
+    kind: 'angel', name: 'Angel', glyph: 'GRACE',
+    text: 'Choose a blessing.', rarity: 'rare', cost: 0, shop: false,
+    cashLike: false, gildable: false, defaultValue: 0, color: 0xc4c3af, ink: 0x302e28,
+    pattern: 'cross', repeatable: false,
+    land: (l) => l.prize('angel', 1, 'A QUIET LIGHT'),
+    apply: (ops) => ops.queueSupernatural('blessing'),
+  },
   cash: {
     kind: 'cash',
     name: 'Cash',
@@ -184,6 +208,10 @@ export const WEDGES: Record<WedgeKind, WedgeDef> = {
         l.resolveAs('bankrupt', 0, 'MYSTERY → BANKRUPT');
         return;
       }
+      const rare = r.float();
+      if (rare < 0.005) { l.resolveAs('crossroads', 0, 'MYSTERY → CROSSROADS'); return; }
+      if (rare < 0.01) { l.resolveAs('angel', 0, 'MYSTERY → ANGEL'); return; }
+      if (rare < 0.015) { l.resolveAs('gun', 0, 'MYSTERY → THE GUN'); return; }
       const pick = r.weighted(MYSTERY_POOL, (p) => p.w);
       l.resolveAs(pick.kind, pick.kind === 'jackpot' ? BALANCE.jackpotValue : pick.value, `MYSTERY → ${WEDGES[pick.kind].name.toUpperCase()}`);
     },
@@ -281,6 +309,10 @@ export const WEDGES: Record<WedgeKind, WedgeDef> = {
     pattern: 'dots',
     repeatable: false,
     land: (l) => {
+      const rare = l.rng.events.float();
+      if (rare < 0.005) { l.resolveAs('crossroads', 0, 'HAUNTED → CROSSROADS'); return; }
+      if (rare < 0.01) { l.resolveAs('angel', 0, 'HAUNTED → ANGEL'); return; }
+      if (rare < 0.015) { l.resolveAs('gun', 0, 'HAUNTED → THE GUN'); return; }
       const pick = l.rng.events.weighted(HAUNTED_POOL, (p) => p.w);
       l.resolveAs(pick.kind, pick.kind === 'jackpot' ? BALANCE.jackpotValue : pick.value, `HAUNTED → ${WEDGES[pick.kind].name.toUpperCase()}`);
     },

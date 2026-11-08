@@ -232,7 +232,10 @@ export async function buildArt(): Promise<number> {
   if (!existsSync(join(SRC, 'icons-wedges.png'))) return 0;
   const sharp = (await import('sharp')).default;
   // The owner's sheet covers the wedges up to Payday; the horror wedges are drawn by tools/horror-art.ts.
-  await grid(sharp, 'icons-wedges.png', 5, 5, WEDGE_KINDS.slice(0, WEDGE_KINDS.indexOf('payday') + 1), 'wedge', 128);
+  await grid(sharp, 'icons-wedges.png', 5, 5, WEDGE_KINDS.slice(WEDGE_KINDS.indexOf('cash'), WEDGE_KINDS.indexOf('payday') + 1), 'wedge', 128);
+  if (existsSync(join(SRC, 'wedge-gun.png'))) {
+    await save(sharp, sharp(join(SRC, 'wedge-gun.png')), 'wedge.gun', 'wedge/gun.png', 192);
+  }
   await horrorIcons(sharp, async (id, buf) => {
     const out = join(OUT, 'wedge', `${id}.png`);
     await mkdir(dirname(out), { recursive: true });

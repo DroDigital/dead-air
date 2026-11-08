@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { WEDGES, WEDGE_KINDS } from '../src/content/wedges';
-import { fitWedge } from '../src/render/scene/wheel';
+import { fitGunMark, fitWedge } from '../src/render/scene/wheel';
 import { supportsGlyph, textWidth } from '../src/ui/bitfont';
 
 // The face is 256 px (radius 128), the inner ring covers the middle 0.336 of it, text is the
@@ -16,6 +16,15 @@ const labelsFor = (kind: string): string[] => {
 };
 
 describe('wheel face layout', () => {
+  it('fits the gun symbol inside a six-degree sliver', () => {
+    const mark = fitGunMark(6, R, HUB);
+    expect(mark).not.toBeNull();
+    const { width, height, r } = mark!;
+    const inner = r - height / 2;
+    expect(inner).toBeGreaterThan(HUB);
+    expect(r + height / 2).toBeLessThanOrEqual(R * 0.95);
+    expect(width + 2.5).toBeLessThanOrEqual(2 * inner * Math.sin(3 * Math.PI / 180));
+  });
   for (const kind of WEDGE_KINDS) {
     it(`every ${kind} label fits its wedge, at every width`, () => {
       for (const text of labelsFor(kind)) {

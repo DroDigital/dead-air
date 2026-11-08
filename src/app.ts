@@ -16,6 +16,7 @@ import { DEADLINE_LINES, HOST_LINES, HOST_SILENT_LINES, PRODUCER_ACCEPT, PRODUCE
 import { challengeText } from './content/challenges';
 import { mutatorDef } from './content/mutators';
 import { scratchDef } from './content/scratchCards';
+import { SUPERNATURAL_OPTIONS } from './content/supernatural';
 import { WEDGES } from './content/wedges';
 import { defaultSettings, sanitizeSettings, SETTINGS_VERSION, type Settings } from './core/config';
 import { APP_TRANSITIONS, Fsm, type AppState } from './core/fsm';
@@ -328,19 +329,27 @@ export class App {
     g.bus.on('changed', () => {
       if (!this.game) return;
       noteRunProgress(this.meta, this.game.run);
-      if (this.game.run.phase === 'GameOver') return;
+      // Persist terminal results too: a reload during a death scene must resume the
+      // loss, rather than restore the spin from before the chamber was fired.
       this.runSlot.save(this.game.snapshot());
     });
     g.bus.on('deadlineEnd', (e) => this.pendingEnds.push(e));
     g.bus.on('challenge', () => {
       const ch = g.challenge();
       if (!ch) return;
-      setTimeout(() => {
+      const announce = () => {
+        if (this.game !== g || g.run.phase === 'GameOver') return;
+        // Do not put a sponsor card over the revolver at the moment of the pull.
+        if (this.stage.revolver.group.visible) {
+          setTimeout(announce, 250);
+          return;
+        }
         this.hud.showBanner("SPONSOR'S CHALLENGE", `${ch.def.name} — +${ch.def.reward} TOKEN${ch.def.reward > 1 ? 'S' : ''}`, '#80ff80', 2.2 / this.speed);
         this.sfx.play('register', { gain: 0.6 });
         this.sfx.play('applause', { gain: 0.35, delay: 0.2 });
         this.stage.lights.applause = 2;
-      }, 900);
+      };
+      setTimeout(announce, 900);
     });
     g.bus.on('trigger', (t) => {
       this.stage.shelf.trigger(t.slot);
@@ -370,6 +379,7 @@ export class App {
     this.stage.audience.setCount(this.meta.runs - this.meta.wins, this.settings.uncut);
     this.stage.audience.approach(Math.min(4, g.run.marks.silences ?? 0), g.run.marks.eyeLost ? 1 : -1);
     this.stage.collateral.reset();
+    this.stage.revolver.reset();
     this.stage.collateral.setFingers(g.run.marks.fingers ?? 0);
     this.stage.post.eyePatch = g.run.marks.eyeLost ? 1 : 0;
     this.hud.fingersLost = g.run.marks.fingers ?? 0;
@@ -578,6 +588,11 @@ export class App {
     this.hud.chyron = { deadline: d, spins: r.spinsLeft, spinsMax: Math.max(this.spinsMax, r.spinsLeft), tray: r.tray, streak: r.streak, vault: r.vault, debt: r.debt };
     this.hud.tickerRight = '';
     this.hud.corner = `TOK ${r.tokens}`;
+    this.hud.supernatural = [
+      ...(r.marks.pactCurse ? ['PACT: -25% DEPOSIT'] : []),
+      ...(r.marks.supernaturalSpins ? [`+${r.marks.supernaturalSpins} SPINS / DEADLINE`] : []),
+      ...((r.marks.supernaturalCashMult ?? 1) > 1 ? [`CASH ×${r.marks.supernaturalCashMult}`] : []),
+    ];
     const ch = g.challenge();
     this.hud.challenge = ch
       ? {
@@ -686,6 +701,10 @@ export class App {
       case 'ArtifactPick':
         this.fsm.force('Resolving');
         this.showArtifactPick();
+        break;
+      case 'SupernaturalChoice':
+        this.fsm.force('Resolving');
+        this.showSupernaturalChoice();
         break;
       case 'WedgeReplace':
         this.fsm.force('Shop');
@@ -1094,7 +1113,17 @@ export class App {
       if (c === 'deadAir') continue;
       st.vfx.float(st.wheel.group.position.clone().add(new THREE.Vector3(0, 1.2, 0)), COMBO_NAMES[c], '#ff70ff', 2, 1.6);
     }
-    this.playHorror(this.pendingHorror.splice(0));
+    const horror = this.pendingHorror.splice(0);
+    this.playHorror(horror);
+    const shots = horror.filter((e): e is Extract<HorrorEvent, { type: 'gunshot' }> => e.type === 'gunshot');
+    const firstJump = shots.findIndex((e) => e.afterJump);
+    const beforeJump = firstJump < 0 ? shots : shots.slice(0, firstJump);
+    const afterJump = firstJump < 0 ? [] : shots.slice(firstJump);
+    for (const e of beforeJump) await this.playRevolver(e.hit);
+    if (beforeJump.some((e) => e.hit)) {
+      st.wheel.showHighlight(null);
+      return;
+    }
     if (p.landedKind === 'bleeder') this.hostSay('bleeder', 'grin', 'point');
     if (res.combos.includes('hatTrick')) this.hostSay('hatTrick', 'shock', 'cheer');
     else if (res.combos.includes('neighbors') && Math.random() < 0.5) this.hostSay('neighbors', 'shock', 'point');
@@ -1168,6 +1197,11 @@ export class App {
         if (res.ringJump.payout.cash > 0) this.sfx.play('cascade', { gain: 0.5 });
         await wait(0.6 / sp);
       }
+      for (const e of afterJump) await this.playRevolver(e.hit);
+      if (afterJump.some((e) => e.hit)) {
+        st.wheel.showHighlight(null);
+        return;
+      }
       this.sync(true);
     }
     void outcome;
@@ -1221,6 +1255,41 @@ export class App {
   // ===================================================================================
   // Choices: artifact pick, conversion, phone
   // ===================================================================================
+  private showSupernaturalChoice(): void {
+    const g = this.game!;
+    const p = g.run.pending;
+    if (!p || p.type !== 'supernatural') return;
+    const pact = p.source === 'pact';
+    this.setChoice(
+      {
+        title: pact ? 'AT THE CROSSROADS' : 'A LIGHT IN THE STATIC',
+        lines: pact
+          ? ['CHOOSE A WISH. THE PRICE IS PERMANENT:', 'LOSE 25% OF EVERY DEPOSIT FOR THE REST OF THIS RUN.']
+          : ['SOMETHING BEYOND THE STUDIO OFFERS A GIFT.', 'CHOOSE ONE BLESSING.'],
+        options: [
+          ...p.options.map((id) => ({
+            label: SUPERNATURAL_OPTIONS[id].name.toUpperCase(),
+            detail: SUPERNATURAL_OPTIONS[id].text,
+            color: pact ? '#efaca0' : '#f8e7ad',
+          })),
+          { label: pact ? 'REFUSE THE PACT' : 'LEAVE THE LIGHT', detail: 'Walk away. Nothing changes.' },
+        ],
+        selected: pact ? p.options.length : 0,
+        layout: 'cards',
+        inspect: true,
+        accent: pact ? '#bd514b' : '#d8c58a',
+        footer: '1-4 · ←/→ + ENTER · CLICK · HOVER TO INSPECT',
+      },
+      (i) => {
+        const option = p.options[i] ?? null;
+        this.setChoice(null, null);
+        g.chooseSupernatural(option);
+        if (option) this.sfx.play('pickup');
+        void this.enterPhase();
+      },
+    );
+  }
+
   private showArtifactPick(): void {
     const g = this.game!;
     const p = g.run.pending;
@@ -1495,7 +1564,6 @@ export class App {
     const st = this.stage;
     await this.withBusy(async () => {
       this.fsm.force('GameOver');
-      this.runSlot.clear();
       this.stopHeartbeat();
       this.music.tapeStop(1.8);
       st.rig.go('center', 0.4);
@@ -1531,7 +1599,8 @@ export class App {
       r.marks.metaApplied = 1;
       const res = applyRun(this.meta, r);
       this.saveMeta();
-      this.menus.showSummary(false, r.deadline, res.ratings, res.newUnlocks, false);
+      this.runSlot.clear();
+      this.menus.showSummary(false, r.deadline, res.ratings, res.newUnlocks, false, r.marks.gunDeath ? 'gun' : undefined);
     }
     this.game = null;
     this.hud.ticker = '';
@@ -2054,6 +2123,42 @@ export class App {
   // ===================================================================================
   // The horror pass
   // ===================================================================================
+  /** Hold the result until the chamber is actually fired. */
+  private async playRevolver(hit: boolean): Promise<void> {
+    const st = this.stage;
+    const speed = this.speed;
+    this.music.setLevel(0.2, 0.3);
+    this.hud.letterboxTarget = 1;
+    this.hud.banner = null;
+    this.hud.captions = [];
+    st.marquee.set('THE CHAMBER TURNS', '#e7cdb1');
+    st.revolver.raise(0.6 / speed);
+    this.sfx.play('ratchet', { gain: 0.55, pitch: 0.65 });
+    await wait(0.9 / speed);
+    st.revolver.fire(hit, this.settings.reducedFlashing);
+    if (hit) {
+      this.sfx.play('impact', { gain: 1, pitch: 0.7 });
+      this.sfx.play('thunk', { gain: 0.9, pitch: 0.6 });
+      if (this.settings.screenShake) st.rig.shake(0.8);
+      st.post.shock = Math.max(st.post.shock, 0.8);
+      if (!this.settings.reducedFlashing) {
+        st.post.flashColor.setRGB(1, 0.65, 0.35);
+        st.post.flashAmt = 0.45;
+      }
+      st.marquee.set('THE CHAMBER WAS LOADED', '#ff8070');
+      if (this.settings.captions) this.hud.caption('THE GUN', 'THE CHAMBER WAS LOADED.', '#ffb0a0', 2);
+    } else {
+      this.sfx.play('button', { gain: 0.9, pitch: 0.55 });
+      st.marquee.set('EMPTY CHAMBER', '#e7cdb1');
+      if (this.settings.captions) this.hud.caption('THE GUN', 'CLICK. THE CHAMBER IS EMPTY.', '#e7cdb1', 2);
+    }
+    await wait(0.8 / speed);
+    st.revolver.lower(0.35 / speed);
+    await wait(0.4 / speed);
+    this.hud.letterboxTarget = 0;
+    this.music.setLevel(1, 0.5);
+  }
+
   /** Wedge beats from the last spin, acted out on the wheel's props. */
   private playHorror(events: HorrorEvent[]): void {
     const st = this.stage;

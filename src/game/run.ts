@@ -8,6 +8,7 @@ import { BARGAINS, PRODUCER_INTROS, bargainDef, type BargainTier } from '../cont
 import { MUTATORS, mutatorDef } from '../content/mutators';
 import { SCRATCH_CARDS, scratchDef } from '../content/scratchCards';
 import { WEDGES } from '../content/wedges';
+import { SUPERNATURAL_CHOICES } from '../content/supernatural';
 import { startingWheel } from '../content/wheels';
 import { EventBus } from '../core/events';
 import { CHALLENGES, type ChallengeDef, type ChallengeEvent } from '../content/challenges';
@@ -38,6 +39,7 @@ import type {
   RunPhase,
   RunState,
   Segment,
+  SupernaturalOption,
   Trigger,
   Wedge,
   WedgeKind,
@@ -249,7 +251,7 @@ export class Game implements PayoutHost {
     };
     const g = new Game(run, rng);
     run.wheel = sw.wedges.map((s) =>
-      g.newWedge(s.kind, s.value ?? WEDGES[s.kind].defaultValue, s.width ?? (s.kind === 'jackpot' ? BALANCE.jackpotWidth : BALANCE.baseWidth)),
+      g.newWedge(s.kind, s.value ?? WEDGES[s.kind].defaultValue, s.width ?? (s.kind === 'jackpot' || s.kind === 'gun' ? BALANCE.jackpotWidth : BALANCE.baseWidth)),
     );
     const extra = BALANCE.stakeExtraBankrupt[cfg.stake] ?? 0;
     for (let i = 0; i < extra; i++) g.insertWedgeRandom('bankrupt', 0, (k) => k === 'dud' || k === 'cash');
@@ -329,6 +331,23 @@ export class Game implements PayoutHost {
         continue;
       }
       this.run.pendingQueue.push({ type: 'artifactPick', options, source });
+    }
+  }
+  queueSupernatural(source: 'pact' | 'blessing'): void {
+    this.run.pendingQueue.push({ type: 'supernatural', source, options: [...SUPERNATURAL_CHOICES[source]] });
+  }
+  /** Pull one chamber from the events stream; the result is saved with the spin. */
+  fireGun(): void {
+    const hit = this.rng.events.int(6) === 0;
+    this.horror({ type: 'gunshot', hit, nested: this.ringJumpDepth > 0, afterJump: this.ringJumpResult !== null });
+    this.note(hit ? 'THE CHAMBER WAS LOADED' : 'THE CHAMBER IS EMPTY');
+    if (hit) {
+      this.run.marks.gunDeath = 1;
+      this.run.endedAt = this.run.deadline;
+      this.run.pending = null;
+      this.run.pendingQueue = [];
+      this.run.phone = null;
+      this.setPhase('GameOver');
     }
   }
   /** Shelf slots: one fewer for every finger the Network has taken. */
@@ -528,7 +547,7 @@ export class Game implements PayoutHost {
     const mut = mutatorDef(this.run.mutator)?.spinsDelta ?? 0;
     // A missing eye costs a spin every Deadline.
     const eye = this.run.marks.eyeLost ? 1 : 0;
-    return Math.max(1, base + this.staticSum('spinsPerDeadline') + this.run.nextMods.spinsDelta + mut - eye);
+    return Math.max(1, base + this.staticSum('spinsPerDeadline') + this.run.nextMods.spinsDelta + mut - eye + (this.run.marks.supernaturalSpins ?? 0));
   }
 
   tokensForPackage(pkg: PackageId): number {
@@ -620,7 +639,7 @@ export class Game implements PayoutHost {
     const q = this.run.pendingQueue.shift();
     if (q) {
       this.run.pending = q;
-      this.setPhase(q.type === 'artifactPick' ? 'ArtifactPick' : q.type === 'nudge' ? 'Nudge' : 'WedgeReplace');
+      this.setPhase(q.type === 'artifactPick' ? 'ArtifactPick' : q.type === 'nudge' ? 'Nudge' : q.type === 'supernatural' ? 'SupernaturalChoice' : 'WedgeReplace');
       return;
     }
     this.run.pending = null;
@@ -867,6 +886,15 @@ export class Game implements PayoutHost {
       nested: false,
     });
 
+    // A loaded chamber ends the run immediately, before queued choices or deadline handling.
+    if (run.phase === 'GameOver') {
+      return {
+        segIdx: seg.idx, nudge, seg, neighbor, innerIndex, innerMult, payout,
+        triggers: this.triggerSink, notes: this.notes, ringJump: this.ringJumpResult,
+        streakAfter: run.streak, deadlineEnd: null, combos: payout.combos,
+      };
+    }
+
     run.history.push({ kind: seg.kind, uid: seg.uid, segIdx: seg.idx, wasCash: payout.isCash, cash: payout.cash, innerMult });
     this.horrorUpkeep(seg);
     if (payout.streakReset) {
@@ -1032,6 +1060,7 @@ export class Game implements PayoutHost {
       ctx.keepStreak = true;
     }
     this.runHook('onDeposit', ctx);
+    if (run.marks.pactCurse) ctx.lossFrac += 0.25;
     const lost = Math.floor(ctx.amount * Math.min(1, ctx.lossFrac));
     const amount = run.tray;
     this.addTray(-amount, 'deposit');
@@ -1139,6 +1168,28 @@ export class Game implements PayoutHost {
   // =====================================================================================
   // Choices
   // =====================================================================================
+  /** Resolve a rare offer once; null refuses it without a price. */
+  chooseSupernatural(id: SupernaturalOption | null): boolean {
+    this.assertPhase('SupernaturalChoice');
+    const p = this.run.pending;
+    if (!p || p.type !== 'supernatural' || (id !== null && !p.options.includes(id))) return false;
+    if (id !== null) {
+      if (p.source === 'pact') this.run.marks.pactCurse = 1;
+      if (id === 'fortune' || id === 'grace') this.addVault(id === 'fortune' ? 5000 : 3000, 'supernatural');
+      if (id === 'time' || id === 'mercy') {
+        const spins = id === 'time' ? 6 : 3;
+        this.run.marks.supernaturalSpins = (this.run.marks.supernaturalSpins ?? 0) + spins;
+        this.addSpins(spins, 'supernatural');
+      }
+      if (id === 'power' || id === 'radiance') {
+        this.run.marks.supernaturalCashMult = (this.run.marks.supernaturalCashMult ?? 1) * (id === 'power' ? 2 : 1.5);
+      }
+    }
+    this.advance();
+    this.changed('chooseSupernatural');
+    return true;
+  }
+
   /** Pick an artifact from a pending 1-of-3. `id = null` skips. If the shelf is full, pass `replaceSlot`. */
   pickArtifact(id: string | null, replaceSlot?: number): boolean {
     this.assertPhase('ArtifactPick');

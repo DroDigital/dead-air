@@ -243,13 +243,19 @@ export function resolvePayout(host: PayoutHost, input: PayoutInput): PayoutResul
     run.cashRun = cashRunAfter;
 
     // Doubler: the next (non-Bankrupt) prize is awarded twice.
-    if (run.flags.doubler > 0 && b.bankruptFrac === 0 && (b.cash > 0 || b.prizes.some((p) => p.kind !== 'doubler'))) {
+    if (run.flags.doubler > 0 && b.bankruptFrac === 0 && (b.cash > 0 || b.prizes.some((p) => p.kind !== 'doubler' && p.kind !== 'gun'))) {
       run.flags.doubler -= 1;
       if (b.cash > 0) b.cash *= 2;
-      const dupes = b.prizes.filter((p) => p.kind !== 'doubler' && p.kind !== 'ringJump').map((p) => ({ ...p }));
+      const dupes = b.prizes.filter((p) => p.kind !== 'doubler' && p.kind !== 'ringJump' && p.kind !== 'gun').map((p) => ({ ...p }));
       b.prizes.push(...dupes);
       b.step('combo', 'DOUBLER ×2');
     }
+  }
+
+  const supernaturalMult = run.marks.supernaturalCashMult ?? 1;
+  if (b.isCash && b.cash > 0 && supernaturalMult !== 1) {
+    b.cash *= supernaturalMult;
+    b.step('mult', `${fmtMult(supernaturalMult)} OTHERWORLDLY`);
   }
 
   // ---- 6. Award -----------------------------------------------------------------------
@@ -309,6 +315,7 @@ export function resolvePayout(host: PayoutHost, input: PayoutInput): PayoutResul
     }
     const def = WEDGES[p.kind];
     if (def.apply) def.apply(host, p);
+    if (run.phase === 'GameOver') break;
   }
   for (const c of combos) run.stats.combos[c] = (run.stats.combos[c] ?? 0) + 1;
 

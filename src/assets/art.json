@@ -1,4 +1,9 @@
 {
+ "wedge.gun": {
+  "url": "assets/art/wedge/gun.png",
+  "w": 125,
+  "h": 192
+ },
  "wedge.cash": {
   "url": "assets/art/wedge/cash.png",
   "w": 128,

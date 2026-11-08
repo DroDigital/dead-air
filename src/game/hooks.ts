@@ -32,6 +32,8 @@ export interface GameOps {
   addStreak(n: number): void;
   addScratch(id?: string): boolean;
   queueArtifactPick(source: string, count?: number, rarity?: Rarity): void;
+  queueSupernatural(source: 'pact' | 'blessing'): void;
+  fireGun(): void;
   grantArtifact(id: string): boolean;
   /** Replace the kind of a wedge (by uid). */
   setWedgeKind(uid: number, kind: WedgeKind, value?: number): void;

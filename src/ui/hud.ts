@@ -69,6 +69,8 @@ export class Hud {
   tooltip: string | null = null;
   ticker = '';
   tickerRight = '';
+  /** Lasting supernatural effects, kept visible after their choice screen. */
+  supernatural: string[] = [];
   /** Structured chyron (preferred over the plain ticker string when set). */
   chyron: { deadline: string; spins: number; spinsMax: number; tray: number; streak: number; vault: number; debt: number } | null = null;
   /** Displayed (rolling) values and flash timers for the chyron numbers. */
@@ -222,6 +224,13 @@ export class Hud {
     drawText(ctx, '8'.repeat(digits), right, 3 * k + LINE, { align: 'right', scale: 2, color: '#2e1c0c' });
     drawText(ctx, lit, right, 3 * k + LINE, { align: 'right', scale: 2, color: flash ? RED : AMBER });
     if (this.corner) drawText(ctx, this.corner, right, 3 * k + LINE + 16, { align: 'right', scale: TS, color: CREAM });
+    if (this.supernatural.length) {
+      const sy = 3 * k + LINE + 26;
+      const sw = Math.max(...this.supernatural.map((s) => textWidth(s, TS))) + 4 * k;
+      ctx.fillStyle = 'rgba(12,8,4,0.85)';
+      ctx.fillRect(right - sw, sy - k, sw + 2 * k, this.supernatural.length * LINE + 2 * k);
+      this.supernatural.forEach((s, i) => drawText(ctx, s, right, sy + i * LINE, { align: 'right', scale: TS, color: s.startsWith('PACT') ? '#efaca0' : '#f8e7ad' }));
+    }
 
     // Bottom edge: Vault against Debt as a full-width meter; the tray shows as a ghost past the fill.
     const bar = 3 * k;

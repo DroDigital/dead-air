@@ -111,6 +111,16 @@ export interface WedgeFit {
   label: { text: string; r0: number; r1: number } | null;
 }
 
+/** The narrow Gun sliver uses a tall mark fitted at its innermost edge. */
+export function fitGunMark(spanDeg: number, R: number, hub: number): { width: number; height: number; r: number } | null {
+  const height = Math.min(24, R * 0.2);
+  const outer = R * RIM_IN - 3;
+  const inner = outer - height;
+  if (inner <= hub + 4) return null;
+  const width = Math.min(height * 0.4, 2 * inner * Math.sin(Math.min(spanDeg, 180) * DEG / 2) - DIVIDER - 0.25);
+  return width >= 3 ? { width, height, r: (inner + outer) / 2 } : null;
+}
+
 /**
  * Choose what goes in a wedge so that everything fits inside its width: the label (bitmap font
  * at native size, read along the radius) must sit where the wedge is wider than a glyph, and
@@ -532,7 +542,14 @@ export class WheelView {
         const def = WEDGES[s.kind];
         const mid = ((s.start + s.end) / 2 - 90) * DEG;
         const fit = fitWedge(s.end - s.start, s.kind, label(s), R, hub);
-        const img = fit.icon ? art.img(`wedge.${s.kind}`) : null;
+        const gunMark = s.kind === 'gun' && !fit.icon ? fitGunMark(s.end - s.start, R, hub) : null;
+        const img = fit.icon || gunMark ? art.img(`wedge.${s.kind}`) : null;
+        if (gunMark && img) {
+          ctx.save();
+          ctx.rotate(mid + Math.PI / 2);
+          ctx.drawImage(img, -gunMark.width / 2, -gunMark.r - gunMark.height / 2, gunMark.width, gunMark.height);
+          ctx.restore();
+        }
         if (fit.icon && img) {
           ctx.save();
           ctx.rotate(mid + Math.PI / 2);

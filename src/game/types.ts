@@ -32,7 +32,10 @@ export type WedgeKind =
   | 'stump'
   | 'bleeder'
   | 'eye'
-  | 'stitches';
+  | 'stitches'
+  | 'crossroads'
+  | 'angel'
+  | 'gun';
 
 export type Rarity = 'common' | 'uncommon' | 'rare' | 'cursed';
 
@@ -113,7 +116,10 @@ export interface PrizeAward {
   text: string;
 }
 
+export type SupernaturalOption = 'fortune' | 'time' | 'power' | 'grace' | 'mercy' | 'radiance';
+
 export type PendingChoice =
+  | { type: 'supernatural'; source: 'pact' | 'blessing'; options: SupernaturalOption[] }
   | { type: 'artifactPick'; options: string[]; source: string }
   | { type: 'nudge'; options: number[] }
   | { type: 'wedgeReplace'; wedge: Wedge; cost: number; source: string };
@@ -166,6 +172,7 @@ export type RunPhase =
   | 'AwaitAction'
   | 'Nudge'
   | 'ArtifactPick'
+  | 'SupernaturalChoice'
   | 'WedgeReplace'
   | 'Conversion'
   | 'Shop'
@@ -299,6 +306,7 @@ export interface RunState {
 
 /** Horror beats the stage acts out (wedge models, the collateral cutscene, the audience). */
 export type HorrorEvent =
+  | { type: 'gunshot'; hit: boolean; nested: boolean; afterJump: boolean }
   | { type: 'mouthEat'; uid: number; amount: number }
   | { type: 'mouthVomit'; uid: number; amount: number }
   | { type: 'cleave'; uid: number; target: number }
