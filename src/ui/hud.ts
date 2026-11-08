@@ -83,6 +83,15 @@ export class Hud {
   showCursor = true;
   /** Cursor art: an open glove over something grabbable, a closed one while dragging. */
   cursor: 'open' | 'grab' | null = null;
+  /** The wheel is busy (spin, payout, cutscene): the HUD steps back to the essentials. */
+  calm = false;
+  /** Seconds since the player last did anything (hints and arrows only show when they pause). */
+  quietFor = 0;
+  /** Show the control hints regardless (first runs). */
+  alwaysHints = false;
+  /** An on-screen cancel button (wedge placement); null hides it. */
+  cancelLabel: string | null = null;
+  private cancelRect: Rect | null = null;
   /** Fingers the Network has taken: the glove cursor wears a bandage. */
   fingersLost = 0;
   /** Cartoon speed lines round the wheel (internal px centre/radius, 0..1 amount). */
@@ -118,8 +127,14 @@ export class Hud {
   }
 
   toast(text: string, color = '#ffe080'): void {
+    // The same toast again just restarts it; at most two at once.
+    const same = this.toasts.find((t) => t.text === text);
+    if (same) {
+      same.t = 0;
+      return;
+    }
     this.toasts.push({ text, color, t: 0 });
-    if (this.toasts.length > 4) this.toasts.shift();
+    if (this.toasts.length > 2) this.toasts.shift();
   }
 
   showBanner(text: string, sub: string, color = '#ffd040', life = 2.4): void {
@@ -147,12 +162,12 @@ export class Hud {
       this.payoutAge = 0;
     } else if (this.payout) {
       this.payoutAge += dt;
-      if (this.payoutAge > 5) this.payout = null;
+      if (this.payoutAge > 2.5) this.payout = null;
     }
     for (const c of this.captions) c.t += dt;
     this.captions = this.captions.filter((c) => c.t < c.life);
     for (const t of this.toasts) t.t += dt;
-    this.toasts = this.toasts.filter((t) => t.t < 2.2);
+    this.toasts = this.toasts.filter((t) => t.t < 1.9);
     if (this.banner) {
       this.banner.t += dt;
       if (this.banner.t > this.banner.life) this.banner = null;
@@ -183,6 +198,11 @@ export class Hud {
       if (x >= r.x && x < r.x + r.w && y >= r.y && y < r.y + r.h) return i;
     }
     return -1;
+  }
+
+  hitCancel(x: number, y: number): boolean {
+    const r = this.cancelRect;
+    return !!r && x >= r.x && x < r.x + r.w && y >= r.y && y < r.y + r.h;
   }
 
   hitArrow(x: number, y: number): 'up' | 'down' | 'left' | 'right' | null {
@@ -289,9 +309,14 @@ export class Hud {
     }
     // ---- Nav arrows (mouse play) ----
     this.arrowRects = [];
-    if (!this.choice) {
+    if (!this.choice && !this.calm) {
       const blink = Math.floor(time * 2) % 2 === 0;
+      // Arrows only when wanted: the mouse near that edge, or the player pausing.
+      const near = (dir: string) =>
+        mouse.inside &&
+        (dir === 'left' ? mouse.x < 40 * k : dir === 'right' ? mouse.x > w - 40 * k : dir === 'up' ? mouse.y < 30 * k : mouse.y > h - 45 * k);
       for (const dir of this.arrows) {
+        if (!near(dir) && this.quietFor < 3) continue;
         const r: Rect =
           dir === 'left'
             ? { x: 2 * k, y: h / 2 - 10 * k, w: 10 * k, h: 20 * k }
@@ -320,7 +345,7 @@ export class Hud {
       drawText(ctx, this.ticker, 34 * k, tickerY, { scale: TS, color: '#f0e0b0' });
       if (this.tickerRight) drawText(ctx, this.tickerRight, w - 3 * k, tickerY, { align: 'right', scale: TS, color: '#a0e0a0' });
     }
-    if (this.hint && !this.choice) drawText(ctx, this.hint, w / 2, h - (this.chyron ? 12 : 21) * k, { align: 'center', scale: TS, color: 'rgba(255,240,200,0.8)', shadow: '#000' });
+    if (this.hint && !this.choice && !this.calm && (this.alwaysHints || this.quietFor > 5)) drawText(ctx, this.hint, w / 2, h - (this.chyron ? 12 : 21) * k, { align: 'center', scale: TS, color: 'rgba(255,240,200,0.8)', shadow: '#000' });
 
     // ---- Banner (Deadline intro, SWEEPS, combos) ----
     if (this.banner) {
@@ -434,16 +459,15 @@ export class Hud {
     this.optionRects = [];
     if (this.choice) this.drawChoice(ctx, w, h, k, hoverChoice);
 
-    if (this.challenge && !this.choice) {
+    if (this.challenge && !this.choice && !this.calm) {
+      // One quiet line: the goal and its progress (the full text is in the Deadline banner).
       const c = this.challenge;
       const y0 = (this.payout ? 26 : this.chyron ? 22 : 3) * k;
-      const title = `SPONSOR: ${c.name}`;
-      const detail = c.done ? 'DONE' : `${c.text} ${c.prog}`;
-      // The studio marquee scrolls behind this HUD: make both lines legible as it passes.
+      const line = c.done ? `SPONSOR: ${c.name} DONE` : `SPONSOR: ${c.name} ${c.prog}`;
+      // Opaque: the studio marquee scrolls behind it.
       ctx.fillStyle = '#0c0804';
-      ctx.fillRect(2 * k, y0 - k, Math.max(textWidth(title, TS), textWidth(detail, TS)) + 2 * k, LINE_H * TS + 7 * TS + 2 * k);
-      drawText(ctx, title, 3 * k, y0, { scale: TS, color: c.done ? '#80ff80' : '#ffc040', shadow: '#000' });
-      drawText(ctx, detail, 3 * k, y0 + LINE_H * TS, { scale: TS, color: c.done ? '#60c060' : 'rgba(255,230,180,0.8)', shadow: '#000' });
+      ctx.fillRect(2 * k, y0 - k, textWidth(line, TS) + 2 * k, 7 * TS + 2 * k);
+      drawText(ctx, line, 3 * k, y0, { scale: TS, color: c.done ? '#80ff80' : '#ffc040', shadow: '#000' });
     }
     // In chyron mode the tokens sit under the spins counter (drawChyron).
     if (this.corner && !this.choice && !this.chyron) drawText(ctx, this.corner, w - 3 * k, (this.payout ? 26 : 3) * k, { align: 'right', scale: TS, color: '#ffc040', shadow: '#000' });
@@ -451,6 +475,21 @@ export class Hud {
       // Beside LIVE in chyron mode, where the corner readouts are.
       const fast = this.chyron ? { x: 15 * k + 23, y: 3 * k } : { x: 3 * k, y: (this.payout ? 26 : 3) * k };
       drawText(ctx, 'FAST >>', fast.x, fast.y, { scale: TS, color: '#9ef08a', shadow: '#000' });
+    }
+
+    // ---- Cancel pill (wedge placement and other wheel targeting) ----
+    this.cancelRect = null;
+    if (this.cancelLabel && !this.choice) {
+      const tw = textWidth(this.cancelLabel, TS) + 10 * k;
+      const r = { x: w - tw - 6 * k, y: h / 2 - 7 * k, w: tw, h: 14 * k };
+      this.cancelRect = r;
+      const hover = mouse.inside && this.hitCancel(mouse.x, mouse.y);
+      ctx.fillStyle = hover ? 'rgba(160,40,20,0.95)' : 'rgba(40,10,6,0.85)';
+      ctx.fillRect(r.x, r.y, r.w, r.h);
+      ctx.fillStyle = '#ff8060';
+      ctx.fillRect(r.x, r.y, r.w, k);
+      ctx.fillRect(r.x, r.y + r.h - k, r.w, k);
+      drawText(ctx, this.cancelLabel, r.x + r.w / 2, r.y + (r.h - 7 * TS) / 2, { align: 'center', scale: TS, color: '#ffe8d8' });
     }
 
     // ---- Letterbox (over the HUD: it's a cinematic moment) ----

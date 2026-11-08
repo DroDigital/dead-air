@@ -172,6 +172,9 @@ export class CameraRig {
     const w = sh.w * sh.w * (3 - 2 * sh.w);
     let fov = this.baseFov + this.punchX - this.dolly * 7 + this.crane.length() * 6;
     fov += (sh.fov - fov) * w;
+    // Narrower than 16:9 (4:3, portrait-ish windows): widen the lens so the shot keeps its width.
+    const aspect = this.camera.aspect;
+    if (aspect < 16 / 9) fov = (2 * Math.atan((Math.tan((fov * Math.PI) / 360) * (16 / 9)) / aspect) * 180) / Math.PI;
     if (Math.abs(fov - this.camera.fov) > 1e-3) {
       this.camera.fov = fov;
       this.camera.updateProjectionMatrix();

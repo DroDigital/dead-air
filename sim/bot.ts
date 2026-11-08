@@ -30,6 +30,10 @@ export const POLICIES: Record<string, Policy> = {
   'ride-to-5': { name: 'ride-to-5', deposit: 'rideN', rideN: 5, shop: true, convertFrac: 0.5, pkg: 'standard' },
   ev: { name: 'ev', deposit: 'ev', caution: 1, shop: true, convertFrac: 0.5, pkg: 'auto' },
   'ev-noshop': { name: 'ev-noshop', deposit: 'ev', caution: 1, shop: false, convertFrac: 0, pkg: 'standard' },
+  /** Never turns the Vault surplus into Tokens: hoards cash as a buffer for later Debts. */
+  'ev-hoard': { name: 'ev-hoard', deposit: 'ev', caution: 1, shop: true, convertFrac: 0, pkg: 'auto' },
+  /** Converts the whole surplus every time. */
+  'ev-spend': { name: 'ev-spend', deposit: 'ev', caution: 1, shop: true, convertFrac: 1, pkg: 'auto' },
 };
 
 // ---------------------------------------------------------------------------------------

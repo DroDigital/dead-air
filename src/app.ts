@@ -45,6 +45,39 @@ const wait = (s: number) => new Promise<void>((r) => setTimeout(r, s * 1000));
 
 const DEG = Math.PI / 180;
 
+/**
+ * How much a host line matters. 3: always heard, may cut in (the show's beats). 2: worth saying
+ * unless something bigger is playing. 1: small talk, dropped freely when the player is quick.
+ */
+const HOST_PRIORITY: Partial<Record<HostTrigger, number>> = {
+  intro: 3,
+  title: 3,
+  package: 3,
+  sweep: 3,
+  endless: 3,
+  jackpot: 3,
+  debtMissed: 3,
+  gameOver: 3,
+  victory: 3,
+  phone: 3,
+  collateral: 3,
+  silence: 3,
+  bankrupt: 2,
+  bigWin: 2,
+  hatTrick: 2,
+  lastSpin: 2,
+  debtPaid: 2,
+  dealTaken: 2,
+  dealRefused: 2,
+  gambleOffer: 2,
+  gambleWin: 2,
+  gambleLose: 2,
+  mouth: 2,
+  cleaver: 2,
+  eye: 2,
+  stitchTear: 2,
+};
+
 export class App {
   readonly assets = new Assets();
   stage!: Stage;
@@ -107,6 +140,8 @@ export class App {
   private lastInput = 0;
   private silenceCool = 0;
   private bulbsDead = 0;
+  /** Who is talking until when (app clock), how important it was, and when the last line ended. */
+  private speech = { until: 0, prio: 0, lastEnd: -99 };
 
   constructor(private canvas: HTMLCanvasElement) {
     this.meta = this.metaSlot.load() ?? newMeta();
@@ -539,12 +574,28 @@ export class App {
   // Presentation helpers
   // ===================================================================================
   private hostSay(trigger: HostTrigger, face: Parameters<Stage['host']['say']>[0] = 'talk', pose?: Parameters<Stage['host']['setPose']>[0], text?: string): void {
+    // The host never talks over himself for something less important, and the small talk waits
+    // for a breath between lines (longer in fast play), so quick play doesn't stack and restart lines.
+    const prio = HOST_PRIORITY[trigger] ?? 1;
+    const now = this.time;
+    const talking = now < this.speech.until;
+    if (talking && (prio < 3 || prio <= this.speech.prio)) {
+      if (pose) this.stage.host.setPose(pose);
+      return;
+    }
+    const gap = prio >= 3 ? 0 : prio === 2 ? 1.2 : this.speed > 1 ? 9 : 4.5;
+    if (!talking && now - this.speech.lastEnd < gap) {
+      if (pose) this.stage.host.setPose(pose);
+      return;
+    }
+    if (prio === 1 && this.speed > 1 && Math.random() < 0.6) return;
     const silent = !!this.game?.run.marks.hostSilent;
     const pool = silent ? HOST_SILENT_LINES : HOST_LINES[trigger];
     const line = silent ? pool[Math.floor(Math.random() * pool.length)] : (text ?? pool[Math.floor(Math.random() * pool.length)]);
     const voiced = silent ? 0 : this.vo.play('host', line, this.hostMood(trigger));
     if (voiced) this.voice.stop();
     const dur = silent ? 1.5 : voiced || this.voice.speak(line, HOST_VOICE, this.speed > 1 ? 1.4 : 1);
+    this.speech = { until: now + dur, prio, lastEnd: now + dur };
     this.stage.host.say(face, dur);
     if (pose) this.stage.host.setPose(pose);
     if (this.settings.captions) this.hud.caption('HOST', line, '#7dffa8', voiced ? dur : dur / (this.speed > 1 ? 1.5 : 1));
@@ -566,6 +617,8 @@ export class App {
     if (voiced) this.voice.stop();
     const dur = voiced || this.voice.speak(text, secret ? SECRET_VOICE : PRODUCER_VOICE, 1.2);
     if (this.settings.captions) this.hud.caption(secret ? '???' : 'THE PRODUCER', text, secret ? '#c080ff' : '#ff9060', dur);
+    // The caller has the floor: the host's chatter waits.
+    this.speech = { until: this.time + dur, prio: 3, lastEnd: this.time + dur };
     return dur;
   }
 
@@ -1075,7 +1128,6 @@ export class App {
       acc = acc ? `${acc} → ${steps[i].label}` : steps[i].label;
       const isCombo = steps[i].op === 'combo';
       st.marquee.set(steps[i].label.slice(0, 21), isCombo ? '#ff70ff' : '#ffe060', isCombo);
-      this.hud.payout = { text: acc, color: '#ffe8a0' };
       this.sfx.play(isCombo ? 'sting' : 'blip', { pitch: 1 + i * 0.12, gain: isCombo ? 0.5 : 0.35 });
       if (steps[i].slot !== undefined) st.shelf.trigger(steps[i].slot!);
       await wait((isCombo ? 0.45 : 0.28) / sp);
@@ -1085,7 +1137,8 @@ export class App {
       const n = Math.max(6, Math.min(20, Math.round(Math.log2(p.cash + 2) * 2)));
       for (let k = 1; k <= n; k++) {
         st.marquee.set(`= $${Math.round((p.cash * k) / n)}`, '#80ff80');
-        this.hud.payout = { text: `${acc} = $${Math.round((p.cash * k) / n)}`, color: '#c0ffc0' };
+        // The HUD carries just the number; the breakdown is on the studio marquee.
+        this.hud.payout = { text: `+$${Math.round((p.cash * k) / n)}`, color: '#c0ffc0' };
         this.sfx.play('nixie', { pitch: 0.8 + (k / n) * 1.4, gain: 0.4 });
         await wait(0.035 / sp);
       }
@@ -1117,6 +1170,14 @@ export class App {
     }
     if (p.cash > 0) {
       if (big) {
+        // 3D juice by size: shockwave and sparks; money and light for the huge ones.
+        const tier = p.cash >= g.run.debt ? 'huge' : 'big';
+        st.juice.reducedFlashing = this.settings.reducedFlashing;
+        st.juice.play(tier, st.wheel.centerWorld(), st.wheel.pointerTipWorld());
+        if (tier === 'huge') {
+          st.coins.burst(st.wheel.centerWorld().add(new THREE.Vector3(0, 0, 0.3)), 30, 2.4, 0.2);
+          st.wheel.lightShow('jackpot', 2.5);
+        }
         this.hitstop = 0.18;
         if (this.settings.screenShake) st.rig.shake(0.5);
         st.rig.punch(-6);
@@ -1144,6 +1205,8 @@ export class App {
       st.lights.applause = 3.5;
       st.wheel.lightShow('jackpot', 3.5);
       st.coins.rain(90);
+      st.juice.reducedFlashing = this.settings.reducedFlashing;
+      st.juice.play('jackpot', st.wheel.centerWorld(), st.wheel.pointerTipWorld());
       st.studio.accent.pos.set(0, 2.5, 0.5);
       setTimeout(() => st.studio.accent.color.setRGB(0, 0, 0), 1500);
       this.hostSay('jackpot', 'shock', 'cheer');
@@ -1621,7 +1684,15 @@ export class App {
   private beginTarget(mode: TargetMode): void {
     this.target = { mode, idx: this.target?.idx ?? 0 };
     this.setChoice(null, null);
-    this.stage.rig.go('center');
+    // Say plainly why the view went to the wheel, and how to get back.
+    this.stage.rig.go('center', 0.55);
+    this.hud.cancelLabel = mode === 'replace' ? 'CANCEL · BACK TO SHOP' : 'CANCEL';
+    this.hud.showBanner(
+      mode === 'replace' ? 'PLACE YOUR WEDGE' : mode.toUpperCase(),
+      mode === 'replace' ? 'CLICK THE WEDGE IT REPLACES' : 'CLICK A WEDGE ON THE WHEEL',
+      '#80d0ff',
+      1.8,
+    );
     this.hud.hint = `${mode.toUpperCase()}: ←/→ OR CLICK A WEDGE · ENTER CONFIRM · BACKSPACE CANCEL`;
     this.highlightTarget();
     this.updateArrows();
@@ -1660,6 +1731,7 @@ export class App {
     const g = this.game;
     if (g?.run.phase === 'WedgeReplace') g.replaceWedge(null);
     this.target = null;
+    this.hud.cancelLabel = null;
     this.stage.wheel.showHighlight(null);
     this.stage.cabinet.setSelectedService(null);
     this.layoutSig = '';
@@ -1765,7 +1837,10 @@ export class App {
       if (a.type === 'confirm') return this.confirmTarget();
       if (a.type === 'back') return this.endTarget();
       if (a.type === 'click') {
+        // The cancel pill, a right click, or a click off the wheel all go back to the shop.
+        if (this.hud.hitCancel(a.x, a.y) || a.button === 2) return this.endTarget();
         const hit = this.stage.pick(a.x, a.y);
+        if (hit && hit.id !== 'wheel') return this.endTarget();
         if (hit?.id === 'wheel' && hit.uv) {
           const L = g.layout();
           const s = L.segments[segmentAt(L, uvToLocalAngle(hit.uv.x, hit.uv.y))];
@@ -2238,7 +2313,7 @@ export class App {
     if (r > 0.4 && !this.busy && !st.host.slipping && Math.random() < dt * (r - 0.4) * 0.04) {
       st.host.slip();
       this.sfx.play('static', { gain: 0.3, pitch: 0.7 });
-      if (Math.random() < 0.35) setTimeout(() => this.game && this.producerSay(SLIP_WHISPER, true), 200);
+      if (Math.random() < 0.35 && this.time >= this.speech.until) setTimeout(() => this.game && this.producerSay(SLIP_WHISPER, true), 200);
     }
     // Policy 7: from Deadline 5, four seconds of silence at the wheel is Dead Air.
     this.silenceCool = Math.max(0, this.silenceCool - dt);
@@ -2299,6 +2374,9 @@ export class App {
     // The wheel rots with the show, and its sun keeps an eye on the player's hand.
     if (g) st.wheel.decay = Math.min(1, (g.run.deadline - 1) / 7);
     this.updateRot(dt);
+    this.hud.calm = this.busy > 0 || !!this.drama || !!this.charge;
+    this.hud.quietFor = this.time - this.lastInput;
+    this.hud.alwaysHints = this.meta.runs < 2 && (g?.run.deadline ?? 1) <= 1;
     {
       const c = this.toScreen(st.wheel.centerWorld());
       const lm = this.input.mouse;
@@ -2310,8 +2388,9 @@ export class App {
       } else st.wheel.sunLook = { x: 0, y: 0.6 };
     }
     st.update(dt * this.timeScale, this.time, this.speed);
-    // Speed lines round the wheel while it's really going.
+    // Speed lines round the wheel while it's really going (and the rush of air under the ticks).
     const sp = st.wheel.spinSpeed;
+    this.sfx.whirr(this.menus.open ? 0 : sp);
     if (st.rig.station === 'center' && sp > 150 && !this.menus.open) {
       const c = this.toScreen(st.wheel.centerWorld());
       const r = this.toScreen(st.wheel.rimWorld());
