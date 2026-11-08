@@ -35,5 +35,11 @@
   "track.shop": "assets/audio/music/shop.mp3",
   "track.deadline": "assets/audio/music/deadline.mp3",
   "track.gameover": "assets/audio/music/gameover.mp3",
-  "track.charge": "assets/audio/music/charge.mp3"
+  "track.charge": "assets/audio/music/charge.mp3",
+  "track.charge.up2": "assets/audio/music/charge.up2.mp3",
+  "track.charge.down3": "assets/audio/music/charge.down3.mp3",
+  "track.charge.offset_echo": "assets/audio/music/charge.offset_echo.mp3",
+  "track.charge.slow": "assets/audio/music/charge.slow.mp3",
+  "track.charge.quick": "assets/audio/music/charge.quick.mp3",
+  "track.charge.dark": "assets/audio/music/charge.dark.mp3"
 }

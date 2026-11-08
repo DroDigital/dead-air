@@ -891,7 +891,8 @@ export class App {
     if (this.stage.rig.station !== 'center') this.stage.rig.go('center');
     this.charge = { t: 0, power: 0, peek: false, previewAt: null, lastTick: 0 };
     this.loops.drum?.stop(0.05);
-    this.loops.drum = this.sfx.loop('tension', 0.6, 'sfx', 0.25, false, this.music.rate) ?? this.sfx.loop('drumroll', 0.32, 'sfx', 0.3);
+    const rate = this.music.rate * (0.97 + Math.random() * 0.06);
+    this.loops.drum = this.sfx.loop(this.sfx.pickTension(), 0.6, 'sfx', 0.25, false, rate) ?? this.sfx.loop('drumroll', 0.32, 'sfx', 0.3);
     this.fsm.force('Charging');
     this.hud.hint = g.canPeek() ? '[RELEASE] SPIN AT THIS POWER · [E] PEEK WHERE IT LANDS' : '[RELEASE] SPIN AT THIS POWER';
     this.updateArrows();

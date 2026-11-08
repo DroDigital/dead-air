@@ -61,6 +61,12 @@ Provided for this project by digitaldro (made with Suno). Sources in `assets-src
 | Final Question | Debt deadline payment; a last spin that is short of the Debt | C minor | -3 st -1¢ |
 | Game-over cue | The floor opens | C major | 0 +4¢ |
 | Spin tension | Charging the lever and the spin | C major | 0 -2¢ |
+| Spin tension, up a tone | Same swell, a tone higher and brighter | C major | 0 |
+| Spin tension, down a minor third | Darker and heavier | C major | 0 |
+| Spin tension, late start with echo | Skips the first 1.2 s, adds a short echo | C major | 0 |
+| Spin tension, slow | Stretched to 90% for a longer build | C major | 0 |
+| Spin tension, quick | Slightly faster, warmer low end | C major | 0 |
+| Spin tension, dark | Tape-slowed, echoing and low-passed | C major | 0 |
 
 ## Generated with ElevenLabs
 

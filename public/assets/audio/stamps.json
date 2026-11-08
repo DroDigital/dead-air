@@ -35,5 +35,11 @@
  "breaker.mp3": "sfx_breaker.mp3|silenceremove=start_periods=1:start_threshold=-50dB,highpass=f=40,lowpass=f=9000,loudnorm=I=-16:TP=-1.5:LRA=11|-ac 1 -ar 22050 -b:a 64k",
  "boneclap.mp3": "sfx_boneclap.mp3|silenceremove=start_periods=1:start_threshold=-50dB,highpass=f=40,lowpass=f=9000,loudnorm=I=-16:TP=-1.5:LRA=11|-ac 1 -ar 22050 -b:a 64k",
  "bulbpop.mp3": "sfx_bulbpop.mp3|silenceremove=start_periods=1:start_threshold=-50dB,highpass=f=40,lowpass=f=9000,loudnorm=I=-16:TP=-1.5:LRA=11|-ac 1 -ar 22050 -b:a 64k",
- "seats.mp3": "sfx_seats.mp3|silenceremove=start_periods=1:start_threshold=-50dB,highpass=f=40,lowpass=f=9000,loudnorm=I=-16:TP=-1.5:LRA=11|-ac 1 -ar 22050 -b:a 64k"
+ "seats.mp3": "sfx_seats.mp3|silenceremove=start_periods=1:start_threshold=-50dB,highpass=f=40,lowpass=f=9000,loudnorm=I=-16:TP=-1.5:LRA=11|-ac 1 -ar 22050 -b:a 64k",
+ "charge.up2.mp3": "variants/tension_up2.mp3|silenceremove=start_periods=1:start_threshold=-50dB,highpass=f=40,lowpass=f=9000,loudnorm=I=-16:TP=-1.5:LRA=11|-ac 1 -ar 22050 -b:a 64k",
+ "charge.down3.mp3": "variants/tension_down3.mp3|silenceremove=start_periods=1:start_threshold=-50dB,highpass=f=40,lowpass=f=9000,loudnorm=I=-16:TP=-1.5:LRA=11|-ac 1 -ar 22050 -b:a 64k",
+ "charge.offset_echo.mp3": "variants/tension_offset_echo.mp3|silenceremove=start_periods=1:start_threshold=-50dB,highpass=f=40,lowpass=f=9000,loudnorm=I=-16:TP=-1.5:LRA=11|-ac 1 -ar 22050 -b:a 64k",
+ "charge.slow.mp3": "variants/tension_slow.mp3|silenceremove=start_periods=1:start_threshold=-50dB,highpass=f=40,lowpass=f=9000,loudnorm=I=-16:TP=-1.5:LRA=11|-ac 1 -ar 22050 -b:a 64k",
+ "charge.quick.mp3": "variants/tension_quick.mp3|silenceremove=start_periods=1:start_threshold=-50dB,highpass=f=40,lowpass=f=9000,loudnorm=I=-16:TP=-1.5:LRA=11|-ac 1 -ar 22050 -b:a 64k",
+ "charge.dark.mp3": "variants/tension_dark.mp3|silenceremove=start_periods=1:start_threshold=-50dB,highpass=f=40,lowpass=f=9000,loudnorm=I=-16:TP=-1.5:LRA=11|-ac 1 -ar 22050 -b:a 64k"
 }
