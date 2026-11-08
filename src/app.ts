@@ -1544,6 +1544,12 @@ export class App {
         st.lights.applause = 2;
         if (e.saved) this.hud.toast('THE TRAPDOOR LEVER SAVED YOU', '#ffd040');
         this.hostSay('debtPaid', 'grin', 'cheer');
+        // The round economy: what was left over becomes Tokens, Tokens held earn interest.
+        if (e.surplusTokens) {
+          this.hud.toast(`LEFTOVER → +${e.surplusTokens} TOKENS`, '#ffd040');
+          this.sfx.play('cascade', { gain: 0.45, pitch: 1.3, delay: 0.3 });
+        }
+        if (e.interestTokens) this.hud.toast(`TOKEN INTEREST +${e.interestTokens}`, '#c0ff80');
         await wait(1.6 / this.speed);
       } else {
         this.hostSay('debtMissed', this.game && this.game.run.deadline >= 5 ? 'melt' : 'sad', 'slump');

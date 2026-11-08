@@ -169,7 +169,7 @@ describe('artifacts', () => {
   it('Trapdoor Lever saves one missed payment and breaks', () => {
     const g = makeGame(wheelWith(), { artifacts: ['trapdoor_lever'], pkg: 'short' });
     while (g.run.phase === 'AwaitAction') g.spinForced(5, RING.x1);
-    expect(g.run.phase).toBe('Conversion');
+    expect(g.run.phase).toBe('Shop');
     expect(g.run.artifacts.some((a) => a.id === 'trapdoor_lever')).toBe(false);
   });
 

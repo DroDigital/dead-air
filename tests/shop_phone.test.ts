@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { BARGAINS } from '../src/content/bargains';
 import { Game } from '../src/game/run';
+import { baseDebt } from '../src/game/balance';
 import { voId } from '../src/audio/voId';
 import voIndex from '../src/assets/vo.json';
 import { sentences } from '../tools/vo';
@@ -9,7 +10,6 @@ import { RING, cash, makeGame, wheelWith } from './helpers';
 function toShop(seed = 'shop'): Game {
   const g = makeGame(wheelWith(cash(1000)), { pkg: 'short', seed });
   while (g.run.phase === 'AwaitAction') g.spinForced(0, RING.x1);
-  g.convert(0);
   g.run.tokens = 50;
   return g;
 }
@@ -143,7 +143,7 @@ describe('the phone', () => {
     g.leaveShop();
     g.run.phone!.offers[0] = { bargainId: 'spins_for_debt', params: {} };
     g.phoneAccept(0);
-    expect(g.run.debt).toBe(Math.round((2200 * 1.15) / 50) * 50);
+    expect(g.run.debt).toBe(Math.round((baseDebt(4) * 1.15) / 50) * 50);
     expect(g.run.nextMods.spinsDelta).toBe(3);
   });
 });
