@@ -142,6 +142,9 @@ export interface DeadlineEndResult {
   triggers: Trigger[];
   /** Short, but the Producer is calling to take payment in kind. */
   collateral?: boolean;
+  /** Round economy: Tokens from leftover cash, and interest on Tokens held. */
+  surplusTokens?: number;
+  interestTokens?: number;
   /** The collateral call ended: what was paid, or whether it was refused. */
   inKind?: 'finger' | 'eye';
   refused?: boolean;
@@ -469,6 +472,9 @@ export class Game implements PayoutHost {
     const m = emptyWidthMods();
     mutatorDef(this.run.mutator)?.widthMods?.(m);
     for (const a of this.active()) a.def.statics?.widthMods?.(m, this.run);
+    // The late show: the Network's Bankrupts grow wider every Deadline past the fourth.
+    const late = Math.max(0, this.run.deadline - 4);
+    if (late > 0) m.mult.bankrupt = (m.mult.bankrupt ?? 1) * (1 + BALANCE.lateBankruptWidth * late);
     return m;
   }
 
@@ -516,7 +522,8 @@ export class Game implements PayoutHost {
     const stake = BALANCE.stakeDebtMult[this.run.stake] ?? 1;
     const mut = mutatorDef(this.run.mutator)?.debtMult ?? 1;
     const cur = this.run.marks.curDebtMult ?? 1;
-    return round50(baseDebt(d) * stake * this.staticProd('debtMult') * mut * cur);
+    const late = Math.pow(BALANCE.lateDebtGrowth, Math.max(0, d - 4));
+    return round50(baseDebt(d) * late * stake * this.staticProd('debtMult') * mut * cur);
   }
 
   recomputeDebt(): void {
@@ -1256,8 +1263,18 @@ export class Game implements PayoutHost {
   private settleDeadline(paid: boolean, saved: boolean, vaultBefore: number, dep: DepositResult | null): DeadlineEndResult {
     const run = this.run;
     if (paid) this.addVault(-run.debt, 'debt');
+    // Tokens held at payment earn interest (counted before anything is added this Deadline).
+    const interestTokens = paid && BALANCE.vaultResets ? this.tokenInterest() : 0;
     const ctx: DeadlineEndCtx = { debt: run.debt, vault: run.vault, paid, surplus: paid ? run.vault : 0 };
     this.runHook('onDeadlineEnd', ctx);
+    let surplusTokens = 0;
+    if (paid && BALANCE.vaultResets) {
+      if (interestTokens) this.addTokens(interestTokens, 'interest');
+      // The Vault does not carry over: what is left becomes Tokens at this Deadline's rate.
+      surplusTokens = this.surplusTokensFor(run.vault);
+      if (surplusTokens) this.addTokens(surplusTokens, 'surplus');
+      if (run.vault > 0) this.addVault(-run.vault, 'reset');
+    }
     run.deadlines.push({ deadline: run.deadline, debt: run.debt, paid, vaultAfter: run.vault, pkg: run.pkg });
     const res: DeadlineEndResult = {
       deadline: run.deadline,
@@ -1268,6 +1285,8 @@ export class Game implements PayoutHost {
       vaultAfter: run.vault,
       deposit: dep,
       triggers: this.triggerSink,
+      surplusTokens,
+      interestTokens,
     };
     if (!paid) {
       run.endedAt = run.deadline;
@@ -1275,10 +1294,28 @@ export class Game implements PayoutHost {
     } else if (run.deadline === BALANCE.deadlinesPerRun && !run.endless) {
       run.endedAt = run.deadline;
       this.setPhase('Victory');
+    } else if (BALANCE.vaultResets) {
+      // Nothing to convert any more: straight to the Prize Cabinet.
+      this.openShop();
     } else {
       this.setPhase('Conversion');
     }
     return res;
+  }
+
+  /** Dollars per Token for this Deadline's leftover cash (scales with the Debt). */
+  surplusRate(): number {
+    return Math.max(BALANCE.surplusTokenFloor, Math.round(this.run.debt / BALANCE.surplusTokenDivisor));
+  }
+
+  /** Tokens the current Vault would turn into if the Debt were paid now (for the HUD and bots). */
+  surplusTokensFor(leftover: number): number {
+    return Math.min(BALANCE.surplusTokenCap, Math.floor(Math.max(0, leftover) / this.surplusRate()));
+  }
+
+  /** Interest a Token balance earns at the end of a Deadline. */
+  tokenInterest(tokens = this.run.tokens): number {
+    return Math.min(BALANCE.tokenInterestCap, Math.floor(tokens / BALANCE.tokenInterestPer));
   }
 
   /** The collateral call ends: payment in kind (the Debt is settled) or the floor. */
@@ -1306,7 +1343,8 @@ export class Game implements PayoutHost {
     this.run.endless = true;
     this.run.victoryShown = true;
     this.run.endedAt = null;
-    this.setPhase('Conversion');
+    if (BALANCE.vaultResets) this.openShop();
+    else this.setPhase('Conversion');
     this.changed('endless');
   }
 

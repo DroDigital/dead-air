@@ -90,7 +90,12 @@ type SfxId =
   | 'breaker'
   | 'boneclap'
   | 'bulbpop'
-  | 'seats';
+  | 'seats'
+  // The flapper, layered: three wood/leather clacks and the bed under a fast spin.
+  | 'clackA'
+  | 'clackB'
+  | 'clackC'
+  | 'whirr';
 
 /** ElevenLabs recordings (assets/elevenlabs.json) take precedence over CC0 files and synthesis. */
 const EL_IDS: Partial<Record<SfxId, string>> = {
@@ -152,9 +157,42 @@ const FILE_IDS: Partial<Record<SfxId, string>> = {
 export class Sfx {
   private buffers = new Map<SfxId, AudioBuffer>();
   private ringing: { stop: () => void } | null = null;
+  /** The flapper's own little chain: a filter, a short room echo, then the SFX bus. */
+  private tickIn: GainNode | null = null;
+  private tickTone: BiquadFilterNode | null = null;
+  private lastTick = 0;
+  private tickSide = 1;
+  private whirrLoop: { stop: (fade?: number) => void; gain: GainNode } | null = null;
+  private whirrFilter: BiquadFilterNode | null = null;
 
   constructor(private mixer: Mixer) {
     this.build();
+  }
+
+  private tickChain(): GainNode {
+    if (this.tickIn) return this.tickIn;
+    const c = this.mixer.ctx;
+    const input = c.createGain();
+    const tone = c.createBiquadFilter();
+    tone.type = 'lowpass';
+    tone.Q.value = 0.7;
+    tone.frequency.value = 4000;
+    input.connect(tone).connect(this.mixer.buses.sfx);
+    // A small, dark room: one short echo with a little feedback, well under the dry tick.
+    const send = c.createGain();
+    send.gain.value = 0.22;
+    const delay = c.createDelay(0.3);
+    delay.delayTime.value = 0.067;
+    const fb = c.createGain();
+    fb.gain.value = 0.28;
+    const damp = c.createBiquadFilter();
+    damp.type = 'lowpass';
+    damp.frequency.value = 1800;
+    tone.connect(send).connect(delay).connect(damp).connect(fb).connect(delay);
+    damp.connect(this.mixer.buses.sfx);
+    this.tickIn = input;
+    this.tickTone = tone;
+    return input;
   }
 
   private build(): void {
@@ -258,6 +296,19 @@ export class Sfx {
       });
       return s;
     });
+    // The flapper's clacks: a hollow wood knock, a leather slap, a brass-pin tick.
+    B('clackA', 0.07, (t, _i, _n, st) => (Math.sin(2 * Math.PI * 920 * t) * 0.6 + Math.sin(2 * Math.PI * 1530 * t) * 0.25) * env(t, 0.0004, 0.012) + (rnd(st) * 2 - 1) * env(t, 0.0002, 0.003) * 0.5, 12, 6000);
+    B('clackB', 0.06, (t, _i, _n, st) => {
+      st.a += ((rnd(st) * 2 - 1) - st.a) * 0.35;
+      return st.a * env(t, 0.0005, 0.01) * 1.2 + Math.sin(2 * Math.PI * 410 * t) * env(t, 0.0005, 0.018) * 0.35;
+    }, 12, 4500);
+    B('clackC', 0.05, (t, _i, _n, st) => Math.sin(2 * Math.PI * 2650 * t) * env(t, 0.0002, 0.006) * 0.5 + (rnd(st) * 2 - 1) * env(t, 0.0001, 0.002) * 0.4, 12, 8000);
+    // Soft rushing air for a fast wheel (loops seamlessly: smoothed noise, ends where it starts).
+    B('whirr', 2.0, (_t, i, n, st) => {
+      st.a += ((rnd(st) * 2 - 1) - st.a) * 0.08;
+      // A 2 ms fade at each end hides the loop seam.
+      return st.a * 0.9 * Math.min(1, i / 44, (n - i) / 44);
+    }, 12, 2500);
     // Horror (procedural stand-ins for the ElevenLabs recordings).
     B('chop', 0.6, (t, _i, _n, st) => ((rnd(st) * 2 - 1) * 0.7 + Math.sin(2 * Math.PI * 70 * t)) * env(t, 0.001, 0.09), 8, 3000);
     B('snap', 0.4, (t, _i, _n, st) => (rnd(st) * 2 - 1) * env(t, 0.0005, 0.02) + (rnd(st) * 2 - 1) * env(Math.max(0, t - 0.03), 0.01, 0.12) * 0.4, 8, 2500);
@@ -376,10 +427,88 @@ export class Sfx {
     return src;
   }
 
-  /** Flapper tick: pitch rises as the wheel slows (speed in deg/s). */
+  /**
+   * The flapper on a peg (speed in deg/s). Each tick is the recording layered with one of three
+   * clacks, never quite the same: pitch, level, timing and stereo position wander a little, and a
+   * filter keeps a fast wheel soft and lets the last slow ticks ring out crisp. When ticks crowd
+   * together most of them drop out and the whirr carries the speed instead.
+   */
   tick(speed: number): void {
+    if (!this.mixer.running) return;
+    const c = this.mixer.ctx;
+    const now = c.currentTime;
     const slow = 1 - Math.min(1, speed / 700);
-    this.play('tick', { pitch: 0.8 + slow * 0.9, gain: 0.35 + slow * 0.5, jitter: 0.1 });
+    const gap = now - this.lastTick;
+    // Crowded ticks thin out: under 40 ms apart, keep one in three or so.
+    if (gap < 0.04 && Math.random() < 0.65) return;
+    this.lastTick = now;
+    const input = this.tickChain();
+    this.tickTone!.frequency.setTargetAtTime(1400 + slow * slow * 5200, now, 0.03);
+    this.tickSide = -this.tickSide;
+    const pan = this.tickSide * (0.08 + Math.random() * 0.1);
+    const level = (0.18 + slow * 0.55) * (0.85 + Math.random() * 0.3);
+    const at = now + Math.random() * 0.006;
+    const layer = (id: SfxId, gain: number, pitch: number) => {
+      const buf = this.buffers.get(id);
+      if (!buf) return;
+      const src = c.createBufferSource();
+      src.buffer = buf;
+      src.playbackRate.value = pitch * (1 + (Math.random() * 2 - 1) * 0.05);
+      const g = c.createGain();
+      g.gain.value = gain;
+      const p = c.createStereoPanner();
+      p.pan.value = pan;
+      src.connect(g).connect(p).connect(input);
+      src.start(at);
+    };
+    layer('tick', level * 0.55, 0.85 + slow * 0.5);
+    const clacks: SfxId[] = ['clackA', 'clackB', 'clackC'];
+    layer(clacks[Math.floor(Math.random() * 3)], level * 0.6, 0.9 + slow * 0.35 + Math.random() * 0.08);
+  }
+
+  /** The rush of a fast wheel: follows the speed (deg/s) and fades out as it slows. */
+  whirr(speed: number): void {
+    if (!this.mixer.running) return;
+    const c = this.mixer.ctx;
+    const k = Math.max(0, Math.min(1, (speed - 120) / 700));
+    if (k <= 0.001) {
+      if (this.whirrLoop) {
+        this.whirrLoop.stop(0.3);
+        this.whirrLoop = null;
+      }
+      return;
+    }
+    if (!this.whirrLoop) {
+      const buf = this.buffers.get('whirr');
+      if (!buf) return;
+      const src = c.createBufferSource();
+      src.buffer = buf;
+      src.loop = true;
+      const bp = c.createBiquadFilter();
+      bp.type = 'bandpass';
+      bp.Q.value = 0.9;
+      const g = c.createGain();
+      g.gain.value = 0;
+      src.connect(bp).connect(g).connect(this.mixer.buses.sfx);
+      src.start();
+      this.whirrFilter = bp;
+      this.whirrLoop = {
+        gain: g,
+        stop: (fade = 0.3) => {
+          const t = c.currentTime;
+          g.gain.cancelScheduledValues(t);
+          g.gain.setTargetAtTime(0, t, fade / 3);
+          try {
+            src.stop(t + fade + 0.1);
+          } catch {
+            /* ended */
+          }
+        },
+      };
+    }
+    const t = c.currentTime;
+    this.whirrLoop.gain.gain.setTargetAtTime(k * 0.16, t, 0.08);
+    this.whirrFilter!.frequency.setTargetAtTime(500 + k * 1600, t, 0.08);
   }
 
   startRinging(): void {

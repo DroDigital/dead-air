@@ -119,7 +119,28 @@ export class CameraRig {
 
   /** Start from a high, wide crane position and settle into the seat. */
   craneIn(): void {
+    if (this.flying) return;
     this.crane.set(0, 1.4, 1.6);
+  }
+
+  /** A long, smooth glide from `from` (an offset from the seat) into the chair. */
+  private flying: gsap.core.Tween | null = null;
+  flyIn(from: THREE.Vector3, seconds: number): Promise<void> {
+    this.flying?.kill();
+    this.crane.copy(from);
+    return new Promise((res) => {
+      this.flying = gsap.to(this.crane, {
+        x: 0,
+        y: 0,
+        z: 0,
+        duration: seconds,
+        ease: 'power2.inOut',
+        onComplete: () => {
+          this.flying = null;
+          res();
+        },
+      });
+    });
   }
 
   /**
@@ -165,13 +186,16 @@ export class CameraRig {
     this.punchX += this.punchV * d;
     this.roll += (this.rollTarget - this.roll) * Math.min(1, d * 6);
     this.dolly += (this.dollyTarget - this.dolly) * Math.min(1, d * 1.2);
-    this.crane.multiplyScalar(Math.max(0, 1 - d * 1.1));
+    if (!this.flying) this.crane.multiplyScalar(Math.max(0, 1 - d * 1.1));
     this.whipV += (-this.whipX * 260 - this.whipV * 20) * d;
     this.whipX += this.whipV * d;
     const sh = this.shot;
     const w = sh.w * sh.w * (3 - 2 * sh.w);
     let fov = this.baseFov + this.punchX - this.dolly * 7 + this.crane.length() * 6;
     fov += (sh.fov - fov) * w;
+    // Narrower than 16:9 (4:3, portrait-ish windows): widen the lens so the shot keeps its width.
+    const aspect = this.camera.aspect;
+    if (aspect < 16 / 9) fov = (2 * Math.atan((Math.tan((fov * Math.PI) / 360) * (16 / 9)) / aspect) * 180) / Math.PI;
     if (Math.abs(fov - this.camera.fov) > 1e-3) {
       this.camera.fov = fov;
       this.camera.updateProjectionMatrix();

@@ -12,7 +12,6 @@ function missNarrowly(g: Game): void {
 
 /** Hang up on any ordinary call and pick a package, so the next Deadline is spinning. */
 function nextDeadline(g: Game): void {
-  g.convert(0);
   g.leaveShop();
   if (g.run.phase === 'PhoneCall') g.phoneHangUp();
   g.choosePackage('short');
@@ -87,7 +86,7 @@ describe('collateral', () => {
     missNarrowly(g);
     expect(g.run.phone?.offers[0].bargainId).toBe('collateral_finger');
     g.phoneAccept(0);
-    expect(g.run.phase).toBe('Conversion');
+    expect(g.run.phase).toBe('Shop');
     expect(g.run.deadlines[0].paid).toBe(true);
     expect(g.run.marks.fingers).toBe(1);
     expect(g.maxArtifacts()).toBe(BALANCE.maxArtifacts - 1);

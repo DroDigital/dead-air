@@ -24,6 +24,7 @@ import { AudienceView } from './horror/audience';
 import { CollateralView } from './horror/collateral';
 import { RotView } from './horror/rotView';
 import { WedgeModels } from './horror/wedgeModels';
+import { WinJuice } from './winJuice';
 
 export interface PickHit {
   id: string;
@@ -96,6 +97,7 @@ export class Stage {
   readonly audience: AudienceView;
   readonly wedgeProps: WedgeModels;
   readonly collateral: CollateralView;
+  readonly juice = new WinJuice();
   private raycaster = new THREE.Raycaster();
   stats = { calls: 0, triangles: 0 };
 
@@ -127,6 +129,7 @@ export class Stage {
       this.rot.group,
       this.audience.group,
       this.collateral.group,
+      this.juice.group,
       this.studio.group,
       this.wheel.group,
       this.tray.group,
@@ -149,6 +152,9 @@ export class Stage {
     this.renderer.setSize(w, h, false);
     this.canvas.style.width = `${w}px`;
     this.canvas.style.height = `${h}px`;
+    // The internal picture takes the window's shape, so nothing is letterboxed.
+    this.post.setAspect(w / Math.max(1, h));
+    PSX_SHARED.uRes.value.set(this.post.width, this.post.height);
   }
 
   setWarp(w: number): void {
@@ -158,7 +164,7 @@ export class Stage {
 
   setScale(s: number): void {
     this.post.setScale(s);
-    PSX_SHARED.uRes.value.set(320 * s, 180 * s);
+    PSX_SHARED.uRes.value.set(this.post.width, this.post.height);
   }
 
   /** Raycast from an internal-resolution pixel. */
@@ -201,6 +207,7 @@ export class Stage {
     this.audience.update(dt);
     this.wedgeProps.update(dt, time, this.rig.camera);
     this.collateral.update(dt);
+    this.juice.update(dt, time);
     this.rig.apply(time, dt);
   }
 

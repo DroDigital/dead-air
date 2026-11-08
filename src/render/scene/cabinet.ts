@@ -179,13 +179,15 @@ export class CabinetView {
         drawText(ctx, 'CLOSED', w / 2, h / 2 - 3, { align: 'center', color: '#c03020', scale: 2, shadow: '#000' });
         return;
       }
+      // The panel faces the chair, so its left edge is the cabinet's far end (slot 2 / 5):
+      // each tag sits under the slot it prices.
       const pos: [number, number][] = [
-        [20, 26],
-        [64, 26],
         [108, 26],
-        [20, 58],
-        [64, 58],
+        [64, 26],
+        [20, 26],
         [108, 58],
+        [64, 58],
+        [20, 58],
       ];
       shop.items.forEach((it, i) => {
         const [x, y] = pos[i] ?? [0, 0];
@@ -194,6 +196,8 @@ export class CabinetView {
           return;
         }
         drawText(ctx, `${it.cost}T`, x, y - 6, { align: 'center', color: canAfford(it.cost) ? '#ffe080' : '#a04030', shadow: '#000' });
+        // Say what it is: a wedge goes on the wheel (you pick where), a card goes in a slot.
+        if (it.type !== 'artifact') drawText(ctx, it.type === 'wedge' ? 'WEDGE' : 'CARD', x, y + 2, { align: 'center', color: it.type === 'wedge' ? '#80d0ff' : '#c0ffa0', shadow: '#000' });
       });
       ctx.setTransform(1, 0, 0, 1, 0, 0);
     });
