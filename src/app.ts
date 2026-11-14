@@ -1184,7 +1184,7 @@ export class App {
     const p = res.payout;
     const sp = this.speed;
     const steps = p.steps.filter((s) => !s.label.startsWith('='));
-    if (p.landedKind) this.hud.stamp(`wedge.${p.resolvedKind ?? p.landedKind}`);
+    if (p.landedKind && !this.pendingHorror.some((e) => e.type === 'gunshot')) this.hud.stamp(`wedge.${p.resolvedKind ?? p.landedKind}`);
     // Step-by-step marquee with rising pitch.
     let acc = '';
     for (let i = 0; i < steps.length; i++) {
@@ -2250,15 +2250,19 @@ export class App {
   /** Hold the result until the chamber is actually fired. */
   private async playRevolver(hit: boolean): Promise<void> {
     const st = this.stage;
-    const speed = this.speed;
-    this.music.setLevel(0.2, 0.3);
+    // Keep the same deliberate pace in fast mode: the chamber must remain in suspense.
+    this.music.setLevel(0.12, 0.5);
     this.hud.letterboxTarget = 1;
+    this.hud.clearStamp();
     this.hud.banner = null;
     this.hud.captions = [];
     st.marquee.set('THE CHAMBER TURNS', '#e7cdb1');
-    st.revolver.raise(0.6 / speed);
+    st.revolver.raise(1.1);
     this.sfx.play('ratchet', { gain: 0.55, pitch: 0.65 });
-    await wait(0.9 / speed);
+    await wait(1.3);
+    st.marquee.set('ONE CHAMBER IN SIX', '#e7cdb1');
+    this.sfx.play('clunk', { gain: 0.35, pitch: 0.7 });
+    await wait(1.6);
     st.revolver.fire(hit, this.settings.reducedFlashing);
     if (hit) {
       this.sfx.play('impact', { gain: 1, pitch: 0.7 });
@@ -2276,9 +2280,9 @@ export class App {
       st.marquee.set('EMPTY CHAMBER', '#e7cdb1');
       if (this.settings.captions) this.hud.caption('THE GUN', 'CLICK. THE CHAMBER IS EMPTY.', '#e7cdb1', 2);
     }
-    await wait(0.8 / speed);
-    st.revolver.lower(0.35 / speed);
-    await wait(0.4 / speed);
+    await wait(hit ? 1.4 : 1.6);
+    st.revolver.lower(0.65);
+    await wait(0.7);
     this.hud.letterboxTarget = 0;
     this.music.setLevel(1, 0.5);
   }
