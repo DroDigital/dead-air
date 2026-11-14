@@ -121,6 +121,9 @@ export class Hud {
   stamp(id: string, life = 1.6): void {
     if (art.has(id)) this.stampState = { id, t: 0, life };
   }
+  clearStamp(): void {
+    this.stampState = null;
+  }
   private lastPayout: { text: string; color: string } | null = null;
   private payoutAge = 0;
 
